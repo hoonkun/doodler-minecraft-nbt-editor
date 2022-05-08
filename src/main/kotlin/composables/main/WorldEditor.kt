@@ -115,8 +115,8 @@ fun GeneralItems() {
 
 @Composable
 fun DimensionSpecificItems() {
-    DimensionItem("Regions", "terrain data")
-    DimensionItem("Entities", "entity data")
-    DimensionItem("Poi", "villager job related data")
-    DimensionItem("Others", "only raids data, currently.")
+    DimensionItem("Terrain", "region/")
+    DimensionItem("Entities", "entities/")
+    DimensionItem("Work Block Owners", "poi/")
+    DimensionItem("Others", "data/")
 }
