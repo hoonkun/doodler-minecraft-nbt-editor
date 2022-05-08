@@ -12,7 +12,9 @@ import androidx.compose.ui.unit.sp
 import composables.themed.LinkText
 
 @Composable
-fun ColumnScope.NoWorldsSelected() {
+fun ColumnScope.NoWorldsSelected(
+    onSelectWorld: (String) -> Unit
+) {
     Column (
         modifier = Modifier
             .fillMaxWidth()
@@ -21,7 +23,7 @@ fun ColumnScope.NoWorldsSelected() {
     ) {
         Spacer(modifier = Modifier.weight(1f))
         Text(
-            "No World Selected.",
+            "Doodler: Minecraft NBT Editor",
             color = Color(255, 255, 255, 125),
             fontSize = 30.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -33,7 +35,7 @@ fun ColumnScope.NoWorldsSelected() {
             fontSize = 40.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-
+            onSelectWorld("")
         }
         LinkText(
             "...or single NBT file",
