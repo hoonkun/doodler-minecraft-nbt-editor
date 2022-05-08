@@ -58,9 +58,10 @@ fun DimensionItem(
         modifier = Modifier.fillMaxWidth(),
         onClick = { }
     ) {
-        Row(horizontalArrangement = Arrangement.Start, modifier = Modifier.fillMaxWidth().padding(start = 35.dp)) {
+        Row(horizontalArrangement = Arrangement.Start, modifier = Modifier.fillMaxWidth().padding(start = 35.dp, end = 18.dp)) {
             Text(name, fontSize = 24.sp, color = Color(255, 255, 255, 200))
             if (path != null) {
+                Spacer(modifier = Modifier.weight(1f))
                 Text(
                     " $path", fontSize = 16.sp, color = Color(255, 255, 255, 100),
                     modifier = Modifier.align(Alignment.Bottom).padding(start = 7.dp)
