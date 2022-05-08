@@ -52,14 +52,18 @@ fun WorldEditor(
                             .background(Color(60, 63, 65))
                             .verticalScroll(scrollState)
                     ) {
-                        DimensionCategory("General")
-                        GeneralItems()
-                        DimensionCategory("Overworld")
-                        DimensionSpecificItems()
-                        DimensionCategory("Nether", "DIM-1")
-                        DimensionSpecificItems()
-                        DimensionCategory("TheEnd", "DIM1")
-                        DimensionSpecificItems()
+                        DimensionCategory("General", initialFolded = false) {
+                            GeneralItems()
+                        }
+                        DimensionCategory("Overworld", initialFolded = false) {
+                            DimensionSpecificItems()
+                        }
+                        DimensionCategory("Nether", "DIM-1", initialFolded = true) {
+                            DimensionSpecificItems()
+                        }
+                        DimensionCategory("TheEnd", "DIM1", initialFolded = true) {
+                            DimensionSpecificItems()
+                        }
                         Spacer(modifier = Modifier.height(25.dp))
                     }
                     VerticalScrollbar(

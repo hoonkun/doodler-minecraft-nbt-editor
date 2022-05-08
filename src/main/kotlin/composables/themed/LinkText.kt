@@ -1,5 +1,6 @@
 package composables.themed
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.text.ClickableText
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -18,7 +19,7 @@ fun LinkText(
     text: String,
     color: Color,
     fontSize: TextUnit,
-    modifier: Modifier,
+    modifier: Modifier = Modifier.background(Color.Transparent),
     onClick: (Int) -> Unit
 ) {
     var active by remember { mutableStateOf(false) }
