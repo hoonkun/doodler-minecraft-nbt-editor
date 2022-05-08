@@ -9,23 +9,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.ApplicationScope
 import androidx.compose.ui.window.WindowState
 import composables.main.NoWorldsSelected
+import composables.main.SingleEditor
 import composables.main.WorldEditor
 
 @Composable
 @Preview
 fun App(
-    addWorld: (String) -> Unit
+    addWorld: (String, String) -> Unit,
+    addSingle: (String, String) -> Unit
 ) {
-    val onSelectWorld: (String) -> Unit = {
-        addWorld(it)
-    }
 
     MaterialTheme {
         Column (modifier = Modifier.fillMaxSize()) {
-            NoWorldsSelected(onSelectWorld)
+            NoWorldsSelected(addWorld, addSingle)
             BottomAppBar(
                 elevation = 15.dp,
                 backgroundColor = Color(60, 63, 65),
@@ -56,27 +54,33 @@ fun main() = application {
 @Composable
 private fun DoodlerWindow(
     appState: DoodlerApplicationState,
-    windowState: DoodlerWindowState
+    windowState: DoodlerWindowData
 ) = Window(
-    onCloseRequest = windowState::close,
+    onCloseRequest = if (windowState.type == DoodlerWindowType.MAIN) appState::exit else windowState::close,
     state = WindowState(
         size = if (windowState.type == DoodlerWindowType.MAIN) DpSize(700.dp, 650.dp) else DpSize(1400.dp, 1100.dp)
     ),
     title = windowState.title
 ) {
-    if (windowState.type == DoodlerWindowType.MAIN) App { appState.openNew(DoodlerWindowType.WORLD_EDITOR, it) }
-    else if (windowState.type == DoodlerWindowType.WORLD_EDITOR) WorldEditor()
+    when (windowState.type) {
+        DoodlerWindowType.MAIN -> App(
+            addWorld = { displayName, path -> appState.openNew(DoodlerWindowType.WORLD_EDITOR, displayName, path) },
+            addSingle = { displayName, path -> appState.openNew(DoodlerWindowType.SINGLE_EDITOR, displayName, path) }
+        )
+        DoodlerWindowType.WORLD_EDITOR -> WorldEditor(windowState.path ?: throw Exception("No path specified!"))
+        DoodlerWindowType.SINGLE_EDITOR -> SingleEditor(windowState.path ?: throw Exception("No path specified!"))
+    }
 }
 
 private class DoodlerApplicationState {
-    val windows = mutableStateListOf<DoodlerWindowState>()
+    val windows = mutableStateListOf<DoodlerWindowData>()
 
     init {
         windows += createNewState(DoodlerWindowType.MAIN, "doodler")
     }
 
-    fun openNew(type: DoodlerWindowType, name: String) {
-        windows += createNewState(type, "Editor $name")
+    fun openNew(type: DoodlerWindowType, name: String, path: String) {
+        windows += createNewState(type, "Editor $name", path)
     }
 
     fun exit() {
@@ -85,18 +89,21 @@ private class DoodlerApplicationState {
 
     private fun createNewState(
         type: DoodlerWindowType,
-        title: String
-    ) = DoodlerWindowState(
+        title: String,
+        path: String? = null
+    ) = DoodlerWindowData(
         type,
         title,
-        windows::remove
+        windows::remove,
+        path
     )
 }
 
-private class DoodlerWindowState(
+private class DoodlerWindowData(
     val type: DoodlerWindowType,
     val title: String,
-    private val close: (DoodlerWindowState) -> Unit
+    private val close: (DoodlerWindowData) -> Unit,
+    val path: String? = null
 ) {
     fun close() = close(this)
 }

@@ -18,7 +18,9 @@ import composables.themed.DimensionCategory
 import composables.themed.DimensionItem
 
 @Composable
-fun WorldEditor() {
+fun WorldEditor(
+    worldPath: String
+) {
     val scrollState = rememberScrollState()
 
     MaterialTheme {

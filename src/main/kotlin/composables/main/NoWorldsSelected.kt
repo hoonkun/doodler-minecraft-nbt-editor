@@ -13,7 +13,8 @@ import composables.themed.LinkText
 
 @Composable
 fun ColumnScope.NoWorldsSelected(
-    onSelectWorld: (String) -> Unit
+    onAddWorld: (String, String) -> Unit,
+    onAddSingle: (String, String) -> Unit
 ) {
     Column (
         modifier = Modifier
@@ -35,7 +36,7 @@ fun ColumnScope.NoWorldsSelected(
             fontSize = 40.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            onSelectWorld("")
+            onAddWorld("", "")
         }
         LinkText(
             "...or single NBT file",
@@ -43,7 +44,7 @@ fun ColumnScope.NoWorldsSelected(
             fontSize = 22.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-
+            onAddSingle("", "")
         }
         Spacer(modifier = Modifier.height(80.dp))
         Text(
