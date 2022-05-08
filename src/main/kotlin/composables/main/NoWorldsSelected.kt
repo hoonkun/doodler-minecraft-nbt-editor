@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import composables.themed.LinkText
+import composables.themed.ThemedColor
 
 @Composable
 fun ColumnScope.NoWorldsSelected(
@@ -32,7 +33,7 @@ fun ColumnScope.NoWorldsSelected(
         Spacer(modifier = Modifier.height(20.dp))
         LinkText(
             "Select World",
-            color = Color(174, 213, 129),
+            color = ThemedColor.Bright,
             fontSize = 40.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
@@ -56,7 +57,7 @@ fun ColumnScope.NoWorldsSelected(
         Spacer(modifier = Modifier.height(10.dp))
         LinkText(
             "Documentation",
-            color = Color(100, 181, 246, 200),
+            color = ThemedColor.Link,
             fontSize = 22.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {

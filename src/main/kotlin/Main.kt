@@ -80,7 +80,7 @@ private class DoodlerApplicationState {
     }
 
     fun openNew(type: DoodlerWindowType, name: String, path: String) {
-        windows += createNewState(type, "Editor $name", path)
+        windows += createNewState(type, "doodler - $name(${if (type == DoodlerWindowType.WORLD_EDITOR) "world" else "single"})", path)
     }
 
     fun exit() {

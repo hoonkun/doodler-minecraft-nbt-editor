@@ -6,22 +6,34 @@ import androidx.compose.material.BottomAppBar
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import composables.themed.DimensionCategory
-import composables.themed.DimensionItem
+import composables.themed.*
 
 @Composable
 fun WorldEditor(
     worldPath: String
 ) {
     val scrollState = rememberScrollState()
+
+    val editorTabs = remember { mutableStateMapOf<String, EditorTabBase>() }
+    var selectedTab by remember { mutableStateOf("") }
+
+    val onDimensionItemClick: (String, String) -> Unit = { dimension, name ->
+        val key = "$dimension/$name"
+        if (editorTabs[key] == null) {
+            editorTabs += key to EditorTabWithSubTabs(key, EditorSubTab.Type.CHUNK)
+        }
+
+        selectedTab = key
+    }
 
     MaterialTheme {
         Column (modifier = Modifier.fillMaxSize()) {
@@ -53,16 +65,12 @@ fun WorldEditor(
                             .verticalScroll(scrollState)
                     ) {
                         DimensionCategory("General", initialFolded = false) {
-                            GeneralItems()
+                            GeneralItems {  }
                         }
-                        DimensionCategory("Overworld", initialFolded = false) {
-                            DimensionSpecificItems()
-                        }
-                        DimensionCategory("Nether", "DIM-1", initialFolded = true) {
-                            DimensionSpecificItems()
-                        }
-                        DimensionCategory("TheEnd", "DIM1", initialFolded = true) {
-                            DimensionSpecificItems()
+                        for (dimension in listOf("", "DIM-1", "DIM1")) {
+                            DimensionCategory(display(dimension), dimension, initialFolded = dimension != "") {
+                                DimensionSpecificItems(dimension, onDimensionItemClick)
+                            }
                         }
                         Spacer(modifier = Modifier.height(25.dp))
                     }
@@ -79,12 +87,19 @@ fun WorldEditor(
                         modifier = Modifier.align(Alignment.TopEnd)
                     )
                 }
-                Column(
+                Box(
                     modifier = Modifier
                         .fillMaxHeight()
                         .weight(0.7f)
                 ) {
-
+                    for (editorTab in editorTabs) {
+                        val tab = editorTab.value
+                        if (tab is EditorTabWithSubTabs && tab.subTabs.isEmpty()) {
+                            EmptyEditorTab(tab, selectedTab == tab.name)
+                        } else {
+                            EditorTab(tab, selectedTab == tab.name)
+                        }
+                    }
                 }
             }
 
@@ -106,17 +121,124 @@ fun WorldEditor(
 }
 
 @Composable
-fun GeneralItems() {
-    DimensionItem("World Data", "level.dat")
-    DimensionItem("Players", "playerdata/")
-    DimensionItem("Statistics", "stats/")
-    DimensionItem("Advancements", "advancements/")
+fun GeneralItems(onClick: (String) -> Unit) {
+    DimensionItem("World Data", "level.dat", onClick = onClick)
+    DimensionItem("Players", "playerdata/", onClick = onClick)
+    DimensionItem("Statistics", "stats/", onClick = onClick)
+    DimensionItem("Advancements", "advancements/", onClick = onClick)
 }
 
 @Composable
-fun DimensionSpecificItems() {
-    DimensionItem("Terrain", "region/")
-    DimensionItem("Entities", "entities/")
-    DimensionItem("Work Block Owners", "poi/")
-    DimensionItem("Others", "data/")
+fun DimensionSpecificItems(dimension: String, onClick: (String, String) -> Unit) {
+    val onDimensionClick: (String) -> Unit = { onClick(display(dimension), it) }
+    DimensionItem("Terrain", "region/", onClick = onDimensionClick)
+    DimensionItem("Entities", "entities/", onClick = onDimensionClick)
+    DimensionItem("Work Block Owners", "poi/", onClick = onDimensionClick)
+    DimensionItem("Others", "data/", onClick = onDimensionClick)
+}
+
+@Composable
+fun EditorTab(tab: EditorTabBase, selected: Boolean) {
+    Column (
+        modifier = Modifier
+            .fillMaxSize()
+            .alpha(if (selected) 1f else 0f)
+            .zIndex(if (selected) 100f else -1f)
+    ) {
+        if (tab is EditorTabWithSubTabs) TabGroup(tab.subTabs.map { TabData(true, it) })
+        // TODO: display tab.selectedSubTab.content or tab.content
+    }
+}
+
+@Composable
+fun EmptyEditorTab(tab: EditorTabWithSubTabs, selected: Boolean) {
+    Column (
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .fillMaxSize()
+            .alpha(if (selected) 1f else 0f)
+            .zIndex(if (selected) 100f else -1f)
+    ) {
+        Text(
+            tab.name,
+            color = Color.White,
+            fontSize = 38.sp,
+        )
+        Spacer(modifier = Modifier.height(25.dp))
+        Text(
+            "No files opened",
+            color = Color(255, 255, 255, 185),
+            fontSize = 33.sp
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        LinkText(
+            "Select File",
+            color = ThemedColor.Bright,
+            fontSize = 30.sp
+        ) {
+
+        }
+        Spacer(modifier = Modifier.height(60.dp))
+        Text(
+            "What is this?",
+            color = Color(255, 255, 255, 145),
+            fontSize = 25.sp
+        )
+        Spacer(modifier = Modifier.height(10.dp))
+        LinkText(
+            "Documentation",
+            color = ThemedColor.Link,
+            fontSize = 22.sp
+        ) {
+
+        }
+    }
+}
+
+fun display(dimension: String): String {
+    return when (dimension) {
+        "" -> "Overworld"
+        "DIM-1" -> "Nether"
+        "DIM1" -> "TheEnd"
+        else -> "Unknown"
+    }
+}
+
+abstract class EditorTabBase(
+    val name: String
+)
+
+class EditorTabWithSingleContent(
+    name: String,
+    val content: EditorTabContent
+): EditorTabBase(name)
+
+class EditorTabWithSubTabs(
+    name: String,
+    val subTabType: EditorSubTab.Type = EditorSubTab.Type.NONE
+): EditorTabBase(name) {
+    val subTabs = mutableStateListOf<EditorSubTab>()
+
+    fun addSubTab(subTab: EditorSubTab) {
+        if (!subTabs.any { it == subTab || it.name == subTab.name }) subTabs.add(subTab)
+    }
+
+    fun removeSubTab(subTab: EditorSubTab) {
+        subTabs.remove(subTab)
+    }
+}
+
+class EditorSubTab(
+    val name: String,
+    val content: EditorTabContent
+) {
+
+    enum class Type {
+        NONE, PLAYER, CHUNK
+    }
+}
+
+class EditorTabContent {
+    val hasChanges: Boolean = false
 }

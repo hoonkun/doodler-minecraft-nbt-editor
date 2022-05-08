@@ -38,7 +38,7 @@ fun DimensionCategory(
             Spacer(modifier = Modifier.weight(1f))
             LinkText(
                 if (folded) "unfold" else "fold",
-                Color(174, 213, 129),
+                ThemedColor.Bright,
                 19.sp
             ) { folded = !folded }
         }
@@ -50,9 +50,10 @@ fun DimensionCategory(
 @Composable
 fun DimensionItem(
     name: String,
-    path: String? = null
+    path: String? = null,
+    onClick: (String) -> Unit = { }
 ) {
-    ListItem (onClick = {  }) {
+    ListItem (onClick = { onClick(name) }) {
         Row(horizontalArrangement = Arrangement.Start, modifier = Modifier.fillMaxWidth().padding(start = 35.dp, end = 18.dp)) {
             Text(name, fontSize = 24.sp, color = Color(255, 255, 255, 200))
             if (path != null) {
