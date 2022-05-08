@@ -1,9 +1,7 @@
 package composables.themed
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Text
-import androidx.compose.material.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,16 +46,13 @@ fun DimensionCategory(
     }
 }
 
+
 @Composable
 fun DimensionItem(
     name: String,
     path: String? = null
 ) {
-    TextButton(
-        colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
-        modifier = Modifier.fillMaxWidth(),
-        onClick = { }
-    ) {
+    ListItem (onClick = {  }) {
         Row(horizontalArrangement = Arrangement.Start, modifier = Modifier.fillMaxWidth().padding(start = 35.dp, end = 18.dp)) {
             Text(name, fontSize = 24.sp, color = Color(255, 255, 255, 200))
             if (path != null) {
