@@ -14,8 +14,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import composables.editor.WorldEditorComposable.Companion.BottomBar
 import composables.editor.WorldEditorComposable.Companion.BottomBarText
-import composables.editor.WorldEditorComposable.Companion.DimensionItems
-import composables.editor.WorldEditorComposable.Companion.GeneralItems
+import composables.editor.WorldEditorComposable.Companion.CategoryItems
 import composables.editor.WorldEditorComposable.Companion.MainArea
 import composables.editor.WorldEditorComposable.Companion.MainColumn
 import composables.editor.WorldEditorComposable.Companion.MainContents
@@ -35,25 +34,28 @@ fun WorldEditor(
     val editorTabs = remember { mutableStateMapOf<String, EditorTabBase>() }
     var selectedTab by remember { mutableStateOf("") }
 
-    val onGeneralItemClick: (String) -> Unit = { key ->
-        if (editorTabs[key] == null) {
-            val newTab = if (key == "General/World Data") {
-                EditorTabWithSingleContent(key, EditorNbtContent())
-            } else {
-                EditorTabWithSubTabs(key, EditorTabWithSubTabs.Type.PLAYER)
-            }
-            editorTabs += key to newTab
-        }
+    val onGeneralItemClick: (CategoryItemData) -> Unit = lambda@ { data ->
+        selectedTab = data.key
 
-        selectedTab = key
+        if (editorTabs[data.key] != null) return@lambda
+
+        editorTabs[data.key] = if (data.key == "General/World Data") {
+            EditorTabWithSingleContent(data.key, EditorNbtContent())
+        } else {
+            EditorTabWithSubTabs(data.key, EditorTabWithSubTabs.Type.PLAYER)
+        }
     }
 
-    val onDimensionItemClick: (String) -> Unit = { key ->
-        if (editorTabs[key] == null) {
-            editorTabs += key to EditorTabWithSubTabs(key, EditorTabWithSubTabs.Type.CHUNK)
-        }
+    val onDimensionItemClick: (CategoryItemData) -> Unit = lambda@ { data ->
+        selectedTab = data.key
 
-        selectedTab = key
+        if (editorTabs[data.key] != null) return@lambda
+
+        editorTabs += data.key to EditorTabWithSubTabs(data.key, EditorTabWithSubTabs.Type.CHUNK)
+    }
+
+    val createDimensionCategoryData: (String) -> CategoryData = { dimension ->
+        CategoryData(display(dimension), dimension != "").withDescription(dimension)
     }
 
     val generalItems = listOf(
@@ -77,12 +79,12 @@ fun WorldEditor(
             MainArea {
                 MainTabs {
                     TabListScrollable(scrollState) {
-                        Category("General", initialFolded = false) {
-                            GeneralItems(generalItems, selectedTab, onGeneralItemClick)
+                        Category(CategoryData("General", false)) { category ->
+                            CategoryItems(category, generalItems, selectedTab, onGeneralItemClick)
                         }
-                        for (dir in listOf("", "DIM-1", "DIM1")) {
-                            Category(display(dir), dir = dir, initialFolded = dir != "") {
-                                DimensionItems(dimensionItems, selectedTab, display(dir), onDimensionItemClick)
+                        for (dimension in listOf("", "DIM-1", "DIM1")) {
+                            Category(createDimensionCategoryData(dimension)) { category ->
+                                CategoryItems(category, dimensionItems, selectedTab, onDimensionItemClick)
                             }
                         }
                         Spacer(modifier = Modifier.height(25.dp))

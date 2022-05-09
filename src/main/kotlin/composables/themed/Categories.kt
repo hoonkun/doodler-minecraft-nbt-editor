@@ -16,22 +16,20 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun ColumnScope.Category(
-    name: String,
-    dir: String? = null,
-    initialFolded: Boolean = false,
-    content: @Composable ColumnScope.() -> Unit = { }
+    data: CategoryData,
+    content: @Composable ColumnScope.(CategoryData) -> Unit = { }
 ) {
-    var folded by remember { mutableStateOf(initialFolded) }
+    var folded by remember { mutableStateOf(data.defaultFoldState) }
 
     Column {
         Row(
             verticalAlignment = Alignment.Bottom,
             modifier = Modifier.padding(start = 25.dp, end = 25.dp, top = 30.dp, bottom = 10.dp)
         ) {
-            Text(name, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
-            if (dir != null) {
+            Text(data.name, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
+            if (data.description != null) {
                 Text(
-                    " $dir", fontSize = 16.sp, color = Color(255, 255, 255, 125),
+                    " ${data.description}", fontSize = 16.sp, color = Color(255, 255, 255, 125),
                     modifier = Modifier.align(Alignment.Bottom).padding(start = 7.dp)
                 )
             }
@@ -42,28 +40,47 @@ fun ColumnScope.Category(
                 19.sp
             ) { folded = !folded }
         }
-        if (!folded) content()
+        if (!folded) content(data)
     }
 }
 
 
 @Composable
 fun CategoryItem(
-    name: String,
-    path: String,
-    category: String,
+    data: CategoryItemData,
     selected: String,
-    onClick: (String) -> Unit = { }
+    onClick: (CategoryItemData) -> Unit = { }
 ) {
-    val key = "$category/$name"
-    ListItem (selected == key, onClick = { onClick(key) }) {
+    val key = "${data.parent.name}/${data.name}"
+    ListItem (selected == key, onClick = { onClick(data) }) {
         Row(horizontalArrangement = Arrangement.Start, modifier = Modifier.fillMaxWidth().padding(start = 35.dp, end = 18.dp)) {
-            Text(name, fontSize = 24.sp, color = Color(255, 255, 255, 200))
+            Text(data.name, fontSize = 24.sp, color = Color(255, 255, 255, 200))
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                " $path", fontSize = 16.sp, color = Color(255, 255, 255, 100),
+                " ${data.description}", fontSize = 16.sp, color = Color(255, 255, 255, 100),
                 modifier = Modifier.align(Alignment.Bottom).padding(start = 7.dp)
             )
         }
     }
+}
+
+class CategoryData(
+    val name: String,
+    val defaultFoldState: Boolean
+) {
+    var description: String? = null
+        private set
+
+    fun withDescription(description: String): CategoryData {
+        this.description = description
+        return this
+    }
+}
+
+class CategoryItemData (
+    val name: String,
+    val description: String,
+    val parent: CategoryData
+) {
+    val key: String = "${parent.name}/$name"
 }

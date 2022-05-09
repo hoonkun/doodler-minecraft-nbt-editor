@@ -13,7 +13,9 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import composables.themed.CategoryData
 import composables.themed.CategoryItem
+import composables.themed.CategoryItemData
 
 class WorldEditorComposable {
     companion object {
@@ -114,27 +116,15 @@ class WorldEditorComposable {
         }
 
         @Composable
-        fun ColumnScope.GeneralItems(
+        fun ColumnScope.CategoryItems(
+            parent: CategoryData,
             items: List<Pair<String, String>>,
             selected: String,
-            onClick: (String) -> Unit
+            onClick: (CategoryItemData) -> Unit
         ) {
-            val category = "General"
-
-            for ((name, path) in items) {
-                CategoryItem(name, path, category, selected, onClick = onClick)
-            }
-        }
-
-        @Composable
-        fun ColumnScope.DimensionItems(
-            items: List<Pair<String, String>>,
-            selected: String,
-            dimension: String,
-            onClick: (String) -> Unit
-        ) {
-            for ((name, path) in items) {
-                CategoryItem(name, path, dimension, selected, onClick = onClick)
+            for ((name, description) in items) {
+                val data = CategoryItemData(name, description, parent)
+                CategoryItem(data, selected, onClick)
             }
         }
 
