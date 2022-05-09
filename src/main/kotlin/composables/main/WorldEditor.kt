@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import composables.editor.WorldEditorComposable.Companion.BottomBar
 import composables.editor.WorldEditorComposable.Companion.BottomBarText
+import composables.editor.WorldEditorComposable.Companion.CategoriesBottomMargin
 import composables.editor.WorldEditorComposable.Companion.CategoryItems
 import composables.editor.WorldEditorComposable.Companion.MainArea
 import composables.editor.WorldEditorComposable.Companion.MainColumn
@@ -34,42 +35,39 @@ fun WorldEditor(
     val editorTabs = remember { mutableStateMapOf<String, EditorTabBase>() }
     var selectedTab by remember { mutableStateOf("") }
 
-    val onGeneralItemClick: (CategoryItemData) -> Unit = lambda@ { data ->
+    val onCategoryItemClick: (CategoryItemData) -> Unit = lambda@ { data ->
         selectedTab = data.key
 
         if (editorTabs[data.key] != null) return@lambda
 
-        editorTabs[data.key] = if (data.key == "General/World Data") {
+        editorTabs[data.key] = if (data.contentType == EditorContentType.SINGLE_NBT) {
             EditorTabWithSingleContent(data.key, EditorNbtContent())
         } else {
-            EditorTabWithSubTabs(data.key, EditorTabWithSubTabs.Type.PLAYER)
+            EditorTabWithSubTabs(data.key, data.contentType)
         }
     }
 
-    val onDimensionItemClick: (CategoryItemData) -> Unit = lambda@ { data ->
-        selectedTab = data.key
-
-        if (editorTabs[data.key] != null) return@lambda
-
-        editorTabs += data.key to EditorTabWithSubTabs(data.key, EditorTabWithSubTabs.Type.CHUNK)
-    }
-
-    val createDimensionCategoryData: (String) -> CategoryData = { dimension ->
-        CategoryData(display(dimension), dimension != "").withDescription(dimension)
-    }
-
     val generalItems = listOf(
-        Pair("World Data", "level.dat"),
-        Pair("Players", "playerdata/"),
-        Pair("Statistics", "stats/"),
-        Pair("Advancements", "advancements/"),
+        Triple("World Data", "level.dat", EditorContentType.SINGLE_NBT),
+        Triple("Players", "playerdata/", EditorContentType.PLAYER),
+        Triple("Statistics", "stats/", EditorContentType.PLAYER),
+        Triple("Advancements", "advancements/", EditorContentType.PLAYER),
     )
 
     val dimensionItems = listOf(
-        Pair("Terrain", "region/"),
-        Pair("Entities", "entities/"),
-        Pair("Work Block Owners", "poi/"),
-        Pair("Others", "data/"),
+        Triple("Terrain", "region/", EditorContentType.CHUNK_IN_COMPRESSED_FILE),
+        Triple("Entities", "entities/", EditorContentType.CHUNK_IN_COMPRESSED_FILE),
+        Triple("Work Block Owners", "poi/", EditorContentType.CHUNK_IN_COMPRESSED_FILE),
+        Triple("Others", "data/", EditorContentType.CHUNK_IN_COMPRESSED_FILE),
+    )
+
+    val createDimensionCategoryData: (String) -> CategoryData = { dimension ->
+        CategoryData(display(dimension), dimension != "", dimensionItems).withDescription(dimension)
+    }
+
+    val categories = listOf(
+        CategoryData("General", false, generalItems),
+        *listOf("", "DIM-1", "DIM1").map(createDimensionCategoryData).toTypedArray()
     )
 
     MaterialTheme {
@@ -79,15 +77,12 @@ fun WorldEditor(
             MainArea {
                 MainTabs {
                     TabListScrollable(scrollState) {
-                        Category(CategoryData("General", false)) { category ->
-                            CategoryItems(category, generalItems, selectedTab, onGeneralItemClick)
-                        }
-                        for (dimension in listOf("", "DIM-1", "DIM1")) {
-                            Category(createDimensionCategoryData(dimension)) { category ->
-                                CategoryItems(category, dimensionItems, selectedTab, onDimensionItemClick)
+                        for (category in categories) {
+                            Category(category) {
+                                CategoryItems(category, selectedTab, onCategoryItemClick)
                             }
                         }
-                        Spacer(modifier = Modifier.height(25.dp))
+                        CategoriesBottomMargin()
                     }
                     TabListScrollbar(scrollState)
                 }
@@ -229,6 +224,10 @@ fun display(dimension: String): String {
     }
 }
 
+enum class EditorContentType {
+    SINGLE_NBT, PLAYER, CHUNK_IN_COMPRESSED_FILE
+}
+
 abstract class EditorTabBase(
     val name: String
 )
@@ -240,7 +239,7 @@ class EditorTabWithSingleContent(
 
 class EditorTabWithSubTabs(
     name: String,
-    val type: Type = Type.NONE
+    val type: EditorContentType
 ): EditorTabBase(name) {
     companion object {
         const val SELECTOR_TAB_NAME = "+"
@@ -266,10 +265,6 @@ class EditorTabWithSubTabs(
     fun removeSubTab(subTab: EditorSubTabBase) {
         if (subTab.name == selected) selected = subTabs[subTabs.indexOf(subTab) - 1].name
         subTabs.remove(subTab)
-    }
-
-    enum class Type {
-        NONE, PLAYER, CHUNK
     }
 }
 

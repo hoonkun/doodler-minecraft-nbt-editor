@@ -118,14 +118,18 @@ class WorldEditorComposable {
         @Composable
         fun ColumnScope.CategoryItems(
             parent: CategoryData,
-            items: List<Pair<String, String>>,
             selected: String,
             onClick: (CategoryItemData) -> Unit
         ) {
-            for ((name, description) in items) {
-                val data = CategoryItemData(name, description, parent)
+            for ((name, description, contentType) in parent.items) {
+                val data = CategoryItemData(name, description, parent, contentType)
                 CategoryItem(data, selected, onClick)
             }
+        }
+
+        @Composable
+        fun ColumnScope.CategoriesBottomMargin() {
+            Spacer(modifier = Modifier.height(25.dp))
         }
 
     }

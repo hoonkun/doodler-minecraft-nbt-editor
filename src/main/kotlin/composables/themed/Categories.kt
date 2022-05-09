@@ -13,11 +13,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import composables.main.EditorContentType
 
 @Composable
 fun ColumnScope.Category(
     data: CategoryData,
-    content: @Composable ColumnScope.(CategoryData) -> Unit = { }
+    content: @Composable ColumnScope.() -> Unit = { }
 ) {
     var folded by remember { mutableStateOf(data.defaultFoldState) }
 
@@ -40,7 +41,7 @@ fun ColumnScope.Category(
                 19.sp
             ) { folded = !folded }
         }
-        if (!folded) content(data)
+        if (!folded) content()
     }
 }
 
@@ -66,7 +67,8 @@ fun CategoryItem(
 
 class CategoryData(
     val name: String,
-    val defaultFoldState: Boolean
+    val defaultFoldState: Boolean,
+    val items: List<Triple<String, String, EditorContentType>>
 ) {
     var description: String? = null
         private set
@@ -80,7 +82,8 @@ class CategoryData(
 class CategoryItemData (
     val name: String,
     val description: String,
-    val parent: CategoryData
+    val parent: CategoryData,
+    val contentType: EditorContentType
 ) {
     val key: String = "${parent.name}/$name"
 }
