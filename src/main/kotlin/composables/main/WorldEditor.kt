@@ -23,30 +23,29 @@ fun WorldEditor(
         if (editorFiles[selectedFile] != null) return@lambda
 
         editorFiles[data.key] = if (data.holderType == EditableHolder.Type.Single) {
-            SingleEditableHolder(data.key, data.editableType, Editable(""))
+            SingleEditableHolder(data.key, data.format, data.contentType, Editable(""))
         } else {
-            MultipleEditableHolder(data.key, data.editableType)
+            MultipleEditableHolder(data.key, data.format, data.contentType)
         }
     }
 
     val generalItems: (String) -> List<CategoryItemData> = {
         listOf(
-            CategoryItemData(it, "World Data", "level.dat", EditableHolder.Type.Single, Editable.Type.LEVEL_DAT),
-            CategoryItemData(it, "Players", "playerdata/", EditableHolder.Type.Multiple, Editable.Type.PLAYER),
-            CategoryItemData(it, "Statistics", "stats/", EditableHolder.Type.Multiple, Editable.Type.PLAYER),
-            CategoryItemData(it, "Advancements", "advancements/", EditableHolder.Type.Multiple, Editable.Type.PLAYER),
+            CategoryItemData(it, EditableHolder.Type.Single, Editable.Format.DAT, Editable.ContentType.LEVEL),
+            CategoryItemData(it, EditableHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.PLAYER),
+            CategoryItemData(it, EditableHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.STATISTICS),
+            CategoryItemData(it, EditableHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.ADVANCEMENTS),
         )
     }
 
     val dimensionItems: (String) -> List<CategoryItemData> = {
         val holderType = EditableHolder.Type.Multiple
-        val editableType = Editable.Type.COMPRESSED_ANVIL
         val prefix = display(it)
         listOf(
-            CategoryItemData(prefix, "Terrain", "region/", holderType, editableType),
-            CategoryItemData(prefix, "Entities", "entities/", holderType, editableType),
-            CategoryItemData(prefix, "Work Block Owners", "poi/", holderType, editableType),
-            CategoryItemData(prefix, "Others", "data/", holderType, editableType),
+            CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.TERRAIN),
+            CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.ENTITY),
+            CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.POI),
+            CategoryItemData(prefix, holderType, Editable.Format.DAT, Editable.ContentType.OTHERS),
         )
     }
 
@@ -114,14 +113,27 @@ class Editable(
         return this.ident.hashCode()
     }
 
-    enum class Type {
-        LEVEL_DAT, PLAYER, COMPRESSED_ANVIL
+    enum class Format {
+        DAT, MCA
+    }
+
+    enum class ContentType(val displayName: String, val description: String) {
+        LEVEL("World Data", "level.dat"),
+        PLAYER("Players", "playerdata/"),
+        STATISTICS("Statistics", "stats/"),
+        ADVANCEMENTS("Advancements", "advancements/"),
+        OTHERS("Others", "data/"),
+
+        TERRAIN("Terrain", "region/"),
+        ENTITY("Entities", "entities/"),
+        POI("Work Block Owners", "poi/")
     }
 }
 
 abstract class EditableHolder(
     val which: String,
-    val type: Editable.Type
+    val format: Editable.Format,
+    val contentType: Editable.ContentType
 ) {
     enum class Type {
         Single, Multiple
@@ -130,16 +142,18 @@ abstract class EditableHolder(
 
 class SingleEditableHolder(
     which: String,
-    type: Editable.Type,
+    format: Editable.Format,
+    contentType: Editable.ContentType,
     editable: Editable
-): EditableHolder(which, type) {
+): EditableHolder(which, format, contentType) {
     val editable by mutableStateOf(editable)
 }
 
 class MultipleEditableHolder(
     which: String,
-    type: Editable.Type
-): EditableHolder(which, type) {
+    format: Editable.Format,
+    contentType: Editable.ContentType
+): EditableHolder(which, format, contentType) {
     val editables = mutableStateListOf<Editable>()
     var selected by mutableStateOf("+")
 

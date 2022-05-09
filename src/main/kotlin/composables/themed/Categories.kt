@@ -56,10 +56,10 @@ fun ColumnScope.FileCategoryItem(
     val key = data.key
     ListItem (selected == key, onClick = { onClick(data) }) {
         Row(horizontalArrangement = Arrangement.Start, modifier = Modifier.fillMaxWidth().padding(start = 35.dp, end = 18.dp)) {
-            Text(data.name, fontSize = 24.sp, color = Color(255, 255, 255, 200))
+            Text(data.contentType.displayName, fontSize = 24.sp, color = Color(255, 255, 255, 200))
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                " ${data.description}", fontSize = 16.sp, color = Color(255, 255, 255, 100),
+                " ${data.contentType.description}", fontSize = 16.sp, color = Color(255, 255, 255, 100),
                 modifier = Modifier.align(Alignment.Bottom).padding(start = 7.dp)
             )
         }
@@ -82,10 +82,9 @@ class CategoryData(
 
 class CategoryItemData (
     parent: String,
-    val name: String,
-    val description: String,
     val holderType: EditableHolder.Type,
-    val editableType: Editable.Type
+    val format: Editable.Format,
+    val contentType: Editable.ContentType
 ) {
-    val key = "$parent/$name"
+    val key = "$parent/${contentType.displayName}"
 }
