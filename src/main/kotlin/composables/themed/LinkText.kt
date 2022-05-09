@@ -12,6 +12,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.zIndex
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -41,5 +42,6 @@ fun LinkText(
             .then(modifier)
             .onPointerEvent(PointerEventType.Enter) { active = true }
             .onPointerEvent(PointerEventType.Exit) { active = false }
+            .zIndex(999f)
     )
 }

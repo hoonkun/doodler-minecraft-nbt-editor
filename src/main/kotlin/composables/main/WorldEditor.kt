@@ -29,7 +29,7 @@ fun WorldEditor(
     val onDimensionItemClick: (String, String) -> Unit = { dimension, name ->
         val key = "$dimension/$name"
         if (editorTabs[key] == null) {
-            editorTabs += key to EditorTabWithSubTabs(key, EditorSubTab.Type.CHUNK)
+            editorTabs += key to EditorTabWithSubTabs(key, EditorTabWithSubTabs.Type.CHUNK)
         }
 
         selectedTab = key
@@ -94,11 +94,7 @@ fun WorldEditor(
                 ) {
                     for (editorTab in editorTabs) {
                         val tab = editorTab.value
-                        if (tab is EditorTabWithSubTabs && tab.subTabs.isEmpty()) {
-                            EmptyEditorTab(tab, selectedTab == tab.name)
-                        } else {
-                            EditorTab(tab, selectedTab == tab.name)
-                        }
+                        EditorTab(tab, selectedTab == tab.name)
                     }
                 }
             }
@@ -145,13 +141,37 @@ fun EditorTab(tab: EditorTabBase, selected: Boolean) {
             .alpha(if (selected) 1f else 0f)
             .zIndex(if (selected) 100f else -1f)
     ) {
-        if (tab is EditorTabWithSubTabs) TabGroup(tab.subTabs.map { TabData(true, it) })
+        if (tab is EditorTabWithSubTabs) {
+            TabGroup(tab.subTabs.map { TabData(tab.selected == it.name, it) }) { tab.select(it) }
+            Box (
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                for (subTab in tab.subTabs) {
+                    if (subTab is EditorSelectorSubTab) {
+                        SelectorTab(tab, tab.selected == subTab.name)
+                    } else {
+                        NbtTab()
+                    }
+                }
+            }
+        } else {
+            NbtTab()
+        }
         // TODO: display tab.selectedSubTab.content or tab.content
     }
 }
 
 @Composable
-fun EmptyEditorTab(tab: EditorTabWithSubTabs, selected: Boolean) {
+fun NbtTab(
+
+) {
+
+}
+
+@Composable
+fun SelectorTab(tab: EditorTabWithSubTabs, selected: Boolean) {
     Column (
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -177,7 +197,7 @@ fun EmptyEditorTab(tab: EditorTabWithSubTabs, selected: Boolean) {
             color = ThemedColor.Bright,
             fontSize = 30.sp
         ) {
-
+            tab.addSubTab(EditorNbtSubTab("Chunk [0, 0]", tab, EditorNbtContent()))
         }
         Spacer(modifier = Modifier.height(60.dp))
         Text(
@@ -211,34 +231,92 @@ abstract class EditorTabBase(
 
 class EditorTabWithSingleContent(
     name: String,
-    val content: EditorTabContent
+    val content: EditorNbtContent
 ): EditorTabBase(name)
 
 class EditorTabWithSubTabs(
     name: String,
-    val subTabType: EditorSubTab.Type = EditorSubTab.Type.NONE
+    val type: Type = Type.NONE
 ): EditorTabBase(name) {
-    val subTabs = mutableStateListOf<EditorSubTab>()
+    companion object {
+        const val SELECTOR_TAB_NAME = "+"
+    }
 
-    fun addSubTab(subTab: EditorSubTab) {
+    val subTabs = mutableStateListOf<EditorSubTabBase>()
+
+    var selected by mutableStateOf("+")
+
+    init {
+        subTabs += EditorSelectorSubTab(SELECTOR_TAB_NAME, this)
+    }
+
+    fun select(what: String) {
+        if (!subTabs.any { it.name == what }) return
+        selected = what
+    }
+
+    fun addSubTab(subTab: EditorSubTabBase) {
         if (!subTabs.any { it == subTab || it.name == subTab.name }) subTabs.add(subTab)
     }
 
-    fun removeSubTab(subTab: EditorSubTab) {
+    fun removeSubTab(subTab: EditorSubTabBase) {
+        selected = subTabs[subTabs.indexOf(subTab) - 1].name
         subTabs.remove(subTab)
     }
-}
-
-class EditorSubTab(
-    val name: String,
-    val content: EditorTabContent
-) {
 
     enum class Type {
         NONE, PLAYER, CHUNK
     }
 }
 
-class EditorTabContent {
+abstract class EditorSubTabBase(
+    val name: String,
+    val parent: EditorTabWithSubTabs
+) {
+    open fun close() {
+        parent.removeSubTab(this)
+    }
+}
+
+class EditorNbtSubTab(
+    name: String,
+    parent: EditorTabWithSubTabs,
+    val content: EditorNbtContent
+): EditorSubTabBase(name, parent) {
+    override fun close() {
+
+        super.close()
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (other === this) return true
+        if (other !is EditorNbtSubTab) return false
+
+        return other.name == this.name
+    }
+
+    override fun hashCode(): Int {
+        return name.hashCode()
+    }
+}
+
+class EditorSelectorSubTab(
+    name: String,
+    parent: EditorTabWithSubTabs
+): EditorSubTabBase(name, parent) {
+
+    override fun equals(other: Any?): Boolean {
+        if (other === this) return true
+        if (other !is EditorNbtSubTab) return false
+
+        return other.name == this.name
+    }
+
+    override fun hashCode(): Int {
+        return name.hashCode()
+    }
+}
+
+class EditorNbtContent {
     val hasChanges: Boolean = false
 }
