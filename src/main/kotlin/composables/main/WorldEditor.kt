@@ -36,13 +36,12 @@ fun WorldEditor(
     var selectedTab by remember { mutableStateOf("") }
 
     val onGeneralItemClick: (String) -> Unit = { key ->
-        val newTab = if (key == "General/World Data") {
-            EditorTabWithSingleContent(key, EditorNbtContent())
-        } else {
-            EditorTabWithSubTabs(key, EditorTabWithSubTabs.Type.PLAYER)
-        }
-
         if (editorTabs[key] == null) {
+            val newTab = if (key == "General/World Data") {
+                EditorTabWithSingleContent(key, EditorNbtContent())
+            } else {
+                EditorTabWithSubTabs(key, EditorTabWithSubTabs.Type.PLAYER)
+            }
             editorTabs += key to newTab
         }
 
