@@ -64,11 +64,11 @@ fun WorldEditor(
                             .background(Color(60, 63, 65))
                             .verticalScroll(scrollState)
                     ) {
-                        DimensionCategory("General", initialFolded = false) {
+                        Category("General", initialFolded = false) {
                             GeneralItems(selectedTab) {  }
                         }
                         for (dimension in listOf("", "DIM-1", "DIM1")) {
-                            DimensionCategory(display(dimension), dimension, initialFolded = dimension != "") {
+                            Category(display(dimension), dimension, initialFolded = dimension != "") {
                                 DimensionSpecificItems(selectedTab, dimension, onDimensionItemClick)
                             }
                         }
@@ -127,7 +127,7 @@ fun GeneralItems(selected: String, onClick: (String) -> Unit) {
     )
 
     for ((name, path) in items) {
-        DimensionItem(name, path, category, selected, onClick = onClick)
+        CategoryItem(name, path, category, selected, onClick = onClick)
     }
 }
 
@@ -142,7 +142,7 @@ fun DimensionSpecificItems(selected: String, dimension: String, onClick: (String
     )
 
     for ((name, path) in items) {
-        DimensionItem(name, path, dimension, selected, onClick = onDimensionClick)
+        CategoryItem(name, path, dimension, selected, onClick = onDimensionClick)
     }
 }
 

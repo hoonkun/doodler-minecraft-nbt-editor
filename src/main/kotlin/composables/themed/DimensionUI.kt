@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun DimensionCategory(
+fun Category(
     name: String,
     dir: String? = null,
     initialFolded: Boolean = false,
@@ -48,7 +48,7 @@ fun DimensionCategory(
 
 
 @Composable
-fun DimensionItem(
+fun CategoryItem(
     name: String,
     path: String,
     category: String,
