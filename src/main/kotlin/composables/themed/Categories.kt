@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.sp
 import composables.main.EditorContentType
 
 @Composable
-fun ColumnScope.Category(
+fun ColumnScope.FilesCategory(
     data: CategoryData,
     content: @Composable ColumnScope.() -> Unit = { }
 ) {
@@ -47,7 +47,7 @@ fun ColumnScope.Category(
 
 
 @Composable
-fun CategoryItem(
+fun ColumnScope.FileCategoryItem(
     data: CategoryItemData,
     selected: String,
     onClick: (CategoryItemData) -> Unit = { }

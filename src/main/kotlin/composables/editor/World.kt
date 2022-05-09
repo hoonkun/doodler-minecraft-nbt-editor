@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import composables.themed.CategoryData
-import composables.themed.CategoryItem
+import composables.themed.FileCategoryItem
 import composables.themed.CategoryItemData
 
 class WorldEditorComposable {
@@ -54,12 +54,12 @@ class WorldEditorComposable {
         }
 
         @Composable
-        fun RowScope.MainTabs(content: @Composable BoxScope.() -> Unit) {
+        fun RowScope.MainFiles(content: @Composable BoxScope.() -> Unit) {
             Box (modifier = Modifier.fillMaxHeight().weight(0.3f), content = content)
         }
 
         @Composable
-        fun BoxScope.TabListScrollable(scrollState: ScrollState, content: @Composable ColumnScope.() -> Unit) {
+        fun BoxScope.FileCategoryListScrollable(scrollState: ScrollState, content: @Composable ColumnScope.() -> Unit) {
             Column(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -70,7 +70,7 @@ class WorldEditorComposable {
         }
 
         @Composable
-        fun BoxScope.TabListScrollbar(scrollState: ScrollState) {
+        fun BoxScope.FileCategoryListScrollbar(scrollState: ScrollState) {
             VerticalScrollbar(
                 ScrollbarAdapter(scrollState),
                 style = ScrollbarStyle(
@@ -116,14 +116,14 @@ class WorldEditorComposable {
         }
 
         @Composable
-        fun ColumnScope.CategoryItems(
+        fun ColumnScope.FileCategoryItems(
             parent: CategoryData,
             selected: String,
             onClick: (CategoryItemData) -> Unit
         ) {
             for ((name, description, contentType) in parent.items) {
                 val data = CategoryItemData(name, description, parent, contentType)
-                CategoryItem(data, selected, onClick)
+                FileCategoryItem(data, selected, onClick)
             }
         }
 

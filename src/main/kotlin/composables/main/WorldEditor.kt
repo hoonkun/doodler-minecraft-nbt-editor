@@ -15,13 +15,13 @@ import androidx.compose.ui.zIndex
 import composables.editor.WorldEditorComposable.Companion.BottomBar
 import composables.editor.WorldEditorComposable.Companion.BottomBarText
 import composables.editor.WorldEditorComposable.Companion.CategoriesBottomMargin
-import composables.editor.WorldEditorComposable.Companion.CategoryItems
+import composables.editor.WorldEditorComposable.Companion.FileCategoryItems
 import composables.editor.WorldEditorComposable.Companion.MainArea
 import composables.editor.WorldEditorComposable.Companion.MainColumn
 import composables.editor.WorldEditorComposable.Companion.MainContents
-import composables.editor.WorldEditorComposable.Companion.MainTabs
-import composables.editor.WorldEditorComposable.Companion.TabListScrollable
-import composables.editor.WorldEditorComposable.Companion.TabListScrollbar
+import composables.editor.WorldEditorComposable.Companion.MainFiles
+import composables.editor.WorldEditorComposable.Companion.FileCategoryListScrollable
+import composables.editor.WorldEditorComposable.Companion.FileCategoryListScrollbar
 import composables.editor.WorldEditorComposable.Companion.TopBar
 import composables.editor.WorldEditorComposable.Companion.TopBarText
 import composables.themed.*
@@ -32,18 +32,18 @@ fun WorldEditor(
 ) {
     val scrollState = rememberScrollState()
 
-    val editorTabs = remember { mutableStateMapOf<String, EditorTabBase>() }
-    var selectedTab by remember { mutableStateOf("") }
+    val editorFiles = remember { mutableStateMapOf<String, EditorFile>() }
+    var selectedFile by remember { mutableStateOf("") }
 
     val onCategoryItemClick: (CategoryItemData) -> Unit = lambda@ { data ->
-        selectedTab = data.key
+        selectedFile = data.key
 
-        if (editorTabs[data.key] != null) return@lambda
+        if (editorFiles[data.key] != null) return@lambda
 
-        editorTabs[data.key] = if (data.contentType == EditorContentType.SINGLE_NBT) {
-            EditorTabWithSingleContent(data.key, EditorNbtContent())
+        editorFiles[data.key] = if (data.contentType == EditorContentType.SINGLE_NBT) {
+            NbtFile(data.key, EditorNbtContent())
         } else {
-            EditorTabWithSubTabs(data.key, data.contentType)
+            CompressedNbtListFile(data.key, data.contentType)
         }
     }
 
@@ -75,24 +75,22 @@ fun WorldEditor(
             TopBar { TopBarText("Doodler: Minecraft NBT Editor") }
 
             MainArea {
-                MainTabs {
-                    TabListScrollable(scrollState) {
+                MainFiles {
+                    FileCategoryListScrollable(scrollState) {
                         for (category in categories) {
-                            Category(category) {
-                                CategoryItems(category, selectedTab, onCategoryItemClick)
-                            }
+                            FilesCategory(category) { FileCategoryItems(category, selectedFile, onCategoryItemClick) }
                         }
                         CategoriesBottomMargin()
                     }
-                    TabListScrollbar(scrollState)
+                    FileCategoryListScrollbar(scrollState)
                 }
                 MainContents {
-                    if (editorTabs.size == 0) {
-                        NoTabSelected()
-                    }
-                    for (editorTab in editorTabs) {
+                    if (editorFiles.size == 0)
+                        NoFileSelected()
+
+                    for (editorTab in editorFiles) {
                         val tab = editorTab.value
-                        EditorTab(tab, selectedTab == tab.name)
+                        Editor(tab, selectedFile == tab.name)
                     }
                 }
             }
@@ -106,23 +104,23 @@ fun WorldEditor(
 }
 
 @Composable
-fun EditorTab(tab: EditorTabBase, selected: Boolean) {
+fun BoxScope.Editor(file: EditorFile, selected: Boolean) {
     Column (
         modifier = Modifier
             .fillMaxSize()
             .alpha(if (selected) 1f else 0f)
             .zIndex(if (selected) 100f else -1f)
     ) {
-        if (tab is EditorTabWithSubTabs) {
-            TabGroup(tab.subTabs.map { TabData(tab.selected == it.name, it) }) { tab.select(it) }
+        if (file is CompressedNbtListFile) {
+            TabGroup(file.tabs.map { TabData(file.selected == it.name, it) }) { file.select(it) }
             Box (
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f)
             ) {
-                for (subTab in tab.subTabs) {
-                    if (subTab is EditorSelectorSubTab) {
-                        SelectorTab(tab, tab.selected == subTab.name)
+                for (tab in file.tabs) {
+                    if (tab is SelectorTab) {
+                        SelectorTab(file, file.selected == tab.name)
                     } else {
                         NbtTab()
                     }
@@ -143,7 +141,7 @@ fun NbtTab(
 }
 
 @Composable
-fun SelectorTab(tab: EditorTabWithSubTabs, selected: Boolean) {
+fun SelectorTab(tab: CompressedNbtListFile, selected: Boolean) {
     Column (
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -169,14 +167,14 @@ fun SelectorTab(tab: EditorTabWithSubTabs, selected: Boolean) {
             color = ThemedColor.Bright,
             fontSize = 30.sp
         ) {
-            tab.addSubTab(EditorNbtSubTab("Chunk [0, 0]", tab, EditorNbtContent()))
+            tab.addTab(NbtTab("Chunk [0, 0]", tab, EditorNbtContent()))
         }
         WhatIsThis("")
     }
 }
 
 @Composable
-fun NoTabSelected() {
+fun BoxScope.NoFileSelected() {
     Column (
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -228,68 +226,68 @@ enum class EditorContentType {
     SINGLE_NBT, PLAYER, CHUNK_IN_COMPRESSED_FILE
 }
 
-abstract class EditorTabBase(
+abstract class EditorFile(
     val name: String
 )
 
-class EditorTabWithSingleContent(
+class NbtFile(
     name: String,
     val content: EditorNbtContent
-): EditorTabBase(name)
+): EditorFile(name)
 
-class EditorTabWithSubTabs(
+class CompressedNbtListFile(
     name: String,
     val type: EditorContentType
-): EditorTabBase(name) {
+): EditorFile(name) {
     companion object {
         const val SELECTOR_TAB_NAME = "+"
     }
 
-    val subTabs = mutableStateListOf<EditorSubTabBase>()
+    val tabs = mutableStateListOf<FileEditorTab>()
 
     var selected by mutableStateOf("+")
 
     init {
-        subTabs += EditorSelectorSubTab(SELECTOR_TAB_NAME, this)
+        tabs += SelectorTab(SELECTOR_TAB_NAME, this)
     }
 
     fun select(what: String) {
-        if (!subTabs.any { it.name == what }) return
+        if (!tabs.any { it.name == what }) return
         selected = what
     }
 
-    fun addSubTab(subTab: EditorSubTabBase) {
-        if (!subTabs.any { it == subTab || it.name == subTab.name }) subTabs.add(subTab)
+    fun addTab(tab: FileEditorTab) {
+        if (!tabs.any { it == tab || it.name == tab.name }) tabs.add(tab)
     }
 
-    fun removeSubTab(subTab: EditorSubTabBase) {
-        if (subTab.name == selected) selected = subTabs[subTabs.indexOf(subTab) - 1].name
-        subTabs.remove(subTab)
+    fun removeTab(tab: FileEditorTab) {
+        if (tab.name == selected) selected = tabs[tabs.indexOf(tab) - 1].name
+        tabs.remove(tab)
     }
 }
 
-abstract class EditorSubTabBase(
+abstract class FileEditorTab(
     val name: String,
-    val parent: EditorTabWithSubTabs
+    val parent: CompressedNbtListFile
 ) {
     open fun close() {
-        parent.removeSubTab(this)
+        parent.removeTab(this)
     }
 }
 
-class EditorNbtSubTab(
+class NbtTab(
     name: String,
-    parent: EditorTabWithSubTabs,
+    parent: CompressedNbtListFile,
     val content: EditorNbtContent
-): EditorSubTabBase(name, parent) {
-    override fun close() {
+): FileEditorTab(name, parent) {
 
+    override fun close() {
         super.close()
     }
 
     override fun equals(other: Any?): Boolean {
         if (other === this) return true
-        if (other !is EditorNbtSubTab) return false
+        if (other !is NbtTab) return false
 
         return other.name == this.name
     }
@@ -299,14 +297,14 @@ class EditorNbtSubTab(
     }
 }
 
-class EditorSelectorSubTab(
+class SelectorTab(
     name: String,
-    parent: EditorTabWithSubTabs
-): EditorSubTabBase(name, parent) {
+    parent: CompressedNbtListFile
+): FileEditorTab(name, parent) {
 
     override fun equals(other: Any?): Boolean {
         if (other === this) return true
-        if (other !is EditorNbtSubTab) return false
+        if (other !is NbtTab) return false
 
         return other.name == this.name
     }

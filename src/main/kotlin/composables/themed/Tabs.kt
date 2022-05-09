@@ -14,8 +14,8 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import composables.main.EditorNbtSubTab
-import composables.main.EditorSubTabBase
+import composables.main.NbtTab
+import composables.main.FileEditorTab
 
 @Composable
 fun TabGroup(
@@ -63,7 +63,7 @@ fun Tab(
                 Spacer(modifier = Modifier.width(20.dp))
                 Text(
                     data.tab.name,
-                    color = if (data.tab is EditorNbtSubTab && data.tab.content.hasChanges) Color(255, 160, 0) else Color.White,
+                    color = if (data.tab is NbtTab && data.tab.content.hasChanges) Color(255, 160, 0) else Color.White,
                     fontSize = 22.sp
                 )
                 if (data.tab.name != "+") {
@@ -90,5 +90,5 @@ fun Tab(
 
 class TabData(
     val selected: Boolean,
-    val tab: EditorSubTabBase
+    val tab: FileEditorTab
 )
