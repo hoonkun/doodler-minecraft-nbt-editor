@@ -55,7 +55,8 @@ fun CategoryItem(
     selected: String,
     onClick: (String) -> Unit = { }
 ) {
-    ListItem (selected == "$category/$name", onClick = { onClick(name) }) {
+    val key = "$category/$name"
+    ListItem (selected == key, onClick = { onClick(key) }) {
         Row(horizontalArrangement = Arrangement.Start, modifier = Modifier.fillMaxWidth().padding(start = 35.dp, end = 18.dp)) {
             Text(name, fontSize = 24.sp, color = Color(255, 255, 255, 200))
             Spacer(modifier = Modifier.weight(1f))

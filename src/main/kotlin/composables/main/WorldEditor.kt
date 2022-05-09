@@ -26,8 +26,21 @@ fun WorldEditor(
     val editorTabs = remember { mutableStateMapOf<String, EditorTabBase>() }
     var selectedTab by remember { mutableStateOf("") }
 
-    val onDimensionItemClick: (String, String) -> Unit = { dimension, name ->
-        val key = "$dimension/$name"
+    val onGeneralItemClick: (String) -> Unit = { key ->
+        val newTab = if (key == "General/World Data") {
+            EditorTabWithSingleContent(key, EditorNbtContent())
+        } else {
+            EditorTabWithSubTabs(key, EditorTabWithSubTabs.Type.PLAYER)
+        }
+
+        if (editorTabs[key] == null) {
+            editorTabs += key to newTab
+        }
+
+        selectedTab = key
+    }
+
+    val onDimensionItemClick: (String) -> Unit = { key ->
         if (editorTabs[key] == null) {
             editorTabs += key to EditorTabWithSubTabs(key, EditorTabWithSubTabs.Type.CHUNK)
         }
@@ -65,11 +78,11 @@ fun WorldEditor(
                             .verticalScroll(scrollState)
                     ) {
                         Category("General", initialFolded = false) {
-                            GeneralItems(selectedTab) {  }
+                            GeneralItems(selectedTab, onGeneralItemClick)
                         }
                         for (dimension in listOf("", "DIM-1", "DIM1")) {
                             Category(display(dimension), dimension, initialFolded = dimension != "") {
-                                DimensionSpecificItems(selectedTab, dimension, onDimensionItemClick)
+                                DimensionSpecificItems(selectedTab, display(dimension), onDimensionItemClick)
                             }
                         }
                         Spacer(modifier = Modifier.height(25.dp))
@@ -135,8 +148,7 @@ fun GeneralItems(selected: String, onClick: (String) -> Unit) {
 }
 
 @Composable
-fun DimensionSpecificItems(selected: String, dimension: String, onClick: (String, String) -> Unit) {
-    val onDimensionClick: (String) -> Unit = { onClick(dimension, it) }
+fun DimensionSpecificItems(selected: String, dimension: String, onClick: (String) -> Unit) {
     val items = listOf(
         Pair("Terrain", "region/"),
         Pair("Entities", "entities/"),
@@ -145,7 +157,7 @@ fun DimensionSpecificItems(selected: String, dimension: String, onClick: (String
     )
 
     for ((name, path) in items) {
-        CategoryItem(name, path, dimension, selected, onClick = onDimensionClick)
+        CategoryItem(name, path, dimension, selected, onClick = onClick)
     }
 }
 
