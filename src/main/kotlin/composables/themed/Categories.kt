@@ -13,7 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import composables.main.EditorContentType
+import composables.main.Editable
+import composables.main.EditableHolder
 
 @Composable
 fun ColumnScope.FilesCategory(
@@ -52,7 +53,7 @@ fun ColumnScope.FileCategoryItem(
     selected: String,
     onClick: (CategoryItemData) -> Unit = { }
 ) {
-    val key = "${data.parent.name}/${data.name}"
+    val key = data.key
     ListItem (selected == key, onClick = { onClick(data) }) {
         Row(horizontalArrangement = Arrangement.Start, modifier = Modifier.fillMaxWidth().padding(start = 35.dp, end = 18.dp)) {
             Text(data.name, fontSize = 24.sp, color = Color(255, 255, 255, 200))
@@ -68,7 +69,7 @@ fun ColumnScope.FileCategoryItem(
 class CategoryData(
     val name: String,
     val defaultFoldState: Boolean,
-    val items: List<Triple<String, String, EditorContentType>>
+    val items: List<CategoryItemData>
 ) {
     var description: String? = null
         private set
@@ -80,10 +81,11 @@ class CategoryData(
 }
 
 class CategoryItemData (
+    parent: String,
     val name: String,
     val description: String,
-    val parent: CategoryData,
-    val contentType: EditorContentType
+    val holderType: EditableHolder.Type,
+    val editableType: Editable.Type
 ) {
-    val key: String = "${parent.name}/$name"
+    val key = "$parent/$name"
 }

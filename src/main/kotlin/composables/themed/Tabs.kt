@@ -14,20 +14,20 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import composables.main.NbtTab
-import composables.main.FileEditorTab
+import composables.main.Editable
 
 @Composable
 fun ColumnScope.TabGroup(
     tabs: List<TabData>,
-    onSelectTab: (String) -> Unit
+    onSelectEditable: (Editable) -> Unit,
+    onCloseEditable: (Editable) -> Unit
 ) {
     val scrollState = rememberScrollState()
 
     Box (modifier = Modifier.background(Color(50, 51, 53)).fillMaxWidth().wrapContentHeight()) {
         Row(modifier = Modifier.wrapContentWidth().horizontalScroll(scrollState)) {
             for (data in tabs) {
-                Tab(data, onSelectTab)
+                Tab(data, onSelectEditable, onCloseEditable)
             }
         }
     }
@@ -37,7 +37,8 @@ fun ColumnScope.TabGroup(
 @Composable
 fun Tab(
     data: TabData,
-    onSelectTab: (String) -> Unit
+    onSelectEditable: (Editable) -> Unit,
+    onCloseEditable: (Editable) -> Unit
 ) {
     var hover by remember { mutableStateOf(false) }
     var press by remember { mutableStateOf(false) }
@@ -46,7 +47,7 @@ fun Tab(
         modifier = Modifier
             .wrapContentSize()
             .onPointerEvent(PointerEventType.Press) { press = true }
-            .onPointerEvent(PointerEventType.Release) { press = false; onSelectTab(data.tab.name); }
+            .onPointerEvent(PointerEventType.Release) { press = false; onSelectEditable(data.editable); }
             .onPointerEvent(PointerEventType.Enter) { hover = true }
             .onPointerEvent(PointerEventType.Exit) { hover = false }
             .background(
@@ -62,14 +63,14 @@ fun Tab(
             Row(verticalAlignment = Alignment.Bottom) {
                 Spacer(modifier = Modifier.width(20.dp))
                 Text(
-                    data.tab.name,
-                    color = if (data.tab is NbtTab && data.tab.content.hasChanges) Color(255, 160, 0) else Color.White,
+                    data.editable.ident,
+                    color = if (data.editable.hasChanges) Color(255, 160, 0) else Color.White,
                     fontSize = 22.sp
                 )
-                if (data.tab.name != "+") {
+                if (data.editable.ident != "+") {
                     Spacer(modifier = Modifier.width(15.dp))
                     LinkText("close", color = Color(255, 255, 255, 65), fontSize = 20.sp) {
-                        data.tab.close()
+                        onCloseEditable(data.editable)
                     }
                 }
                 Spacer(modifier = Modifier.width(18.dp))
@@ -90,5 +91,5 @@ fun Tab(
 
 class TabData(
     val selected: Boolean,
-    val tab: FileEditorTab
+    val editable: Editable
 )

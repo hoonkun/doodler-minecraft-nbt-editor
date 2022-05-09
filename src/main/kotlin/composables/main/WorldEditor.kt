@@ -14,42 +14,47 @@ fun WorldEditor(
 ) {
     val scrollState = rememberScrollState()
 
-    val editorFiles = remember { mutableStateMapOf<String, EditorFile>() }
+    val editorFiles = remember { mutableStateMapOf<String, EditableHolder>() }
     var selectedFile by remember { mutableStateOf("") }
 
     val onCategoryItemClick: (CategoryItemData) -> Unit = lambda@ { data ->
         selectedFile = data.key
 
-        if (editorFiles[data.key] != null) return@lambda
+        if (editorFiles[selectedFile] != null) return@lambda
 
-        editorFiles[data.key] = if (data.contentType == EditorContentType.SINGLE_NBT) {
-            NbtFile(data.key, EditorNbtContent())
+        editorFiles[data.key] = if (data.holderType == EditableHolder.Type.Single) {
+            SingleEditableHolder(data.key, data.editableType, Editable(""))
         } else {
-            CompressedNbtListFile(data.key, data.contentType)
+            MultipleEditableHolder(data.key, data.editableType)
         }
     }
 
-    val generalItems = listOf(
-        Triple("World Data", "level.dat", EditorContentType.SINGLE_NBT),
-        Triple("Players", "playerdata/", EditorContentType.PLAYER),
-        Triple("Statistics", "stats/", EditorContentType.PLAYER),
-        Triple("Advancements", "advancements/", EditorContentType.PLAYER),
-    )
+    val generalItems: (String) -> List<CategoryItemData> = {
+        listOf(
+            CategoryItemData(it, "World Data", "level.dat", EditableHolder.Type.Single, Editable.Type.LEVEL_DAT),
+            CategoryItemData(it, "Players", "playerdata/", EditableHolder.Type.Multiple, Editable.Type.PLAYER),
+            CategoryItemData(it, "Statistics", "stats/", EditableHolder.Type.Multiple, Editable.Type.PLAYER),
+            CategoryItemData(it, "Advancements", "advancements/", EditableHolder.Type.Multiple, Editable.Type.PLAYER),
+        )
+    }
 
-    val dimensionItems = listOf(
-        Triple("Terrain", "region/", EditorContentType.CHUNK_IN_COMPRESSED_FILE),
-        Triple("Entities", "entities/", EditorContentType.CHUNK_IN_COMPRESSED_FILE),
-        Triple("Work Block Owners", "poi/", EditorContentType.CHUNK_IN_COMPRESSED_FILE),
-        Triple("Others", "data/", EditorContentType.CHUNK_IN_COMPRESSED_FILE),
-    )
-
-    val createDimensionCategoryData: (String) -> CategoryData = { dimension ->
-        CategoryData(display(dimension), dimension != "", dimensionItems).withDescription(dimension)
+    val dimensionItems: (String) -> List<CategoryItemData> = {
+        val holderType = EditableHolder.Type.Multiple
+        val editableType = Editable.Type.COMPRESSED_ANVIL
+        val prefix = display(it)
+        listOf(
+            CategoryItemData(prefix, "Terrain", "region/", holderType, editableType),
+            CategoryItemData(prefix, "Entities", "entities/", holderType, editableType),
+            CategoryItemData(prefix, "Work Block Owners", "poi/", holderType, editableType),
+            CategoryItemData(prefix, "Others", "data/", holderType, editableType),
+        )
     }
 
     val categories = listOf(
-        CategoryData("General", false, generalItems),
-        *listOf("", "DIM-1", "DIM1").map(createDimensionCategoryData).toTypedArray()
+        CategoryData("General", false, generalItems("General")),
+        CategoryData(display(""), false, dimensionItems("")).withDescription(""),
+        CategoryData(display("DIM-1"), true, dimensionItems("DIM-1")).withDescription("DIM-1"),
+        CategoryData(display("DIM1"), true, dimensionItems("DIM1")).withDescription("DIM1")
     )
 
     MaterialTheme {
@@ -70,9 +75,8 @@ fun WorldEditor(
                     if (editorFiles.size == 0)
                         NoFileSelected()
 
-                    for (editorTab in editorFiles) {
-                        val tab = editorTab.value
-                        Editor(tab, selectedFile == tab.name)
+                    for ((_, holder) in editorFiles) {
+                        Editor(holder, selectedFile == holder.which)
                     }
                 }
             }
@@ -94,98 +98,71 @@ fun display(dimension: String): String {
     }
 }
 
-enum class EditorContentType {
-    SINGLE_NBT, PLAYER, CHUNK_IN_COMPRESSED_FILE
-}
+class Editable(
+    val ident: String
+) {
+    val hasChanges = false
 
-abstract class EditorFile(
-    val name: String
-)
+    override fun equals(other: Any?): Boolean {
+        if (other === this) return true
+        if (other !is Editable) return false
 
-class NbtFile(
-    name: String,
-    val content: EditorNbtContent
-): EditorFile(name)
-
-class CompressedNbtListFile(
-    name: String,
-    val type: EditorContentType
-): EditorFile(name) {
-    companion object {
-        const val SELECTOR_TAB_NAME = "+"
+        return other.ident == this.ident
     }
 
-    val tabs = mutableStateListOf<FileEditorTab>()
+    override fun hashCode(): Int {
+        return this.ident.hashCode()
+    }
 
+    enum class Type {
+        LEVEL_DAT, PLAYER, COMPRESSED_ANVIL
+    }
+}
+
+abstract class EditableHolder(
+    val which: String,
+    val type: Editable.Type
+) {
+    enum class Type {
+        Single, Multiple
+    }
+}
+
+class SingleEditableHolder(
+    which: String,
+    type: Editable.Type,
+    editable: Editable
+): EditableHolder(which, type) {
+    val editable by mutableStateOf(editable)
+}
+
+class MultipleEditableHolder(
+    which: String,
+    type: Editable.Type
+): EditableHolder(which, type) {
+    val editables = mutableStateListOf<Editable>()
     var selected by mutableStateOf("+")
 
     init {
-        tabs += SelectorTab(SELECTOR_TAB_NAME, this)
+        editables.add(Editable("+"))
     }
 
-    fun select(what: String) {
-        if (!tabs.any { it.name == what }) return
-        selected = what
+    fun select(editable: Editable) {
+        if (!editables.any { it.ident == editable.ident })
+            return
+
+        selected = editable.ident
     }
 
-    fun addTab(tab: FileEditorTab) {
-        if (!tabs.any { it == tab || it.name == tab.name }) tabs.add(tab)
+    fun add(editable: Editable) {
+        if (!editables.any { it == editable || it.ident == editable.ident })
+            editables.add(editable)
     }
 
-    fun removeTab(tab: FileEditorTab) {
-        if (tab.name == selected) selected = tabs[tabs.indexOf(tab) - 1].name
-        tabs.remove(tab)
+    fun remove(editable: Editable) {
+        if (editable.ident == selected)
+            selected = editables[editables.indexOf(editable) - 1].ident
+
+        editables.remove(editable)
     }
-}
-
-abstract class FileEditorTab(
-    val name: String,
-    val parent: CompressedNbtListFile
-) {
-    open fun close() {
-        parent.removeTab(this)
-    }
-}
-
-class NbtTab(
-    name: String,
-    parent: CompressedNbtListFile,
-    val content: EditorNbtContent
-): FileEditorTab(name, parent) {
-
-    override fun close() {
-        super.close()
-    }
-
-    override fun equals(other: Any?): Boolean {
-        if (other === this) return true
-        if (other !is NbtTab) return false
-
-        return other.name == this.name
-    }
-
-    override fun hashCode(): Int {
-        return name.hashCode()
-    }
-}
-
-class SelectorTab(
-    name: String,
-    parent: CompressedNbtListFile
-): FileEditorTab(name, parent) {
-
-    override fun equals(other: Any?): Boolean {
-        if (other === this) return true
-        if (other !is NbtTab) return false
-
-        return other.name == this.name
-    }
-
-    override fun hashCode(): Int {
-        return name.hashCode()
-    }
-}
-
-class EditorNbtContent {
-    val hasChanges: Boolean = false
 }

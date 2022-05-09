@@ -118,9 +118,8 @@ fun ColumnScope.FileCategoryItems(
     selected: String,
     onClick: (CategoryItemData) -> Unit
 ) {
-    for ((name, description, contentType) in parent.items) {
-        val data = CategoryItemData(name, description, parent, contentType)
-        FileCategoryItem(data, selected, onClick)
+    for (item in parent.items) {
+        FileCategoryItem(item, selected, onClick)
     }
 }
 
@@ -130,21 +129,25 @@ fun ColumnScope.CategoriesBottomMargin() {
 }
 
 @Composable
-fun BoxScope.Editor(file: EditorFile, selected: Boolean) {
+fun BoxScope.Editor(holder: EditableHolder, selected: Boolean) {
     EditorRoot(selected) {
-        if (file is CompressedNbtListFile) {
-            TabGroup(file.tabs.map { TabData(file.selected == it.name, it) }) { file.select(it) }
+        if (holder is MultipleEditableHolder) {
+            TabGroup(
+                holder.editables.map { TabData(holder.selected == it.ident, it) },
+                { holder.select(it) },
+                { holder.remove(it) }
+            )
             Editables {
-                for (tab in file.tabs) {
-                    if (tab is SelectorTab) {
-                        Selector(file, file.selected == tab.name)
+                for (editable in holder.editables) {
+                    if (editable.ident == "+") {
+                        Selector(holder, holder.selected == editable.ident)
                     } else {
-                        Editable()
+                        Editable(editable)
                     }
                 }
             }
-        } else {
-            Editables { Editable() }
+        } else if (holder is SingleEditableHolder) {
+            Editables { Editable(holder.editable) }
         }
     }
 }
@@ -171,7 +174,7 @@ fun ColumnScope.Editables(content: @Composable BoxScope.() -> Unit) {
 }
 
 @Composable
-fun BoxScope.Selector(tab: CompressedNbtListFile, selected: Boolean) {
+fun BoxScope.Selector(holder: MultipleEditableHolder, selected: Boolean) {
     Column (
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -181,7 +184,7 @@ fun BoxScope.Selector(tab: CompressedNbtListFile, selected: Boolean) {
             .zIndex(if (selected) 100f else -1f)
     ) {
         Text(
-            tab.name,
+            holder.which,
             color = Color.White,
             fontSize = 38.sp,
         )
@@ -197,7 +200,7 @@ fun BoxScope.Selector(tab: CompressedNbtListFile, selected: Boolean) {
             color = ThemedColor.Bright,
             fontSize = 30.sp
         ) {
-            tab.addTab(NbtTab("Chunk [0, 0]", tab, EditorNbtContent()))
+            holder.add(Editable("Some Name"))
         }
         WhatIsThis("")
     }
@@ -205,7 +208,7 @@ fun BoxScope.Selector(tab: CompressedNbtListFile, selected: Boolean) {
 
 @Composable
 fun BoxScope.Editable(
-
+    editable: Editable
 ) {
 
 }
