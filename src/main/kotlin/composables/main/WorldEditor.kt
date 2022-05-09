@@ -303,7 +303,7 @@ class EditorTabWithSubTabs(
     }
 
     fun removeSubTab(subTab: EditorSubTabBase) {
-        selected = subTabs[subTabs.indexOf(subTab) - 1].name
+        if (subTab.name == selected) selected = subTabs[subTabs.indexOf(subTab) - 1].name
         subTabs.remove(subTab)
     }
 
