@@ -24,9 +24,11 @@ fun TabGroup(
 ) {
     val scrollState = rememberScrollState()
 
-    Row (modifier = Modifier.wrapContentWidth().horizontalScroll(scrollState)) {
-        for (data in tabs) {
-            Tab(data, onSelectTab)
+    Box (modifier = Modifier.background(Color(50, 51, 53)).fillMaxWidth().wrapContentHeight()) {
+        Row(modifier = Modifier.wrapContentWidth().horizontalScroll(scrollState)) {
+            for (data in tabs) {
+                Tab(data, onSelectTab)
+            }
         }
     }
 }
@@ -50,7 +52,7 @@ fun Tab(
             .background(
                 if (press) Color(255, 255, 255, 40.plus(if (data.selected) 10 else 0))
                 else if (hover) Color(255, 255, 255, 25.plus(if (data.selected) 10 else 0))
-                else Color(255, 255, 255, if (data.selected) 10 else 0)
+                else Color(255, 255, 255, if (data.selected) 20 else 0)
             )
     ) {
         Column(

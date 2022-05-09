@@ -92,6 +92,9 @@ fun WorldEditor(
                         .fillMaxHeight()
                         .weight(0.7f)
                 ) {
+                    if (editorTabs.size == 0) {
+                        NoTabSelected()
+                    }
                     for (editorTab in editorTabs) {
                         val tab = editorTab.value
                         EditorTab(tab, selectedTab == tab.name)
@@ -212,20 +215,47 @@ fun SelectorTab(tab: EditorTabWithSubTabs, selected: Boolean) {
         ) {
             tab.addSubTab(EditorNbtSubTab("Chunk [0, 0]", tab, EditorNbtContent()))
         }
-        Spacer(modifier = Modifier.height(60.dp))
-        Text(
-            "What is this?",
-            color = Color(255, 255, 255, 145),
-            fontSize = 25.sp
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        LinkText(
-            "Documentation",
-            color = ThemedColor.Link,
-            fontSize = 22.sp
-        ) {
+        WhatIsThis("")
+    }
+}
 
-        }
+@Composable
+fun NoTabSelected() {
+    Column (
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxSize()
+    ) {
+        Text(
+            "World: //TODO", //TODO: World name from level.dat here.
+            color = Color.White,
+            fontSize = 38.sp,
+        )
+        Spacer(modifier = Modifier.height(25.dp))
+        Text(
+            "Select Tab in Left Area!",
+            color = Color(255, 255, 255, 185),
+            fontSize = 33.sp
+        )
+        WhatIsThis("")
+    }
+}
+
+@Composable
+fun WhatIsThis(link: String) {
+    Spacer(modifier = Modifier.height(60.dp))
+    Text(
+        "What is this?",
+        color = Color(255, 255, 255, 145),
+        fontSize = 25.sp
+    )
+    Spacer(modifier = Modifier.height(10.dp))
+    LinkText(
+        "Documentation",
+        color = ThemedColor.Link,
+        fontSize = 22.sp
+    ) {
+
     }
 }
 
