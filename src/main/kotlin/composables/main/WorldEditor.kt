@@ -65,11 +65,11 @@ fun WorldEditor(
                             .verticalScroll(scrollState)
                     ) {
                         DimensionCategory("General", initialFolded = false) {
-                            GeneralItems {  }
+                            GeneralItems(selectedTab) {  }
                         }
                         for (dimension in listOf("", "DIM-1", "DIM1")) {
                             DimensionCategory(display(dimension), dimension, initialFolded = dimension != "") {
-                                DimensionSpecificItems(dimension, onDimensionItemClick)
+                                DimensionSpecificItems(selectedTab, dimension, onDimensionItemClick)
                             }
                         }
                         Spacer(modifier = Modifier.height(25.dp))
@@ -117,20 +117,33 @@ fun WorldEditor(
 }
 
 @Composable
-fun GeneralItems(onClick: (String) -> Unit) {
-    DimensionItem("World Data", "level.dat", onClick = onClick)
-    DimensionItem("Players", "playerdata/", onClick = onClick)
-    DimensionItem("Statistics", "stats/", onClick = onClick)
-    DimensionItem("Advancements", "advancements/", onClick = onClick)
+fun GeneralItems(selected: String, onClick: (String) -> Unit) {
+    val category = "General"
+    val items = listOf(
+        Pair("World Data", "level.dat"),
+        Pair("Players", "playerdata/"),
+        Pair("Statistics", "stats/"),
+        Pair("Advancements", "advancements/"),
+    )
+
+    for ((name, path) in items) {
+        DimensionItem(name, path, category, selected, onClick = onClick)
+    }
 }
 
 @Composable
-fun DimensionSpecificItems(dimension: String, onClick: (String, String) -> Unit) {
-    val onDimensionClick: (String) -> Unit = { onClick(display(dimension), it) }
-    DimensionItem("Terrain", "region/", onClick = onDimensionClick)
-    DimensionItem("Entities", "entities/", onClick = onDimensionClick)
-    DimensionItem("Work Block Owners", "poi/", onClick = onDimensionClick)
-    DimensionItem("Others", "data/", onClick = onDimensionClick)
+fun DimensionSpecificItems(selected: String, dimension: String, onClick: (String, String) -> Unit) {
+    val onDimensionClick: (String) -> Unit = { onClick(dimension, it) }
+    val items = listOf(
+        Pair("Terrain", "region/"),
+        Pair("Entities", "entities/"),
+        Pair("Work Block Owners", "poi/"),
+        Pair("Others", "data/"),
+    )
+
+    for ((name, path) in items) {
+        DimensionItem(name, path, dimension, selected, onClick = onDimensionClick)
+    }
 }
 
 @Composable

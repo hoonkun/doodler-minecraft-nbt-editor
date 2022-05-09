@@ -50,19 +50,19 @@ fun DimensionCategory(
 @Composable
 fun DimensionItem(
     name: String,
-    path: String? = null,
+    path: String,
+    category: String,
+    selected: String,
     onClick: (String) -> Unit = { }
 ) {
-    ListItem (onClick = { onClick(name) }) {
+    ListItem (selected == "$category/$name", onClick = { onClick(name) }) {
         Row(horizontalArrangement = Arrangement.Start, modifier = Modifier.fillMaxWidth().padding(start = 35.dp, end = 18.dp)) {
             Text(name, fontSize = 24.sp, color = Color(255, 255, 255, 200))
-            if (path != null) {
-                Spacer(modifier = Modifier.weight(1f))
-                Text(
-                    " $path", fontSize = 16.sp, color = Color(255, 255, 255, 100),
-                    modifier = Modifier.align(Alignment.Bottom).padding(start = 7.dp)
-                )
-            }
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                " $path", fontSize = 16.sp, color = Color(255, 255, 255, 100),
+                modifier = Modifier.align(Alignment.Bottom).padding(start = 7.dp)
+            )
         }
     }
 }
