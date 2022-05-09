@@ -3,27 +3,9 @@ package composables.main
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
-import composables.editor.WorldEditorComposable.Companion.BottomBar
-import composables.editor.WorldEditorComposable.Companion.BottomBarText
-import composables.editor.WorldEditorComposable.Companion.CategoriesBottomMargin
-import composables.editor.WorldEditorComposable.Companion.FileCategoryItems
-import composables.editor.WorldEditorComposable.Companion.MainArea
-import composables.editor.WorldEditorComposable.Companion.MainColumn
-import composables.editor.WorldEditorComposable.Companion.MainContents
-import composables.editor.WorldEditorComposable.Companion.MainFiles
-import composables.editor.WorldEditorComposable.Companion.FileCategoryListScrollable
-import composables.editor.WorldEditorComposable.Companion.FileCategoryListScrollbar
-import composables.editor.WorldEditorComposable.Companion.TopBar
-import composables.editor.WorldEditorComposable.Companion.TopBarText
+import composables.editor.*
 import composables.themed.*
 
 @Composable
@@ -100,116 +82,6 @@ fun WorldEditor(
                 BottomBarText("by kiwicraft")
             }
         }
-    }
-}
-
-@Composable
-fun BoxScope.Editor(file: EditorFile, selected: Boolean) {
-    Column (
-        modifier = Modifier
-            .fillMaxSize()
-            .alpha(if (selected) 1f else 0f)
-            .zIndex(if (selected) 100f else -1f)
-    ) {
-        if (file is CompressedNbtListFile) {
-            TabGroup(file.tabs.map { TabData(file.selected == it.name, it) }) { file.select(it) }
-            Box (
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-            ) {
-                for (tab in file.tabs) {
-                    if (tab is SelectorTab) {
-                        SelectorTab(file, file.selected == tab.name)
-                    } else {
-                        NbtTab()
-                    }
-                }
-            }
-        } else {
-            NbtTab()
-        }
-        // TODO: display tab.selectedSubTab.content or tab.content
-    }
-}
-
-@Composable
-fun NbtTab(
-
-) {
-
-}
-
-@Composable
-fun SelectorTab(tab: CompressedNbtListFile, selected: Boolean) {
-    Column (
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .fillMaxSize()
-            .alpha(if (selected) 1f else 0f)
-            .zIndex(if (selected) 100f else -1f)
-    ) {
-        Text(
-            tab.name,
-            color = Color.White,
-            fontSize = 38.sp,
-        )
-        Spacer(modifier = Modifier.height(25.dp))
-        Text(
-            "No files opened",
-            color = Color(255, 255, 255, 185),
-            fontSize = 33.sp
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        LinkText(
-            "Select File",
-            color = ThemedColor.Bright,
-            fontSize = 30.sp
-        ) {
-            tab.addTab(NbtTab("Chunk [0, 0]", tab, EditorNbtContent()))
-        }
-        WhatIsThis("")
-    }
-}
-
-@Composable
-fun BoxScope.NoFileSelected() {
-    Column (
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Text(
-            "World: //TODO", //TODO: World name from level.dat here.
-            color = Color.White,
-            fontSize = 38.sp,
-        )
-        Spacer(modifier = Modifier.height(25.dp))
-        Text(
-            "Select Tab in Left Area!",
-            color = Color(255, 255, 255, 185),
-            fontSize = 33.sp
-        )
-        WhatIsThis("")
-    }
-}
-
-@Composable
-fun WhatIsThis(link: String) {
-    Spacer(modifier = Modifier.height(60.dp))
-    Text(
-        "What is this?",
-        color = Color(255, 255, 255, 145),
-        fontSize = 25.sp
-    )
-    Spacer(modifier = Modifier.height(10.dp))
-    LinkText(
-        "Documentation",
-        color = ThemedColor.Link,
-        fontSize = 22.sp
-    ) {
-
     }
 }
 

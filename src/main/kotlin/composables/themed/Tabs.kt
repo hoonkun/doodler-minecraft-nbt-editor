@@ -18,7 +18,7 @@ import composables.main.NbtTab
 import composables.main.FileEditorTab
 
 @Composable
-fun TabGroup(
+fun ColumnScope.TabGroup(
     tabs: List<TabData>,
     onSelectTab: (String) -> Unit
 ) {
