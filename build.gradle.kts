@@ -17,7 +17,8 @@ repositories {
 }
 
 dependencies {
-    testImplementation(kotlin("test"))
+    testImplementation("org.jetbrains.kotlin:kotlin-test:1.5.31")
+    testImplementation("io.kotlintest:kotlintest-runner-junit5:3.4.2")
     implementation(compose.desktop.currentOs)
 }
 
