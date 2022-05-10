@@ -15,6 +15,7 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import composables.main.Editable
+import composables.themed.ThemedColor.Companion.selectable
 
 @Composable
 fun ColumnScope.TabGroup(
@@ -50,11 +51,7 @@ fun Tab(
             .onPointerEvent(PointerEventType.Release) { press = false; onSelectEditable(data.editable); }
             .onPointerEvent(PointerEventType.Enter) { hover = true }
             .onPointerEvent(PointerEventType.Exit) { hover = false }
-            .background(
-                if (press) Color(255, 255, 255, 40.plus(if (data.selected) 10 else 0))
-                else if (hover) Color(255, 255, 255, 25.plus(if (data.selected) 10 else 0))
-                else Color(255, 255, 255, if (data.selected) 20 else 0)
-            )
+            .background(selectable(data.selected, press, hover))
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally

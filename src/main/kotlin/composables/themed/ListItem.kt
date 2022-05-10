@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
+import composables.themed.ThemedColor.Companion.selectable
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -31,11 +32,7 @@ fun ListItem(
             .onPointerEvent(PointerEventType.Release) { press = false; onClick() }
             .onPointerEvent(PointerEventType.Enter) { hover = true }
             .onPointerEvent(PointerEventType.Exit) { hover = false }
-            .background(
-                if (press) Color(255, 255, 255, 40.plus(if (selected) 10 else 0))
-                else if (hover) Color(255, 255, 255, 25.plus(if (selected) 10 else 0))
-                else Color(255, 255, 255, if (selected) 20 else 0)
-            )
+            .background(selectable(selected, press, hover))
     ) {
         Box (modifier = Modifier.matchParentSize()) {
             Box (
