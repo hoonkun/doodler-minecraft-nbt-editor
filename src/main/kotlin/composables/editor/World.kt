@@ -2,10 +2,14 @@ package composables.editor
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.BottomAppBar
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -17,6 +21,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import composables.main.*
 import composables.themed.*
+import doodler.doodle.NbtDoodle
+import doodler.doodle.doodle
 
 @Composable
 fun MainColumn(content: @Composable ColumnScope.() -> Unit) {
@@ -149,12 +155,12 @@ fun BoxScope.Editor(holder: EditableHolder, selected: Boolean) {
                     if (editable.ident == "+") {
                         Selector(holder, holder.selected == editable.ident)
                     } else {
-                        Editable(editable)
+                        EditableField(editable)
                     }
                 }
             }
         } else if (holder is SingleEditableHolder) {
-            Editables { Editable(holder.editable) }
+            Editables { EditableField(holder.editable) }
         }
     }
 }
@@ -214,10 +220,24 @@ fun BoxScope.Selector(holder: MultipleEditableHolder, selected: Boolean) {
 }
 
 @Composable
-fun BoxScope.Editable(
+fun BoxScope.EditableField(
     editable: Editable
 ) {
+    val nbt = editable.root ?: return
 
+    val doodle = remember { mutableStateListOf(*nbt.doodle(0).toTypedArray()) }
+
+    LazyColumn {
+        itemsIndexed(doodle, key = { _, item -> item.path }) { index, item ->
+            NbtItem(item) click@ {
+                if (item !is NbtDoodle) return@click
+                if (!item.hasChildren) return@click
+
+                if (!item.expanded) doodle.addAll(index + 1, item.expand())
+                else doodle.removeRange(index + 1, index + item.collapse() + 1)
+            }
+        }
+    }
 }
 
 @Composable

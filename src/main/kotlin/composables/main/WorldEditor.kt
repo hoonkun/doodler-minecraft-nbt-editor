@@ -40,7 +40,7 @@ fun WorldEditor(
         if (editorFiles[selectedFile] != null) return@lambda
 
         editorFiles[data.key] = if (data.holderType == EditableHolder.Type.Single) {
-            SingleEditableHolder(data.key, data.format, data.contentType, Editable(""))
+            SingleEditableHolder(data.key, data.format, data.contentType, Editable("", level))
         } else {
             MultipleEditableHolder(data.key, data.format, data.contentType)
         }
@@ -51,7 +51,7 @@ fun WorldEditor(
             CategoryItemData(it, EditableHolder.Type.Single, Editable.Format.DAT, Editable.ContentType.LEVEL),
             CategoryItemData(it, EditableHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.PLAYER),
             CategoryItemData(it, EditableHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.STATISTICS),
-            CategoryItemData(it, EditableHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.ADVANCEMENTS),
+            CategoryItemData(it, EditableHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.ADVANCEMENTS)
         )
     }
 
@@ -59,6 +59,7 @@ fun WorldEditor(
         val holderType = EditableHolder.Type.Multiple
         val prefix = display(it)
         val result = mutableListOf<CategoryItemData>()
+
         if (worldData[it].region.isNotEmpty())
             result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.TERRAIN))
         if (worldData[it].entities.isNotEmpty())
@@ -120,7 +121,8 @@ fun display(dimension: String): String {
 }
 
 class Editable(
-    val ident: String
+    val ident: String,
+    val root: CompoundTag? = null
 ) {
     val hasChanges = false
 
