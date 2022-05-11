@@ -7,6 +7,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import composables.editor.*
 import composables.themed.*
+import doodler.file.LevelData
+import doodler.file.WorldDirectory
+import nbt.tag.CompoundTag
+import nbt.tag.StringTag
 
 @Composable
 fun WorldEditor(
@@ -16,6 +20,19 @@ fun WorldEditor(
 
     val editorFiles = remember { mutableStateMapOf<String, EditableHolder>() }
     var selectedFile by remember { mutableStateOf("") }
+
+    var worldName by remember { mutableStateOf("") }
+
+    val worldData = WorldDirectory.load(worldPath)
+    val level = LevelData.read(worldData.level.readBytes())
+
+    val levelName = level["Data"]?.getAs<CompoundTag>()!!["LevelName"]?.getAs<StringTag>()?.value
+
+    if (levelName == null) {
+        // TODO: Handle world name reading error here.
+    } else {
+        worldName = levelName
+    }
 
     val onCategoryItemClick: (CategoryItemData) -> Unit = lambda@ { data ->
         selectedFile = data.key
@@ -41,12 +58,17 @@ fun WorldEditor(
     val dimensionItems: (String) -> List<CategoryItemData> = {
         val holderType = EditableHolder.Type.Multiple
         val prefix = display(it)
-        listOf(
-            CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.TERRAIN),
-            CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.ENTITY),
-            CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.POI),
-            CategoryItemData(prefix, holderType, Editable.Format.DAT, Editable.ContentType.OTHERS),
-        )
+        val result = mutableListOf<CategoryItemData>()
+        if (worldData[it].region.isNotEmpty())
+            result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.TERRAIN))
+        if (worldData[it].entities.isNotEmpty())
+            result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.ENTITY))
+        if (worldData[it].poi.isNotEmpty())
+            result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.POI))
+        if (worldData[it].data.isNotEmpty())
+            result.add(CategoryItemData(prefix, holderType, Editable.Format.DAT, Editable.ContentType.OTHERS))
+
+        result
     }
 
     val categories = listOf(
@@ -58,7 +80,7 @@ fun WorldEditor(
 
     MaterialTheme {
         MainColumn {
-            TopBar { TopBarText("Doodler: Minecraft NBT Editor") }
+            TopBar { TopBarText(worldName) }
 
             MainArea {
                 MainFiles {
@@ -72,7 +94,7 @@ fun WorldEditor(
                 }
                 MainContents {
                     if (editorFiles.size == 0)
-                        NoFileSelected()
+                        NoFileSelected(worldName)
 
                     for ((_, holder) in editorFiles) {
                         Editor(holder, selectedFile == holder.which)

@@ -220,14 +220,14 @@ fun BoxScope.Editable(
 }
 
 @Composable
-fun BoxScope.NoFileSelected() {
+fun BoxScope.NoFileSelected(worldName: String) {
     Column (
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxSize()
     ) {
         Text(
-            "World: //TODO", //TODO: World name from level.dat here.
+            worldName,
             color = Color.White,
             fontSize = 38.sp,
         )
