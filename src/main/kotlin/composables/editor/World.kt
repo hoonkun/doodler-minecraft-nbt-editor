@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.unit.dp
@@ -25,10 +26,12 @@ fun MainColumn(content: @Composable ColumnScope.() -> Unit) {
 @Composable
 fun ColumnScope.TopBar(content: @Composable RowScope.() -> Unit) {
     TopAppBar(
-        elevation = 7.dp,
+        elevation = 0.dp,
         backgroundColor = Color(55, 55, 57),
         contentPadding = PaddingValues(start = 25.dp, top = 15.dp, bottom = 15.dp),
-        modifier = Modifier.zIndex(1f),
+        modifier = Modifier
+            .zIndex(1f)
+            .drawBehind(border(bottom = Pair(1f, Color(30, 30, 30)))),
         content = content
     )
 }
@@ -95,10 +98,13 @@ fun RowScope.MainContents(content: @Composable BoxScope.() -> Unit) {
 @Composable
 fun ColumnScope.BottomBar(content: @Composable RowScope.() -> Unit) {
     BottomAppBar(
-        elevation = 20.dp,
+        elevation = 0.dp,
         backgroundColor = Color(60, 63, 65),
         contentPadding = PaddingValues(top = 0.dp, bottom = 0.dp, start = 25.dp, end = 25.dp),
-        modifier = Modifier.height(40.dp).zIndex(1f),
+        modifier = Modifier
+            .height(40.dp)
+            .zIndex(1f)
+            .drawBehind(border(top = Pair(1f, Color(36, 36, 36)))),
         content = content
     )
 }
