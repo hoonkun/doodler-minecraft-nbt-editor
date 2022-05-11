@@ -28,8 +28,9 @@ fun ColumnScope.TopBar(content: @Composable RowScope.() -> Unit) {
     TopAppBar(
         elevation = 0.dp,
         backgroundColor = Color(55, 55, 57),
-        contentPadding = PaddingValues(start = 25.dp, top = 15.dp, bottom = 15.dp),
+        contentPadding = PaddingValues(start = 25.dp, top = 10.dp, bottom = 10.dp),
         modifier = Modifier
+            .height(60.dp)
             .zIndex(1f)
             .drawBehind(border(bottom = Pair(1f, Color(30, 30, 30)))),
         content = content
@@ -38,7 +39,7 @@ fun ColumnScope.TopBar(content: @Composable RowScope.() -> Unit) {
 
 @Composable
 fun RowScope.TopBarText(text: String) {
-    Text(text, color = Color.White, fontSize = 32.sp)
+    Text(text, color = Color.White, fontSize = 25.sp)
 }
 
 @Composable
@@ -227,16 +228,23 @@ fun BoxScope.NoFileSelected(worldName: String) {
         modifier = Modifier.fillMaxSize()
     ) {
         Text(
+            "< world >",
+            color = Color(255, 255, 255, 100),
+            fontSize = 29.sp
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
             worldName,
             color = Color.White,
-            fontSize = 38.sp,
+            fontSize = 38.sp
         )
-        Spacer(modifier = Modifier.height(25.dp))
+        Spacer(modifier = Modifier.height(35.dp))
         Text(
             "Select Tab in Left Area!",
             color = Color(255, 255, 255, 185),
             fontSize = 33.sp
         )
+        Spacer(modifier = Modifier.height(25.dp))
         WhatIsThis("")
     }
 }
