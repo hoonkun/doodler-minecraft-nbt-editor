@@ -9,7 +9,7 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.nio.ByteBuffer
 
-class WorldDirectoryUtils {
+class WorldDirectory {
 
     companion object {
 
@@ -55,7 +55,7 @@ class WorldDirectoryUtils {
 
 }
 
-class LevelUtils {
+class LevelData {
 
     companion object {
 
