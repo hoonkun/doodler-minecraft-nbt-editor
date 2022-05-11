@@ -55,7 +55,7 @@ fun ColumnScope.FileCategoryItem(
 ) {
     val key = data.key
     ListItem (selected == key, onClick = { onClick(data) }) {
-        Row(horizontalArrangement = Arrangement.Start, modifier = Modifier.fillMaxWidth().padding(start = 35.dp, end = 18.dp)) {
+        Row(horizontalArrangement = Arrangement.Start, modifier = Modifier.fillMaxWidth().padding(start = 25.dp, end = 25.dp)) {
             Text(data.contentType.displayName, fontSize = 24.sp, color = Color(255, 255, 255, 200))
             Spacer(modifier = Modifier.weight(1f))
             Text(
