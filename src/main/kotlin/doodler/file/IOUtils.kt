@@ -1,7 +1,13 @@
 package doodler.file
 
+import doodler.anvil.GZip
+import nbt.Tag
+import nbt.TagType
+import nbt.extensions.byte
+import nbt.tag.CompoundTag
 import java.io.File
 import java.io.FileNotFoundException
+import java.nio.ByteBuffer
 
 class WorldDirectoryUtils {
 
@@ -49,6 +55,19 @@ class WorldDirectoryUtils {
 
 }
 
+class LevelUtils {
+
+    companion object {
+
+        fun read(bytes: ByteArray): CompoundTag {
+            val uncompressed = GZip.decompress(bytes)
+            return Tag.read(TagType.TAG_COMPOUND, ByteBuffer.wrap(uncompressed).apply { byte; short; }, null, null).getAs()
+        }
+
+    }
+
+}
+
 class WorldData (
     val icon: File,
     val level: File,
@@ -58,7 +77,16 @@ class WorldData (
     val overworld: WorldDimension,
     val nether: WorldDimension,
     val end: WorldDimension
-)
+) {
+    operator fun get(key: String): WorldDimension {
+        return when (key) {
+            "" -> overworld
+            "DIM1" -> end
+            "DIM-1" -> nether
+            else -> throw Exception("Invalid dimension name: $key")
+        }
+    }
+}
 
 class WorldDimension (
     val region: List<File>,
