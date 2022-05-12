@@ -51,6 +51,76 @@ private fun ItemRoot(onClick: () -> Unit = { }, content: @Composable RowScope.()
 }
 
 @Composable
+private fun ItemIndicator(content: @Composable BoxScope.() -> Unit) {
+    Box (
+        modifier = Modifier
+            .wrapContentSize()
+            .background(Color(60, 60, 60), shape = RoundedCornerShape(5.dp))
+            .padding(top = 2.dp, bottom = 2.dp, start = 3.dp, end = 3.dp),
+        content = content
+    )
+}
+
+@Composable
+private fun IndicatorText(text: String, color: Color) {
+    Text(text, color = color, fontFamily = JetBrainsMono, fontSize = 18.sp)
+}
+
+@Composable
+private fun NumberTypeIndicator(typeString: String) {
+    ItemIndicator {
+        IndicatorText(" $typeString ", color = Color(104, 151, 187))
+    }
+}
+
+@Composable
+private fun StringTypeIndicator() {
+    ItemIndicator {
+        IndicatorText("...", color = Color(106, 135, 89))
+    }
+}
+
+@Composable
+private fun CompoundTypeIndicator() {
+    ItemIndicator {
+        IndicatorText("{C}", color = Color(255, 199, 109))
+    }
+}
+
+@Composable
+private fun ListTypeIndicator() {
+    ItemIndicator {
+        IndicatorText("[ ]", color = Color(204, 120, 50))
+    }
+}
+
+@Composable
+private fun ArrayTypeIndicator(typeString: String) {
+    ItemIndicator {
+        IndicatorText("[$typeString]", color = Color(104, 151, 187))
+    }
+}
+
+@Composable
+private fun Indicator(type: TagType) {
+    when (type) {
+        TagType.TAG_BYTE -> NumberTypeIndicator("B")
+        TagType.TAG_INT -> NumberTypeIndicator("I")
+        TagType.TAG_SHORT -> NumberTypeIndicator("S")
+        TagType.TAG_FLOAT -> NumberTypeIndicator("F")
+        TagType.TAG_DOUBLE -> NumberTypeIndicator("D")
+        TagType.TAG_LONG -> NumberTypeIndicator("L")
+        TagType.TAG_BYTE_ARRAY -> ArrayTypeIndicator("B")
+        TagType.TAG_INT_ARRAY -> ArrayTypeIndicator("I")
+        TagType.TAG_LONG_ARRAY -> ArrayTypeIndicator("L")
+        TagType.TAG_STRING -> StringTypeIndicator()
+        TagType.TAG_COMPOUND -> CompoundTypeIndicator()
+        TagType.TAG_LIST -> ListTypeIndicator()
+        TagType.TAG_END -> { /* impossible */ }
+    }
+}
+
+@Composable
 private fun ItemText(text: String, color: Color, fontSize: TextUnit = 20.sp) {
     Text(text, color = color, fontFamily = JetBrainsMono, fontSize = fontSize)
 }
@@ -78,7 +148,7 @@ private fun ExpandableValue(value: String) {
             .background(Color(60, 60, 60), shape = RoundedCornerShape(5.dp))
             .padding(top = 2.dp, bottom = 2.dp, start = 10.dp, end = 10.dp)
     ) {
-        ItemText(value, Color(150, 150, 150), 15.sp)
+        ItemText(value, Color(150, 150, 150), 18.sp)
     }
 }
 
@@ -90,7 +160,7 @@ private fun Index(index: Int) {
             .background(Color(60, 60, 60), shape = RoundedCornerShape(5.dp))
             .padding(top = 2.dp, bottom = 2.dp, start = 5.dp, end = 5.dp)
     ) {
-        ItemText("$index:", Color(150, 150, 150), 15.sp)
+        ItemText("$index:", Color(150, 150, 150), 18.sp)
     }
 }
 
@@ -130,7 +200,7 @@ fun NbtItem(doodle: Doodle, onClick: () -> Unit = { }) {
         ) {
             when (doodle) {
                 is NbtDoodle -> {
-                    // Key("${doodle.type}")
+                    Indicator(doodle.type)
                     Spacer(modifier = Modifier.width(20.dp))
                     KeyValue(doodle.type, doodle.name, doodle.value, doodle.index)
                 }
