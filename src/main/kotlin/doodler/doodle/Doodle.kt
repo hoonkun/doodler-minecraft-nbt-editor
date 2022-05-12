@@ -4,29 +4,29 @@ import nbt.AnyTag
 import nbt.TagType
 import nbt.tag.*
 
-fun CompoundTag.doodle(depth: Int): List<Doodle> {
-    return this.value.values.map { NbtDoodle(depth, it) }
+fun CompoundTag.doodle(parent: NbtDoodle?, depth: Int): List<Doodle> {
+    return this.value.values.map { NbtDoodle(it, depth, parentTag = parent) }
 }
 
-fun ListTag.doodle(depth: Int): List<Doodle> {
-    return this.value.mapIndexed { index, value -> NbtDoodle(depth, value, index) }
+fun ListTag.doodle(parent: NbtDoodle, depth: Int): List<Doodle> {
+    return this.value.mapIndexed { index, value -> NbtDoodle(value, depth, index, parent) }
 }
 
-fun ByteArrayTag.doodle(depth: Int, parentKey: String): List<Doodle> {
+fun ByteArrayTag.doodle(parent: NbtDoodle, depth: Int, parentKey: String): List<Doodle> {
     return this.value.mapIndexed { index, value ->
-        PrimitiveValueDoodle(depth, "$value", "$parentKey[$index]", index)
+        PrimitiveValueDoodle("$value", depth, "$parentKey[$index]", index, parent)
     }
 }
 
-fun IntArrayTag.doodle(depth: Int, parentKey: String): List<Doodle> {
+fun IntArrayTag.doodle(parent: NbtDoodle, depth: Int, parentKey: String): List<Doodle> {
     return this.value.mapIndexed { index, value ->
-        PrimitiveValueDoodle(depth, "$value", "$parentKey[$index]", index)
+        PrimitiveValueDoodle("$value", depth, "$parentKey[$index]", index, parent)
     }
 }
 
-fun LongArrayTag.doodle(depth: Int, parentKey: String): List<Doodle> {
+fun LongArrayTag.doodle(parent: NbtDoodle, depth: Int, parentKey: String): List<Doodle> {
     return this.value.mapIndexed { index, value ->
-        PrimitiveValueDoodle(depth, "$value", "$parentKey[$index]", index)
+        PrimitiveValueDoodle("$value", depth, "$parentKey[$index]", index, parent)
     }
 }
 
@@ -48,11 +48,16 @@ fun TagType.displayName(): String {
     }
 }
 
-abstract class Doodle(val depth: Int, val index: Int) {
+abstract class Doodle(val depth: Int, val index: Int, val parentTag: NbtDoodle?) {
     abstract val path: String
 }
 
-class NbtDoodle(depth: Int, private val tag: AnyTag, index: Int = -1): Doodle(depth, index) {
+class NbtDoodle(
+    private val tag: AnyTag,
+    depth: Int,
+    index: Int = -1,
+    parentTag: NbtDoodle? = null
+): Doodle(depth, index, parentTag) {
 
     val type = tag.type
     val hasChildren = tag is CompoundTag
@@ -74,11 +79,11 @@ class NbtDoodle(depth: Int, private val tag: AnyTag, index: Int = -1): Doodle(de
         expanded = true
         val newDepth = depth + 1
         val result = when (tag) {
-            is CompoundTag -> tag.doodle(newDepth)
-            is ListTag -> tag.doodle(newDepth)
-            is ByteArrayTag -> tag.doodle(newDepth, path)
-            is IntArrayTag -> tag.doodle(newDepth, path)
-            is LongArrayTag -> tag.doodle(newDepth, path)
+            is CompoundTag -> tag.doodle(this, newDepth)
+            is ListTag -> tag.doodle(this, newDepth)
+            is ByteArrayTag -> tag.doodle(this, newDepth, path)
+            is IntArrayTag -> tag.doodle(this, newDepth, path)
+            is LongArrayTag -> tag.doodle(this, newDepth, path)
             else -> throw Exception("this tag is not expandable!")
         }
         children = result
@@ -126,4 +131,10 @@ class NbtDoodle(depth: Int, private val tag: AnyTag, index: Int = -1): Doodle(de
 
 }
 
-class PrimitiveValueDoodle(depth: Int, val value: String, override val path: String, index: Int): Doodle(depth, index)
+class PrimitiveValueDoodle(
+    val value: String,
+    depth: Int,
+    override val path: String,
+    index: Int,
+    parentTag: NbtDoodle? = null
+): Doodle(depth, index, parentTag)

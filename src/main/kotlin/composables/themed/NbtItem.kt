@@ -40,9 +40,7 @@ private fun ItemRoot(onClick: () -> Unit = { }, content: @Composable RowScope.()
             .background(ThemedColor.selectable(false, press, hover))
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 10.dp, bottom = 10.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
             content()
         }
@@ -196,18 +194,29 @@ fun NbtItem(doodle: Doodle, onSelect: () -> Unit = { }, onExpand: () -> Unit = {
     ItemRoot(onExpand) {
         Row (
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = (20 + doodle.depth * 50).dp)
+            modifier = Modifier.padding(start = 20.dp).height(60.dp)
         ) {
-            when (doodle) {
-                is NbtDoodle -> {
-                    Indicator(doodle.type)
-                    Spacer(modifier = Modifier.width(20.dp))
-                    KeyValue(doodle.type, doodle.name, doodle.value, doodle.index)
+            for (i in 0 until doodle.depth) {
+                Box (modifier = Modifier.fillMaxHeight().wrapContentWidth()) {
+                    Spacer(modifier = Modifier.width(50.dp))
+                    Box (modifier = Modifier.width(1.dp).fillMaxHeight().background(Color(60, 60, 60))) { }
                 }
-                is PrimitiveValueDoodle -> {
-                    Index(doodle.index)
-                    Spacer(modifier = Modifier.width(10.dp))
-                    NumberValue(doodle.value)
+            }
+            Row (
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(top = 10.dp, bottom = 10.dp)
+            ) {
+                when (doodle) {
+                    is NbtDoodle -> {
+                        Indicator(doodle.type)
+                        Spacer(modifier = Modifier.width(20.dp))
+                        KeyValue(doodle.type, doodle.name, doodle.value, doodle.index)
+                    }
+                    is PrimitiveValueDoodle -> {
+                        Index(doodle.index)
+                        Spacer(modifier = Modifier.width(10.dp))
+                        NumberValue(doodle.value)
+                    }
                 }
             }
         }

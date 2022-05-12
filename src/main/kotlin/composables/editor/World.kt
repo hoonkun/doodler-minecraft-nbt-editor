@@ -225,7 +225,7 @@ fun BoxScope.EditableField(
 ) {
     val nbt = editable.root ?: return
 
-    val doodle = remember { mutableStateListOf(*nbt.doodle(0).toTypedArray()) }
+    val doodle = remember { mutableStateListOf(*nbt.doodle(null, 0).toTypedArray()) }
 
     LazyColumn {
         itemsIndexed(doodle, key = { _, item -> item.path }) { index, item ->
