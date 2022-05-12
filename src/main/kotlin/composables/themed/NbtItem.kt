@@ -1,7 +1,9 @@
 package composables.themed
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.mouseClickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -10,6 +12,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isPrimaryPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -19,7 +22,7 @@ import doodler.doodle.NbtDoodle
 import doodler.doodle.PrimitiveValueDoodle
 import nbt.TagType
 
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun ItemRoot(onClick: () -> Unit = { }, content: @Composable RowScope.() -> Unit) {
     var hover by remember { mutableStateOf(false) }
@@ -28,9 +31,12 @@ private fun ItemRoot(onClick: () -> Unit = { }, content: @Composable RowScope.()
     Box (
         modifier = Modifier
             .onPointerEvent(PointerEventType.Press) { press = true }
-            .onPointerEvent(PointerEventType.Release) { press = false; onClick() }
+            .onPointerEvent(PointerEventType.Release) { press = false }
             .onPointerEvent(PointerEventType.Enter) { hover = true }
             .onPointerEvent(PointerEventType.Exit) { hover = false }
+            .mouseClickable {
+                if (buttons.isPrimaryPressed) onClick()
+            }
             .background(ThemedColor.selectable(false, press, hover))
     ) {
         Row(
