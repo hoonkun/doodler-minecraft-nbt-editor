@@ -229,13 +229,17 @@ fun BoxScope.EditableField(
 
     LazyColumn {
         itemsIndexed(doodle, key = { _, item -> item.path }) { index, item ->
-            NbtItem(item) click@ {
+            val onExpand = click@ {
                 if (item !is NbtDoodle) return@click
                 if (!item.hasChildren) return@click
 
                 if (!item.expanded) doodle.addAll(index + 1, item.expand())
                 else doodle.removeRange(index + 1, index + item.collapse() + 1)
             }
+            val onSelect = {
+
+            }
+            NbtItem(item, onSelect = onSelect, onExpand = onExpand)
         }
     }
 }

@@ -192,8 +192,8 @@ private fun KeyValue(type: TagType, key: String?, value: String, index: Int) {
 }
 
 @Composable
-fun NbtItem(doodle: Doodle, onClick: () -> Unit = { }) {
-    ItemRoot(onClick) {
+fun NbtItem(doodle: Doodle, onSelect: () -> Unit = { }, onExpand: () -> Unit = { }) {
+    ItemRoot(onExpand) {
         Row (
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(start = (20 + doodle.depth * 50).dp)
