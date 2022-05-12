@@ -22,22 +22,20 @@ import doodler.doodle.NbtDoodle
 import doodler.doodle.PrimitiveValueDoodle
 import nbt.TagType
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-private fun ItemRoot(onClick: () -> Unit = { }, content: @Composable RowScope.() -> Unit) {
-    var hover by remember { mutableStateOf(false) }
-    var press by remember { mutableStateOf(false) }
-
+private fun ItemRoot(
+    pressed: Boolean,
+    selected: Boolean,
+    focused: Boolean,
+    content: @Composable RowScope.() -> Unit
+) {
     Box (
         modifier = Modifier
-            .onPointerEvent(PointerEventType.Press) { press = true }
-            .onPointerEvent(PointerEventType.Release) { press = false }
-            .onPointerEvent(PointerEventType.Enter) { hover = true }
-            .onPointerEvent(PointerEventType.Exit) { hover = false }
-            .mouseClickable {
-                if (buttons.isPrimaryPressed) onClick()
-            }
-            .background(ThemedColor.selectable(false, press, hover))
+            .background(ThemedColor.selectable(
+                selected = selected,
+                press = pressed,
+                hover = focused
+            ))
     ) {
         Row(
             modifier = Modifier.fillMaxWidth()
@@ -189,36 +187,95 @@ private fun KeyValue(type: TagType, key: String?, value: String, index: Int) {
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun NbtItem(doodle: Doodle, onSelect: () -> Unit = { }, onExpand: () -> Unit = { }) {
-    ItemRoot(onExpand) {
+fun NbtItem(
+    doodle: Doodle,
+    onSelect: () -> Unit = { },
+    onExpand: () -> Unit = { },
+    selected: List<Doodle?>,
+    pressed: Doodle?,
+    focusedDirectly: Doodle?,
+    focusedTree: Doodle?,
+    setSelected: (Doodle) -> Unit,
+    addToSelected: (Doodle) -> Unit,
+    removeFromSelected: (Doodle) -> Unit,
+    setPressed: (Doodle?) -> Unit,
+    setFocusedDirectly: (Doodle?) -> Unit,
+    setFocusedTree: (Doodle?) -> Unit,
+    treeCollapse: (Doodle, Int) -> Unit
+) {
+    val hierarchy = getHierarchy(doodle)
+
+    ItemRoot(
+        pressed == doodle,
+        selected == doodle,
+        focusedDirectly == doodle || focusedTree == doodle
+    ) {
         Row (
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(start = 20.dp).height(60.dp)
         ) {
             for (i in 0 until doodle.depth) {
-                Box (modifier = Modifier.fillMaxHeight().wrapContentWidth()) {
+                val focused = focusedDirectly == hierarchy[i] || focusedTree == hierarchy[i]
+                Box (modifier = Modifier
+                    .fillMaxHeight()
+                    .wrapContentWidth()
+                    .onPointerEvent(PointerEventType.Enter) { setFocusedTree(hierarchy[i]) }
+                    .onPointerEvent(PointerEventType.Exit) { setFocusedTree(null) }
+                    .onPointerEvent(PointerEventType.Release) { treeCollapse(hierarchy[i], hierarchy[i].collapse()) }
+                ) {
                     Spacer(modifier = Modifier.width(50.dp))
-                    Box (modifier = Modifier.width(1.dp).fillMaxHeight().background(Color(60, 60, 60))) { }
+                    Box (
+                        modifier = Modifier
+                            .width(1.dp)
+                            .fillMaxHeight()
+                            .background(
+                                if (focused) Color(100, 100, 100)
+                                else Color(60, 60, 60)
+                            )
+                    ) { }
                 }
             }
-            Row (
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(top = 10.dp, bottom = 10.dp)
+            Box (
+                modifier = Modifier.weight(1f)
+                    .onPointerEvent(PointerEventType.Enter) { setFocusedDirectly(doodle) }
+                    .onPointerEvent(PointerEventType.Exit) { setFocusedDirectly(null) }
+                    .onPointerEvent(PointerEventType.Press) { setPressed(doodle) }
+                    .onPointerEvent(PointerEventType.Release) { setPressed(null) }
+                    .mouseClickable(onClick = { if (buttons.isPrimaryPressed) onExpand() })
             ) {
-                when (doodle) {
-                    is NbtDoodle -> {
-                        Indicator(doodle.type)
-                        Spacer(modifier = Modifier.width(20.dp))
-                        KeyValue(doodle.type, doodle.name, doodle.value, doodle.index)
-                    }
-                    is PrimitiveValueDoodle -> {
-                        Index(doodle.index)
-                        Spacer(modifier = Modifier.width(10.dp))
-                        NumberValue(doodle.value)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .padding(top = 10.dp, bottom = 10.dp)
+                        .fillMaxHeight()
+                ) {
+                    when (doodle) {
+                        is NbtDoodle -> {
+                            Indicator(doodle.type)
+                            Spacer(modifier = Modifier.width(20.dp))
+                            KeyValue(doodle.type, doodle.name, doodle.value, doodle.index)
+                        }
+                        is PrimitiveValueDoodle -> {
+                            Index(doodle.index)
+                            Spacer(modifier = Modifier.width(10.dp))
+                            NumberValue(doodle.value)
+                        }
                     }
                 }
             }
         }
     }
+}
+
+fun getHierarchy(doodle: Doodle): List<NbtDoodle> {
+    val result = mutableListOf<NbtDoodle>()
+    var parent = doodle.parentTag
+    while (parent != null) {
+        result.add(parent)
+        parent = parent.parentTag
+    }
+    result.reverse()
+    return result
 }
