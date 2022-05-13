@@ -267,7 +267,15 @@ fun BoxScope.EditableField(
             val onSelect: () -> Unit = {
                 if (!doodleState.selected.contains(item)) {
                     if (keys.contains(Key.CtrlLeft)) doodleState.addToSelected(item)
-                    else doodleState.setSelected(item)
+                    else if (keys.contains(Key.ShiftLeft)) {
+                        val lastSelected = doodleState.getLastSelected()
+                        if (lastSelected == null) doodleState.addToSelected(item)
+                        else {
+                            doodleState.addRangeToSelected(doodle.slice(
+                                doodle.indexOf(lastSelected) + 1 until doodle.indexOf(item) + 1
+                            ))
+                        }
+                    } else doodleState.setSelected(item)
                 } else {
                     if (keys.contains(Key.CtrlLeft) || doodleState.selected.size == 1)
                         doodleState.removeFromSelected(item)

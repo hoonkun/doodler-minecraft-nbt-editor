@@ -172,6 +172,12 @@ class DoodleState(
         if (pressed == target) pressed = null
     }
 
+    fun getLastSelected(): Doodle? = if (selected.isEmpty()) null else selected.last()
+
+    fun addRangeToSelected(targets: List<Doodle>) {
+        selected.addAll(targets.filter { !selected.contains(it) })
+    }
+
     fun addToSelected(target: Doodle) {
         if (!selected.contains(target)) selected.add(target)
     }
