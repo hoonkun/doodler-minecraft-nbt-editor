@@ -232,24 +232,24 @@ fun BoxScope.EditableField(
 ) {
     val nbt = editable.root ?: return
 
-    val doodle = remember { mutableStateListOf(*nbt.doodle(null, 0).toTypedArray()) }
+    val doodles = remember { mutableStateListOf(*nbt.doodle(null, 0).toTypedArray()) }
 
     val lazyColumnState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
     val doodleState = rememberDoodleState()
 
     val treeCollapse: (Doodle, Int) -> Unit = { target, collapseCount ->
-        val baseIndex = doodle.indexOf(target)
-        doodle.removeRange(baseIndex + 1, baseIndex + collapseCount + 1)
+        val baseIndex = doodles.indexOf(target)
+        doodles.removeRange(baseIndex + 1, baseIndex + collapseCount + 1)
         if (lazyColumnState.firstVisibleItemIndex > baseIndex) {
             coroutineScope.launch { lazyColumnState.scrollToItem(baseIndex) }
         }
     }
 
     val treeViewTarget = if (doodleState.focusedTree == null) doodleState.focusedTreeView else doodleState.focusedTree
-    if (treeViewTarget != null && lazyColumnState.firstVisibleItemIndex > doodle.indexOf(treeViewTarget)) {
+    if (treeViewTarget != null && lazyColumnState.firstVisibleItemIndex > doodles.indexOf(treeViewTarget)) {
         NbtItemTreeView(treeViewTarget, doodleState) {
-            val index = doodle.indexOf(treeViewTarget)
+            val index = doodles.indexOf(treeViewTarget)
             coroutineScope.launch {
                 lazyColumnState.scrollToItem(index)
             }
@@ -260,13 +260,13 @@ fun BoxScope.EditableField(
     }
 
     LazyColumn (state = lazyColumnState) {
-        itemsIndexed(doodle, key = { _, item -> item.path }) { index, item ->
+        itemsIndexed(doodles, key = { _, item -> item.path }) { index, item ->
             val onExpand: () -> Unit = click@ {
                 if (item !is NbtDoodle) return@click
                 if (!item.hasChildren) return@click
 
-                if (!item.expanded) doodle.addAll(index + 1, item.expand())
-                else doodle.removeRange(index + 1, index + item.collapse() + 1)
+                if (!item.expanded) doodles.addAll(index + 1, item.expand())
+                else doodles.removeRange(index + 1, index + item.collapse() + 1)
             }
             val onSelect: () -> Unit = {
                 if (!doodleState.selected.contains(item)) {
@@ -275,8 +275,8 @@ fun BoxScope.EditableField(
                         val lastSelected = doodleState.getLastSelected()
                         if (lastSelected == null) doodleState.addToSelected(item)
                         else {
-                            doodleState.addRangeToSelected(doodle.slice(
-                                doodle.indexOf(lastSelected) + 1 until doodle.indexOf(item) + 1
+                            doodleState.addRangeToSelected(doodles.slice(
+                                doodles.indexOf(lastSelected) + 1 until doodles.indexOf(item) + 1
                             ))
                         }
                     } else doodleState.setSelected(item)
