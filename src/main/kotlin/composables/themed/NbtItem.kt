@@ -215,6 +215,9 @@ fun NbtItem(
                     .wrapContentWidth()
                     .onPointerEvent(PointerEventType.Enter) { state.focusTree(hierarchy[i]) }
                     .onPointerEvent(PointerEventType.Exit) { state.unFocusTree(hierarchy[i]) }
+                    .onPointerEvent(PointerEventType.Move) {
+                        if (state.focusedTree != hierarchy[i]) state.focusTree(hierarchy[i])
+                    }
                     .onPointerEvent(PointerEventType.Release) { treeCollapse(hierarchy[i], hierarchy[i].collapse()) }
                 ) {
                     Spacer(modifier = Modifier.width(50.dp))
@@ -231,8 +234,11 @@ fun NbtItem(
             }
             Box (
                 modifier = Modifier.weight(1f)
-                    .onPointerEvent(PointerEventType.Enter) { state.focusDirectly(doodle) }
+                    .onPointerEvent(PointerEventType.Enter) { state.focusDirectly(doodle); state.focusedTree = null }
                     .onPointerEvent(PointerEventType.Exit) { state.unFocusDirectly(doodle) }
+                    .onPointerEvent(PointerEventType.Move) {
+                        if (state.focusedDirectly != doodle) state.focusDirectly(doodle); state.focusedTree = null
+                    }
                     .onPointerEvent(PointerEventType.Press) { state.press(doodle) }
                     .onPointerEvent(PointerEventType.Release) { state.unPress(doodle) }
                     .mouseClickable(onClick = { if (buttons.isPrimaryPressed) onExpand() })
