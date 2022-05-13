@@ -147,11 +147,11 @@ fun ColumnScope.CategoriesBottomMargin() {
 }
 
 @Composable
-fun BoxScope.Editor(holder: EditableHolder, selected: Boolean) {
+fun BoxScope.Editor(holder: EditableHolder) {
     if (holder.editorStateOrNull() == null)
         holder.setEditorState(rememberEditorState())
 
-    EditorRoot(selected) {
+    EditorRoot {
         if (holder is MultipleEditableHolder) {
             TabGroup(
                 holder.editables.map { TabData(holder.selected == it.ident, it) },
@@ -174,12 +174,11 @@ fun BoxScope.Editor(holder: EditableHolder, selected: Boolean) {
 }
 
 @Composable
-fun BoxScope.EditorRoot(selected: Boolean, content: @Composable ColumnScope.() -> Unit) {
+fun BoxScope.EditorRoot(content: @Composable ColumnScope.() -> Unit) {
     Column (
         modifier = Modifier
             .fillMaxSize()
-            .alpha(if (selected) 1f else 0f)
-            .zIndex(if (selected) 100f else -1f),
+            .zIndex(100f),
         content = content
     )
 }

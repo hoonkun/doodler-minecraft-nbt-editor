@@ -100,11 +100,11 @@ fun WorldEditor(
                     FileCategoryListScrollbar(scrollState)
                 }
                 MainContents {
-                    if (editorFiles.size == 0)
+                    if (editorFiles.size == 0) {
                         NoFileSelected(worldName)
-
-                    for ((_, holder) in editorFiles) {
-                        Editor(holder, selectedFile == holder.which)
+                    } else {
+                        val selected = editorFiles.values.find { it.which == selectedFile }
+                        if (selected != null) Editor(selected)
                     }
                 }
             }
