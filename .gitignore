@@ -74,3 +74,5 @@ outTmp/
 /kotlin-native/dist
 kotlin-ide/
 .idea/
+
+src/test/kotlin/Workspace.kt
