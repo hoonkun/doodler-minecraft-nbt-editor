@@ -149,6 +149,9 @@ fun ColumnScope.CategoriesBottomMargin() {
 
 @Composable
 fun BoxScope.Editor(holder: EditableHolder, selected: Boolean) {
+    if (holder.editorStateOrNull() == null)
+        holder.setEditorState(rememberEditorState())
+
     EditorRoot(selected) {
         if (holder is MultipleEditableHolder) {
             TabGroup(
@@ -161,12 +164,12 @@ fun BoxScope.Editor(holder: EditableHolder, selected: Boolean) {
                     if (editable.ident == "+") {
                         Selector(holder, holder.selected == editable.ident)
                     } else {
-                        EditableField(editable)
+                        EditableField(editable, holder.editorState)
                     }
                 }
             }
         } else if (holder is SingleEditableHolder) {
-            Editables { EditableField(holder.editable) }
+            Editables { EditableField(holder.editable, holder.editorState) }
         }
     }
 }
@@ -228,15 +231,18 @@ fun BoxScope.Selector(holder: MultipleEditableHolder, selected: Boolean) {
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.EditableField(
-    editable: Editable
+    editable: Editable,
+    state: EditorState
 ) {
     val nbt = editable.root ?: return
 
-    val doodles = remember { mutableStateListOf(*nbt.doodle(null, 0).toTypedArray()) }
-
-    val lazyColumnState = rememberLazyListState()
     val coroutineScope = rememberCoroutineScope()
-    val doodleState = rememberDoodleState()
+
+    val doodles = state.doodles
+    val doodleState = state.doodleState
+    val lazyColumnState = state.lazyState
+
+    if (doodles.isEmpty()) doodles.addAll(nbt.doodle(null, 0))
 
     val treeCollapse: (Doodle, Int) -> Unit = { target, collapseCount ->
         val baseIndex = doodles.indexOf(target)

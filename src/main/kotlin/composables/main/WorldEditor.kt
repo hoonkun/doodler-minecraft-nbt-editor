@@ -2,11 +2,17 @@ package composables.main
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
 import composables.editor.*
 import composables.themed.*
+import doodler.doodle.Doodle
+import doodler.doodle.DoodleState
+import doodler.doodle.rememberDoodleState
 import doodler.file.LevelData
 import doodler.file.WorldDirectory
 import nbt.tag.CompoundTag
@@ -154,11 +160,37 @@ class Editable(
     }
 }
 
+@Composable
+fun rememberEditorState(
+    doodles: SnapshotStateList<Doodle> = remember { mutableStateListOf() },
+    doodleState: DoodleState = rememberDoodleState(),
+    lazyState: LazyListState = rememberLazyListState()
+) = remember(doodles, doodleState, lazyState) {
+    EditorState(doodles, doodleState, lazyState)
+}
+
+class EditorState(
+    val doodles: SnapshotStateList<Doodle>,
+    val doodleState: DoodleState,
+    val lazyState: LazyListState
+)
+
 abstract class EditableHolder(
     val which: String,
     val format: Editable.Format,
-    val contentType: Editable.ContentType
+    val contentType: Editable.ContentType,
 ) {
+    private var _editorState: EditorState? = null
+    val editorState get() = _editorState!!
+
+    fun setEditorState(editorState: EditorState) {
+        _editorState = editorState
+    }
+
+    fun editorStateOrNull(): EditorState? {
+        return _editorState
+    }
+
     enum class Type {
         Single, Multiple
     }
