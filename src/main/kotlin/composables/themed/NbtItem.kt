@@ -2,6 +2,7 @@ package composables.themed
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.mouseClickable
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +18,7 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import doodler.doodle.Doodle
 import doodler.doodle.DoodleState
 import doodler.doodle.NbtDoodle
@@ -188,6 +190,27 @@ private fun KeyValue(type: TagType, key: String?, value: String, index: Int) {
     }
 }
 
+@Composable
+fun NbtItemTreeView(
+    doodle: Doodle
+) {
+    Box (modifier = Modifier
+        .border(2.dp, Color(75, 75, 75))
+        .zIndex(999f)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .background(Color(43, 43, 43))
+                .padding(start = (20 + 50 * doodle.depth).dp)
+                .fillMaxWidth()
+                .height(60.dp)
+        ) {
+            DoodleContent(doodle)
+        }
+    }
+}
+
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun NbtItem(
@@ -249,20 +272,25 @@ fun NbtItem(
                         .padding(top = 10.dp, bottom = 10.dp)
                         .fillMaxHeight()
                 ) {
-                    when (doodle) {
-                        is NbtDoodle -> {
-                            Indicator(doodle.type)
-                            Spacer(modifier = Modifier.width(20.dp))
-                            KeyValue(doodle.type, doodle.name, doodle.value, doodle.index)
-                        }
-                        is PrimitiveValueDoodle -> {
-                            Index(doodle.index)
-                            Spacer(modifier = Modifier.width(10.dp))
-                            NumberValue(doodle.value)
-                        }
-                    }
+                    DoodleContent(doodle)
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun DoodleContent(doodle: Doodle) {
+    when (doodle) {
+        is NbtDoodle -> {
+            Indicator(doodle.type)
+            Spacer(modifier = Modifier.width(20.dp))
+            KeyValue(doodle.type, doodle.name, doodle.value, doodle.index)
+        }
+        is PrimitiveValueDoodle -> {
+            Index(doodle.index)
+            Spacer(modifier = Modifier.width(10.dp))
+            NumberValue(doodle.value)
         }
     }
 }

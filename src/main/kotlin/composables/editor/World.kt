@@ -241,6 +241,11 @@ fun BoxScope.EditableField(
         }
     }
 
+    val tree = doodleState.focusedTree
+    if (tree != null && lazyColumnState.firstVisibleItemIndex > doodle.indexOf(tree)) {
+        NbtItemTreeView(tree)
+    }
+
     LazyColumn (state = lazyColumnState) {
         itemsIndexed(doodle, key = { _, item -> item.path }) { index, item ->
             val onExpand = click@ {
