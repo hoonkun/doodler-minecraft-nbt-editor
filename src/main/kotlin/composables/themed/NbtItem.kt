@@ -290,8 +290,8 @@ fun NbtItem(
                     .onPointerEvent(PointerEventType.Press) { state.press(doodle) }
                     .onPointerEvent(PointerEventType.Release) { state.unPress(doodle) }
                     .mouseClickable(onClick = {
-                        if (buttons.isPrimaryPressed) onSelect()
-                        else if (buttons.isSecondaryPressed) onExpand()
+                        if (buttons.isPrimaryPressed) onExpand()
+                        else if (buttons.isSecondaryPressed) onSelect()
                     })
             ) {
                 Row(
