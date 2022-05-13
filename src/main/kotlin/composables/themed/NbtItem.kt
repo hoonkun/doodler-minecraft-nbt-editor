@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import doodler.doodle.Doodle
+import doodler.doodle.DoodleState
 import doodler.doodle.NbtDoodle
 import doodler.doodle.PrimitiveValueDoodle
 import nbt.TagType
@@ -191,38 +192,29 @@ private fun KeyValue(type: TagType, key: String?, value: String, index: Int) {
 @Composable
 fun NbtItem(
     doodle: Doodle,
-    onSelect: () -> Unit = { },
-    onExpand: () -> Unit = { },
-    selected: List<Doodle?>,
-    pressed: Doodle?,
-    focusedDirectly: Doodle?,
-    focusedTree: Doodle?,
-    setSelected: (Doodle) -> Unit,
-    addToSelected: (Doodle) -> Unit,
-    removeFromSelected: (Doodle) -> Unit,
-    setPressed: (Doodle?) -> Unit,
-    setFocusedDirectly: (Doodle?) -> Unit,
-    setFocusedTree: (Doodle?) -> Unit,
+    onSelect: () -> Unit,
+    onExpand: () -> Unit,
+    state: DoodleState,
     treeCollapse: (Doodle, Int) -> Unit
 ) {
     val hierarchy = getHierarchy(doodle)
 
     ItemRoot(
-        pressed == doodle,
-        selected == doodle,
-        focusedDirectly == doodle || focusedTree == doodle
+        state.pressed == doodle,
+        state.selected.contains(doodle),
+        state.focusedDirectly == doodle || state.focusedTree == doodle
     ) {
         Row (
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(start = 20.dp).height(60.dp)
         ) {
             for (i in 0 until doodle.depth) {
-                val focused = focusedDirectly == hierarchy[i] || focusedTree == hierarchy[i]
+                val focused = state.focusedDirectly == hierarchy[i] || state.focusedTree == hierarchy[i]
                 Box (modifier = Modifier
                     .fillMaxHeight()
                     .wrapContentWidth()
-                    .onPointerEvent(PointerEventType.Enter) { setFocusedTree(hierarchy[i]) }
-                    .onPointerEvent(PointerEventType.Exit) { setFocusedTree(null) }
+                    .onPointerEvent(PointerEventType.Enter) { state.focusTree(hierarchy[i]) }
+                    .onPointerEvent(PointerEventType.Exit) { state.unFocusTree(hierarchy[i]) }
                     .onPointerEvent(PointerEventType.Release) { treeCollapse(hierarchy[i], hierarchy[i].collapse()) }
                 ) {
                     Spacer(modifier = Modifier.width(50.dp))
@@ -239,10 +231,10 @@ fun NbtItem(
             }
             Box (
                 modifier = Modifier.weight(1f)
-                    .onPointerEvent(PointerEventType.Enter) { setFocusedDirectly(doodle) }
-                    .onPointerEvent(PointerEventType.Exit) { setFocusedDirectly(null) }
-                    .onPointerEvent(PointerEventType.Press) { setPressed(doodle) }
-                    .onPointerEvent(PointerEventType.Release) { setPressed(null) }
+                    .onPointerEvent(PointerEventType.Enter) { state.focusDirectly(doodle) }
+                    .onPointerEvent(PointerEventType.Exit) { state.unFocusDirectly(doodle) }
+                    .onPointerEvent(PointerEventType.Press) { state.press(doodle) }
+                    .onPointerEvent(PointerEventType.Release) { state.unPress(doodle) }
                     .mouseClickable(onClick = { if (buttons.isPrimaryPressed) onExpand() })
             ) {
                 Row(

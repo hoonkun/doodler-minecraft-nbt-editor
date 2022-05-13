@@ -7,12 +7,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.BottomAppBar
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -27,6 +22,7 @@ import composables.themed.*
 import doodler.doodle.Doodle
 import doodler.doodle.NbtDoodle
 import doodler.doodle.doodle
+import doodler.doodle.rememberDoodleState
 
 @Composable
 fun MainColumn(content: @Composable ColumnScope.() -> Unit) {
@@ -231,17 +227,7 @@ fun BoxScope.EditableField(
 
     val doodle = remember { mutableStateListOf(*nbt.doodle(null, 0).toTypedArray()) }
 
-    val selected = remember { mutableStateListOf<Doodle?>(null) }
-    var pressed by remember { mutableStateOf<Doodle?>(null) }
-    var focusedDirectly by remember { mutableStateOf<Doodle?>(null) }
-    var focusedTree by remember { mutableStateOf<Doodle?>(null) }
-
-    val setSelected: (Doodle) -> Unit = { selected.clear(); selected.add(it) }
-    val removeFromSelected: (Doodle) -> Unit = { selected.remove(it) }
-    val addToSelected: (Doodle) -> Unit = { selected.add(it) }
-    val setPressed: (Doodle?) -> Unit = { pressed = it }
-    val setFocusedDirectly: (Doodle?) -> Unit = { focusedDirectly = it }
-    val setFocusedTree: (Doodle?) -> Unit = { focusedTree = it }
+    val doodleState = rememberDoodleState()
 
     val treeCollapse: (Doodle, Int) -> Unit = { target, collapseCount ->
         val baseIndex = doodle.indexOf(target)
@@ -260,22 +246,7 @@ fun BoxScope.EditableField(
             val onSelect = {
 
             }
-            NbtItem(
-                item,
-                onSelect = onSelect,
-                onExpand = onExpand,
-                selected,
-                pressed,
-                focusedDirectly,
-                focusedTree,
-                setSelected,
-                addToSelected,
-                removeFromSelected,
-                setPressed,
-                setFocusedDirectly,
-                setFocusedTree,
-                treeCollapse
-            )
+            NbtItem(item, onSelect, onExpand, doodleState, treeCollapse)
         }
     }
 }

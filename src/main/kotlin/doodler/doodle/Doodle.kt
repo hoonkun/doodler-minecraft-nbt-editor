@@ -1,5 +1,7 @@
 package doodler.doodle
 
+import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import nbt.AnyTag
 import nbt.TagType
 import nbt.tag.*
@@ -138,3 +140,49 @@ class PrimitiveValueDoodle(
     index: Int,
     parentTag: NbtDoodle? = null
 ): Doodle(depth, index, parentTag)
+
+@Composable
+fun rememberDoodleState(
+    selected: SnapshotStateList<Doodle?> = remember { mutableStateListOf() },
+    pressed: MutableState<Doodle?> = remember { mutableStateOf(null) },
+    focusedDirectly: MutableState<Doodle?> = remember { mutableStateOf(null) },
+    focusedTree: MutableState<Doodle?> = remember { mutableStateOf(null) }
+) = remember(selected, pressed, focusedDirectly, focusedTree) {
+    DoodleState(selected, pressed, focusedDirectly, focusedTree)
+}
+
+class DoodleState(
+    val selected: SnapshotStateList<Doodle?>,
+    pressed: MutableState<Doodle?>,
+    focusedDirectly: MutableState<Doodle?>,
+    focusedTree: MutableState<Doodle?>
+) {
+    var pressed by pressed
+    var focusedDirectly by focusedDirectly
+    var focusedTree by focusedTree
+
+    fun press(target: Doodle) {
+        pressed = target
+    }
+
+    fun unPress(target: Doodle) {
+        if (pressed == target) pressed = null
+    }
+
+    fun focusDirectly(target: Doodle) {
+        focusedDirectly = target
+    }
+
+    fun unFocusDirectly(target: Doodle) {
+        if (focusedDirectly == target) focusedDirectly = null
+    }
+
+    fun focusTree(target: Doodle) {
+        focusedTree = target
+    }
+
+    fun unFocusTree(target: Doodle) {
+        if (focusedTree == target) focusedTree = null
+    }
+
+}
