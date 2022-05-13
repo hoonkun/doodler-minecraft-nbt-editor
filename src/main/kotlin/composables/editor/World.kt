@@ -4,9 +4,10 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material.BottomAppBar
-import androidx.compose.material.Text
-import androidx.compose.material.TopAppBar
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -15,16 +16,29 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import composables.main.*
 import composables.themed.*
+import doodler.anvil.AnvilLocation
+import doodler.anvil.AnvilManager
+import doodler.anvil.BlockLocation
+import doodler.anvil.ChunkLocation
 import doodler.doodle.*
 import keys
 import kotlinx.coroutines.launch
 import java.awt.Desktop
+import java.io.File
 import java.net.URI
 import java.util.*
 
@@ -148,9 +162,6 @@ fun ColumnScope.CategoriesBottomMargin() {
 
 @Composable
 fun BoxScope.Editor(holder: EditableHolder) {
-    if (holder.editorStateOrNull() == null)
-        holder.setEditorState(rememberEditorState())
-
     EditorRoot {
         if (holder is MultipleEditableHolder) {
             TabGroup(
@@ -161,14 +172,24 @@ fun BoxScope.Editor(holder: EditableHolder) {
             Editables {
                 for (editable in holder.editables) {
                     if (editable.ident == "+") {
-                        Selector(holder, holder.selected == editable.ident)
+                        if (holder.selected == editable.ident) {
+                            Selector(holder, holder.selected == editable.ident)
+                        }
                     } else {
-                        EditableField(editable, holder.editorState)
+                        if (editable.editorStateOrNull() == null)
+                            editable.setEditorState(rememberEditorState())
+
+                        if (holder.selected == editable.ident) {
+                            EditableField(editable, editable.editorState)
+                        }
                     }
                 }
             }
         } else if (holder is SingleEditableHolder) {
-            Editables { EditableField(holder.editable, holder.editorState) }
+            if (holder.editable.editorStateOrNull() == null)
+                holder.editable.setEditorState(rememberEditorState())
+
+            Editables { EditableField(holder.editable, holder.editable.editorState) }
         }
     }
 }
@@ -195,34 +216,292 @@ fun ColumnScope.Editables(content: @Composable BoxScope.() -> Unit) {
 
 @Composable
 fun BoxScope.Selector(holder: MultipleEditableHolder, selected: Boolean) {
-    Column (
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .fillMaxSize()
-            .alpha(if (selected) 1f else 0f)
-            .zIndex(if (selected) 100f else -1f)
-    ) {
-        Text(
-            holder.which,
-            color = Color.White,
-            fontSize = 38.sp,
-        )
-        Spacer(modifier = Modifier.height(25.dp))
-        Text(
-            "No files opened",
-            color = Color(255, 255, 255, 185),
-            fontSize = 33.sp
-        )
-        Spacer(modifier = Modifier.height(10.dp))
-        LinkText(
-            "Select File",
-            color = ThemedColor.Bright,
-            fontSize = 30.sp
+
+    val onSelectChunk: (ChunkLocation, File?) -> Unit = select@ { loc, file ->
+        if (file == null) return@select
+
+        val newIdent = "[${loc.x}, ${loc.z}]"
+        if (holder.hasEditable(newIdent)) return@select
+
+        val root = AnvilManager.instance.loadChunk(loc, file.readBytes())
+        holder.add(Editable(newIdent, root))
+    }
+
+    Column {
+        if (holder.format == Editable.Format.MCA) AnvilSelector(holder, onSelectChunk)
+        Column (
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxSize()
+                .weight(1f)
+                .alpha(if (selected) 1f else 0f)
+                .zIndex(if (selected) 100f else -1f)
         ) {
-            holder.add(Editable("Some Name"))
+            Text(
+                holder.which,
+                color = Color.White,
+                fontSize = 38.sp,
+            )
+            Spacer(modifier = Modifier.height(25.dp))
+            Text(
+                "No files opened",
+                color = Color(255, 255, 255, 185),
+                fontSize = 33.sp
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            LinkText(
+                "Select File",
+                color = ThemedColor.Bright,
+                fontSize = 30.sp
+            ) {
+                holder.add(Editable("Some Name"))
+            }
+            WhatIsThis("")
         }
-        WhatIsThis("")
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@Composable
+fun ColumnScope.AnvilSelector(
+    holder: MultipleEditableHolder,
+    onSelectChunk: (ChunkLocation, File?) -> Unit
+) {
+
+    val worldData = rootWorldData ?: return
+    val dimension = holder.extra["dimension"] ?: return
+
+    val worldDimension = worldData[dimension]
+
+    val anvils = when(holder.contentType) {
+        Editable.ContentType.TERRAIN -> worldDimension.region
+        Editable.ContentType.POI -> worldDimension.poi
+        Editable.ContentType.ENTITY -> worldDimension.entities
+        else -> return
+    }
+
+    val chunks = mutableListOf<ChunkLocation>()
+    anvils.forEach {
+        val segments = it.name.split(".")
+        val location = AnvilLocation(segments[1].toInt(), segments[2].toInt())
+        chunks.addAll(AnvilManager.instance.loadChunkList(location, it.readBytes()))
+    }
+
+    var selectedChunk by remember { mutableStateOf(if (chunks.isEmpty()) null else chunks[0]) }
+
+    var chunkXValue by remember { mutableStateOf(TextFieldValue("${selectedChunk?.x ?: "-"}")) }
+    var chunkZValue by remember { mutableStateOf(TextFieldValue("${selectedChunk?.z ?: "-"}")) }
+
+    var blockXValue by remember { mutableStateOf(TextFieldValue("-")) }
+    var blockZValue by remember { mutableStateOf(TextFieldValue("-")) }
+
+    var isChunkXValid by remember { mutableStateOf(true) }
+    var isChunkZValid by remember { mutableStateOf(true) }
+
+    val validChunkX = chunks.map { chunk -> chunk.x }
+    val validChunkZ = chunks.map { chunk -> chunk.z }
+
+    val updateSelectedChunk: () -> Unit = {
+        selectedChunk =
+            if (!isChunkXValid || !isChunkZValid || chunkXValue.text.toIntOrNull() == null || chunkZValue.text.toIntOrNull() == null) null
+            else ChunkLocation(chunkXValue.text.toInt(), chunkZValue.text.toInt())
+    }
+
+    val validate: (List<Int>, AnnotatedString) -> Pair<TransformedText, Boolean> = validate@ { valid, actual ->
+        val int = actual.text.toIntOrNull()
+        if (int == null) {
+            TransformedText(
+                AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = Color(100, 100, 100)), 0, actual.text.length))),
+                OffsetMapping.Identity
+            ) to false
+        } else {
+            if (valid.contains(int)) {
+                TransformedText(AnnotatedString(actual.text), OffsetMapping.Identity) to true
+            } else {
+                TransformedText(
+                    AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = Color(230, 81, 0)), 0, actual.text.length))),
+                    OffsetMapping.Identity
+                ) to false
+            }
+        }
+    }
+
+    val validateIntOnly: (AnnotatedString) -> TransformedText = { actual ->
+        val int = actual.text.toIntOrNull()
+        if (int == null) {
+            TransformedText(
+                AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = Color(100, 100, 100)), 0, actual.text.length))),
+                OffsetMapping.Identity
+            )
+        } else {
+            TransformedText(AnnotatedString(actual.text), OffsetMapping.Identity)
+        }
+    }
+
+    val validateChunkX: (AnnotatedString) -> TransformedText = validate@ {
+        val validateResult = validate(validChunkX, it)
+
+        isChunkXValid = validateResult.second
+
+        updateSelectedChunk()
+        validateResult.first
+    }
+
+    val validateChunkZ: (AnnotatedString) -> TransformedText = validate@ {
+        val validateResult = validate(validChunkZ, it)
+
+        isChunkZValid = validateResult.second
+
+        updateSelectedChunk()
+        validateResult.first
+    }
+
+    val removeBlock: () -> Unit = {
+        blockXValue = TextFieldValue("-")
+        blockZValue = TextFieldValue("-")
+    }
+
+    val updateFromBlock: () -> Unit = {
+        if (blockXValue.text.toIntOrNull() != null && blockZValue.text.toIntOrNull() != null) {
+            val newChunk = BlockLocation(blockXValue.text.toInt(), blockZValue.text.toInt()).toChunkLocation()
+            chunkXValue = TextFieldValue("${newChunk.x}")
+            chunkZValue = TextFieldValue("${newChunk.z}")
+            selectedChunk = newChunk
+        }
+    }
+
+    Row (
+        modifier = Modifier
+            .background(Color(36, 36, 36))
+            .height(60.dp)
+            .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Spacer(modifier = Modifier.width(10.dp))
+        AnvilSelectorDropdown("block:") {
+            CoordinateText("[")
+            CoordinateInput(
+                blockXValue,
+                { blockXValue = it; updateFromBlock() },
+                validateIntOnly
+            )
+            CoordinateText(", ")
+            CoordinateInput(
+                blockZValue,
+                { blockZValue = it; updateFromBlock() },
+                validateIntOnly
+            )
+            CoordinateText("]")
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        AnvilSelectorDropdown("chunk:", true) {
+            CoordinateText("[")
+            CoordinateInput(
+                chunkXValue,
+                { chunkXValue = it; removeBlock() },
+                validateChunkX
+            )
+            CoordinateText(", ")
+            CoordinateInput(
+                chunkZValue,
+                { chunkZValue = it; removeBlock() },
+                validateChunkZ
+            )
+            CoordinateText("]")
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+        AnvilSelectorDropdown("region:") {
+            CoordinateText("r.")
+            CoordinateText("${selectedChunk?.toAnvilLocation()?.x ?: "-"}", !isChunkXValid || !isChunkZValid)
+            CoordinateText(".")
+            CoordinateText("${selectedChunk?.toAnvilLocation()?.z ?: "-"}", !isChunkXValid || !isChunkZValid)
+            CoordinateText(".mca")
+        }
+        Spacer(modifier = Modifier.weight(1f))
+        Row (
+            modifier = Modifier
+                .background(Color(57, 64, 52), RoundedCornerShape(4.dp))
+                .wrapContentWidth()
+                .alpha(if (selectedChunk == null) 0.5f else 1f)
+                .mouseClickable {
+                    val chunk = selectedChunk
+                    if (chunk != null) {
+                        val anvil = chunk.toAnvilLocation()
+                        onSelectChunk(chunk, anvils.find { it.name == "r.${anvil.x}.${anvil.z}.mca" })
+                    }
+                }
+                .height(45.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Spacer(modifier = Modifier.width(17.dp))
+            Text(
+                "GO!",
+                fontSize = 21.sp,
+                color = Color(175, 175, 175),
+                fontFamily = JetBrainsMono
+            )
+            Spacer(modifier = Modifier.width(17.dp))
+        }
+        Spacer(modifier = Modifier.width(10.dp))
+    }
+}
+
+@Composable
+fun RowScope.CoordinateText(text: String, invalid: Boolean = false) {
+    Text(
+        text,
+        fontSize = 21.sp,
+        color = if (invalid) Color(100, 100, 100) else Color(169, 183, 198),
+        fontFamily = JetBrainsMono,
+        modifier = Modifier.focusable(false)
+    )
+}
+
+@Composable
+fun RowScope.CoordinateInput(
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
+    transformer: (AnnotatedString) -> TransformedText = { TransformedText(it, OffsetMapping.Identity) }
+) {
+    BasicTextField(
+        value,
+        onValueChange,
+        textStyle = TextStyle(
+            fontSize = 21.sp,
+            color = Color(169, 183, 198),
+            fontFamily = JetBrainsMono
+        ),
+        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+        singleLine = true,
+        cursorBrush = SolidColor(Color(169, 183, 198)),
+        visualTransformation = transformer,
+        modifier = Modifier
+            .width((value.text.length.coerceAtLeast(1) * 12.75).dp)
+            .focusable(false)
+    )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun RowScope.AnvilSelectorDropdown(prefix: String, accent: Boolean = false, content: @Composable RowScope.() -> Unit) {
+    Row (
+        modifier = Modifier
+            .background(if (accent) Color(50, 54, 47) else Color(42, 42, 42), RoundedCornerShape(4.dp))
+            .wrapContentWidth()
+            .height(45.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Spacer(modifier = Modifier.width(17.dp))
+        Text(
+            prefix,
+            fontSize = 18.sp,
+            color = Color(125, 125, 125),
+            fontFamily = JetBrainsMono
+        )
+        Spacer(modifier = Modifier.width(10.dp))
+        content()
+        Spacer(modifier = Modifier.width(17.dp))
     }
 }
 

@@ -10,6 +10,7 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.TextUnit
 
@@ -20,6 +21,7 @@ fun LinkText(
     color: Color,
     fontSize: TextUnit,
     modifier: Modifier = Modifier.background(Color.Transparent),
+    fontFamily: FontFamily = FontFamily.Default,
     onClick: () -> Unit
 ) {
     var active by remember { mutableStateOf(false) }
@@ -31,7 +33,8 @@ fun LinkText(
                     SpanStyle(
                         color = color,
                         fontSize = fontSize,
-                        textDecoration = if (active) TextDecoration.Underline else TextDecoration.None
+                        textDecoration = if (active) TextDecoration.Underline else TextDecoration.None,
+                        fontFamily = fontFamily
                     ), 0, text.length
                 )
             )

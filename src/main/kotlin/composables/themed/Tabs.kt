@@ -62,11 +62,12 @@ fun Tab(
                 Text(
                     data.editable.ident,
                     color = if (data.editable.hasChanges) Color(255, 160, 0) else Color.White,
-                    fontSize = 22.sp
+                    fontSize = 22.sp,
+                    fontFamily = JetBrainsMono
                 )
                 if (data.editable.ident != "+") {
                     Spacer(modifier = Modifier.width(15.dp))
-                    LinkText("close", color = Color(255, 255, 255, 65), fontSize = 20.sp) {
+                    LinkText("x", color = Color(255, 255, 255, 65), fontSize = 20.sp, fontFamily = JetBrainsMono) {
                         onCloseEditable(data.editable)
                     }
                 }

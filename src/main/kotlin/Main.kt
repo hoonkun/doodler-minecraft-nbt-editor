@@ -62,7 +62,7 @@ private fun DoodlerWindow(
     appState: DoodlerApplicationState,
     windowState: DoodlerWindowData
 ) = Window(
-    onKeyEvent = {
+    onPreviewKeyEvent = {
         if (it.type == KeyEventType.KeyDown) keys.add(it.key)
         else if (it.type == KeyEventType.KeyUp) keys.remove(it.key)
         false
@@ -78,7 +78,7 @@ private fun DoodlerWindow(
             addWorld = { displayName, path -> appState.openNew(DoodlerWindowType.WORLD_EDITOR, displayName, path) },
             addSingle = { displayName, path -> appState.openNew(DoodlerWindowType.SINGLE_EDITOR, displayName, path) }
         )
-        DoodlerWindowType.WORLD_EDITOR -> WorldEditor(windowState.path ?: throw Exception("No path specified!"))
+        DoodlerWindowType.WORLD_EDITOR -> WorldEditor("/home/hoonkun/minecraft/data-directory/saves/doodler_test_world")
         DoodlerWindowType.SINGLE_EDITOR -> SingleEditor(windowState.path ?: throw Exception("No path specified!"))
     }
 }

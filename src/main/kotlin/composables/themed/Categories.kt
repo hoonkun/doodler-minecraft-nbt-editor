@@ -84,7 +84,8 @@ class CategoryItemData (
     parent: String,
     val holderType: EditableHolder.Type,
     val format: Editable.Format,
-    val contentType: Editable.ContentType
+    val contentType: Editable.ContentType,
+    val extra: Map<String, String> = mapOf()
 ) {
     val key = "$parent/${contentType.displayName}"
 }

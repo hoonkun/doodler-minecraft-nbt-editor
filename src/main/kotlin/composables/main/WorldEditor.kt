@@ -14,9 +14,12 @@ import doodler.doodle.Doodle
 import doodler.doodle.DoodleState
 import doodler.doodle.rememberDoodleState
 import doodler.file.LevelData
+import doodler.file.WorldData
 import doodler.file.WorldDirectory
 import nbt.tag.CompoundTag
 import nbt.tag.StringTag
+
+var rootWorldData by mutableStateOf<WorldData?>(null)
 
 @Composable
 fun WorldEditor(
@@ -30,6 +33,7 @@ fun WorldEditor(
     var worldName by remember { mutableStateOf("") }
 
     val worldData = WorldDirectory.load(worldPath)
+    rootWorldData = worldData
     val level = LevelData.read(worldData.level.readBytes())
 
     val levelName = level["Data"]?.getAs<CompoundTag>()!!["LevelName"]?.getAs<StringTag>()?.value
@@ -48,7 +52,7 @@ fun WorldEditor(
         editorFiles[data.key] = if (data.holderType == EditableHolder.Type.Single) {
             SingleEditableHolder(data.key, data.format, data.contentType, Editable("", level))
         } else {
-            MultipleEditableHolder(data.key, data.format, data.contentType)
+            MultipleEditableHolder(data.key, data.format, data.contentType, data.extra)
         }
     }
 
@@ -65,15 +69,16 @@ fun WorldEditor(
         val holderType = EditableHolder.Type.Multiple
         val prefix = display(it)
         val result = mutableListOf<CategoryItemData>()
+        val extra = mapOf("dimension" to it)
 
         if (worldData[it].region.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.TERRAIN))
+            result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.TERRAIN, extra))
         if (worldData[it].entities.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.ENTITY))
+            result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.ENTITY, extra))
         if (worldData[it].poi.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.POI))
+            result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.POI, extra))
         if (worldData[it].data.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Editable.Format.DAT, Editable.ContentType.OTHERS))
+            result.add(CategoryItemData(prefix, holderType, Editable.Format.DAT, Editable.ContentType.OTHERS, extra))
 
         result
     }
@@ -130,6 +135,17 @@ class Editable(
     val ident: String,
     val root: CompoundTag? = null
 ) {
+    private var _editorState: EditorState? = null
+    val editorState get() = _editorState!!
+
+    fun setEditorState(editorState: EditorState) {
+        _editorState = editorState
+    }
+
+    fun editorStateOrNull(): EditorState? {
+        return _editorState
+    }
+
     val hasChanges = false
 
     override fun equals(other: Any?): Boolean {
@@ -180,17 +196,6 @@ abstract class EditableHolder(
     val format: Editable.Format,
     val contentType: Editable.ContentType,
 ) {
-    private var _editorState: EditorState? = null
-    val editorState get() = _editorState!!
-
-    fun setEditorState(editorState: EditorState) {
-        _editorState = editorState
-    }
-
-    fun editorStateOrNull(): EditorState? {
-        return _editorState
-    }
-
     enum class Type {
         Single, Multiple
     }
@@ -208,7 +213,8 @@ class SingleEditableHolder(
 class MultipleEditableHolder(
     which: String,
     format: Editable.Format,
-    contentType: Editable.ContentType
+    contentType: Editable.ContentType,
+    val extra: Map<String, String> = mapOf()
 ): EditableHolder(which, format, contentType) {
     val editables = mutableStateListOf<Editable>()
     var selected by mutableStateOf("+")
@@ -216,6 +222,8 @@ class MultipleEditableHolder(
     init {
         editables.add(Editable("+"))
     }
+
+    fun hasEditable(ident: String) = editables.any { it.ident == ident }
 
     fun select(editable: Editable) {
         if (!editables.any { it.ident == editable.ident })

@@ -8,6 +8,11 @@ import nbt.tag.CompoundTag
 import java.nio.ByteBuffer
 import kotlin.math.floor
 
+data class BlockLocation(val x: Int, val z: Int) {
+    fun toChunkLocation(): ChunkLocation {
+        return ChunkLocation(floor(this.x / 16.0).toInt(), floor(this.z / 16.0).toInt())
+    }
+}
 data class AnvilLocation(val x: Int, val z: Int)
 data class ChunkLocation(val x: Int, val z: Int) {
     fun toAnvilLocation(): AnvilLocation {
@@ -24,15 +29,39 @@ class AnvilManager private constructor() {
         val instance = AnvilManager()
     }
 
-    fun load(location: AnvilLocation, bytes: ByteArray): Map<ChunkLocation, CompoundTag> {
-        val parts = mutableMapOf<ChunkLocation, CompoundTag>()
+    fun loadChunkList(location: AnvilLocation, bytes: ByteArray): List<ChunkLocation> {
+        val chunks = mutableListOf<ChunkLocation>()
 
-        if (bytes.isEmpty()) return parts
+        if (bytes.isEmpty()) return chunks
 
         for (m in 0 until 32 * 32) {
             val x = m / 32
             val z = m % 32
             val i = 4 * ((x and 31) + (z and 31) * 32)
+
+            val offset = (bytes[i].u() * 65536 + bytes[i + 1].u() * 256 + bytes[i + 2].u()) * 4096
+            val sectors = bytes[i + 3] * 4096
+
+            if (offset == 0 || sectors == 0) continue
+
+            chunks.add(ChunkLocation(32 * location.x + x, 32 * location.z + z))
+        }
+
+        return chunks
+    }
+
+    fun loadChunk(chunkLocation: ChunkLocation, bytes: ByteArray): CompoundTag? {
+        val location = chunkLocation.toAnvilLocation()
+        var result: CompoundTag? = null
+
+        if (bytes.isEmpty()) return null
+
+        for (m in 0 until 32 * 32) {
+            val x = m / 32
+            val z = m % 32
+            val i = 4 * ((x and 31) + (z and 31) * 32)
+
+            if (ChunkLocation(32 * location.x + x, 32 * location.z + z) != chunkLocation) continue
 
             val offset = (bytes[i].u() * 65536 + bytes[i + 1].u() * 256 + bytes[i + 2].u()) * 4096
             val sectors = bytes[i + 3] * 4096
@@ -54,10 +83,9 @@ class AnvilManager private constructor() {
             chunkBuffer.byte
             chunkBuffer.short
 
-            parts[ChunkLocation(32 * location.x + x, 32 * location.z + z)] =
-                Tag.read(TagType.TAG_COMPOUND, chunkBuffer, null, null).getAs()
+            result = Tag.read(TagType.TAG_COMPOUND, chunkBuffer, null, null).getAs()
         }
 
-        return parts
+        return result
     }
 }
