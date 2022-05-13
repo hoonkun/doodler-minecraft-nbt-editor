@@ -4,6 +4,7 @@ import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.BottomAppBar
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
@@ -23,6 +24,7 @@ import doodler.doodle.Doodle
 import doodler.doodle.NbtDoodle
 import doodler.doodle.doodle
 import doodler.doodle.rememberDoodleState
+import kotlinx.coroutines.launch
 
 @Composable
 fun MainColumn(content: @Composable ColumnScope.() -> Unit) {
@@ -227,14 +229,19 @@ fun BoxScope.EditableField(
 
     val doodle = remember { mutableStateListOf(*nbt.doodle(null, 0).toTypedArray()) }
 
+    val lazyColumnState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
     val doodleState = rememberDoodleState()
 
     val treeCollapse: (Doodle, Int) -> Unit = { target, collapseCount ->
         val baseIndex = doodle.indexOf(target)
         doodle.removeRange(baseIndex + 1, baseIndex + collapseCount + 1)
+        if (lazyColumnState.firstVisibleItemIndex > baseIndex) {
+            coroutineScope.launch { lazyColumnState.scrollToItem(baseIndex) }
+        }
     }
 
-    LazyColumn {
+    LazyColumn (state = lazyColumnState) {
         itemsIndexed(doodle, key = { _, item -> item.path }) { index, item ->
             val onExpand = click@ {
                 if (item !is NbtDoodle) return@click
