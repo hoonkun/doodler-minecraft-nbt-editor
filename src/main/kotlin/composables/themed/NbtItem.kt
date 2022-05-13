@@ -267,9 +267,6 @@ fun NbtItem(
                     .wrapContentWidth()
                     .onPointerEvent(PointerEventType.Enter) { state.focusTree(current) }
                     .onPointerEvent(PointerEventType.Exit) { state.unFocusTree(current) }
-                    .onPointerEvent(PointerEventType.Move) {
-                        if (state.focusedTree != current) state.focusTree(current)
-                    }
                     .onPointerEvent(PointerEventType.Release) { treeCollapse(current, current.collapse()) }
                 ) {
                     val co = if (selected) 16 else 0
@@ -290,9 +287,6 @@ fun NbtItem(
                 modifier = Modifier.weight(1f)
                     .onPointerEvent(PointerEventType.Enter) { state.focusDirectly(doodle); state.focusedTree = null }
                     .onPointerEvent(PointerEventType.Exit) { state.unFocusDirectly(doodle) }
-                    .onPointerEvent(PointerEventType.Move) {
-                        if (state.focusedDirectly != doodle) state.focusDirectly(doodle); state.focusedTree = null
-                    }
                     .onPointerEvent(PointerEventType.Press) { state.press(doodle) }
                     .onPointerEvent(PointerEventType.Release) { state.unPress(doodle) }
                     .mouseClickable(onClick = {
