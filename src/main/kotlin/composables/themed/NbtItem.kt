@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.isPrimaryPressed
+import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -28,11 +29,17 @@ private fun ItemRoot(
 ) {
     Box (
         modifier = Modifier
-            .background(ThemedColor.selectable(
-                selected = selected,
-                press = pressed,
-                hover = focused
-            ))
+            .background(
+                if (selected) {
+                    if (pressed) Color(91, 115, 65, 50)
+                    else if (focused) Color(91, 115, 65, 40)
+                    else Color(91, 115, 65, 40)
+                } else {
+                    if (pressed) Color(0, 0, 0, 80)
+                    else if (focused) Color(0, 0, 0, 40)
+                    else Color.Transparent
+                }
+            )
     ) {
         Row(
             modifier = Modifier.fillMaxWidth()
@@ -44,11 +51,14 @@ private fun ItemRoot(
 }
 
 @Composable
-private fun ItemIndicator(content: @Composable BoxScope.() -> Unit) {
+private fun ItemIndicator(selected: Boolean, content: @Composable BoxScope.() -> Unit) {
+    val color =
+        if (selected) Color(80, 80, 80)
+        else Color(60, 60, 60)
     Box (
         modifier = Modifier
             .wrapContentSize()
-            .background(Color(60, 60, 60), shape = RoundedCornerShape(5.dp))
+            .background(color, shape = RoundedCornerShape(5.dp))
             .padding(top = 2.dp, bottom = 2.dp, start = 3.dp, end = 3.dp),
         content = content
     )
@@ -61,55 +71,48 @@ private fun IndicatorText(text: String, color: Color) {
 
 @Composable
 private fun NumberTypeIndicator(typeString: String) {
-    ItemIndicator {
-        IndicatorText(" $typeString ", color = Color(104, 151, 187))
-    }
+    IndicatorText(" $typeString ", color = Color(104, 151, 187))
 }
 
 @Composable
 private fun StringTypeIndicator() {
-    ItemIndicator {
-        IndicatorText("...", color = Color(106, 135, 89))
-    }
+    IndicatorText("...", color = Color(106, 135, 89))
 }
 
 @Composable
 private fun CompoundTypeIndicator() {
-    ItemIndicator {
-        IndicatorText("{C}", color = Color(255, 199, 109))
-    }
+    IndicatorText("{C}", color = Color(255, 199, 109))
 }
 
 @Composable
 private fun ListTypeIndicator() {
-    ItemIndicator {
-        IndicatorText("[ ]", color = Color(204, 120, 50))
-    }
+    IndicatorText("[ ]", color = Color(204, 120, 50))
 }
 
 @Composable
 private fun ArrayTypeIndicator(typeString: String) {
-    ItemIndicator {
-        IndicatorText("[$typeString]", color = Color(104, 151, 187))
-    }
+    IndicatorText("[$typeString]", color = Color(104, 151, 187))
 }
 
 @Composable
-private fun Indicator(type: TagType) {
-    when (type) {
-        TagType.TAG_BYTE -> NumberTypeIndicator("B")
-        TagType.TAG_INT -> NumberTypeIndicator("I")
-        TagType.TAG_SHORT -> NumberTypeIndicator("S")
-        TagType.TAG_FLOAT -> NumberTypeIndicator("F")
-        TagType.TAG_DOUBLE -> NumberTypeIndicator("D")
-        TagType.TAG_LONG -> NumberTypeIndicator("L")
-        TagType.TAG_BYTE_ARRAY -> ArrayTypeIndicator("B")
-        TagType.TAG_INT_ARRAY -> ArrayTypeIndicator("I")
-        TagType.TAG_LONG_ARRAY -> ArrayTypeIndicator("L")
-        TagType.TAG_STRING -> StringTypeIndicator()
-        TagType.TAG_COMPOUND -> CompoundTypeIndicator()
-        TagType.TAG_LIST -> ListTypeIndicator()
-        TagType.TAG_END -> { /* impossible */ }
+private fun Indicator(type: TagType, selected: Boolean) {
+    ItemIndicator (selected) {
+        when (type) {
+            TagType.TAG_BYTE -> NumberTypeIndicator("B")
+            TagType.TAG_INT -> NumberTypeIndicator("I")
+            TagType.TAG_SHORT -> NumberTypeIndicator("S")
+            TagType.TAG_FLOAT -> NumberTypeIndicator("F")
+            TagType.TAG_DOUBLE -> NumberTypeIndicator("D")
+            TagType.TAG_LONG -> NumberTypeIndicator("L")
+            TagType.TAG_BYTE_ARRAY -> ArrayTypeIndicator("B")
+            TagType.TAG_INT_ARRAY -> ArrayTypeIndicator("I")
+            TagType.TAG_LONG_ARRAY -> ArrayTypeIndicator("L")
+            TagType.TAG_STRING -> StringTypeIndicator()
+            TagType.TAG_COMPOUND -> CompoundTypeIndicator()
+            TagType.TAG_LIST -> ListTypeIndicator()
+            TagType.TAG_END -> { /* impossible */
+            }
+        }
     }
 }
 
@@ -134,37 +137,51 @@ private fun StringValue(value: String) {
 }
 
 @Composable
-private fun ExpandableValue(value: String) {
+private fun ExpandableValue(value: String, selected: Boolean) {
+    val color =
+        if (selected) Color(80, 80, 80)
+        else Color(60, 60, 60)
+    val textColor =
+        if (selected) Color(165, 165, 165)
+        else Color(150, 150, 150)
+
     Box (
         modifier = Modifier
             .wrapContentSize()
-            .background(Color(60, 60, 60), shape = RoundedCornerShape(5.dp))
+            .background(color, shape = RoundedCornerShape(5.dp))
             .padding(top = 2.dp, bottom = 2.dp, start = 10.dp, end = 10.dp)
     ) {
-        ItemText(value, Color(150, 150, 150), 18.sp)
+        ItemText(value, textColor, 18.sp)
     }
 }
 
 @Composable
-private fun Index(index: Int) {
+private fun Index(index: Int, selected: Boolean) {
+    val color =
+        if (selected) Color(80, 80, 80)
+        else Color(60, 60, 60)
+    val textColor =
+        if (selected) Color(165, 165, 165)
+        else Color(150, 150, 150)
+
     Box (
         modifier = Modifier
             .wrapContentSize()
-            .background(Color(60, 60, 60), shape = RoundedCornerShape(5.dp))
+            .background(color, shape = RoundedCornerShape(5.dp))
             .padding(top = 2.dp, bottom = 2.dp, start = 5.dp, end = 5.dp)
     ) {
-        ItemText("$index:", Color(150, 150, 150), 18.sp)
+        ItemText("$index:", textColor, 18.sp)
     }
 }
 
 @Composable
-private fun KeyValue(type: TagType, key: String?, value: String, index: Int) {
+private fun KeyValue(type: TagType, key: String?, value: String, index: Int, selected: Boolean) {
     if (key != null) {
         Key(key)
         Spacer(modifier = Modifier.width(20.dp))
     }
     if (index >= 0) {
-        Index(index)
+        Index(index, selected)
         Spacer(modifier = Modifier.width(10.dp))
     }
     when (type) {
@@ -179,7 +196,7 @@ private fun KeyValue(type: TagType, key: String?, value: String, index: Int) {
             TagType.TAG_BYTE_ARRAY,
             TagType.TAG_INT_ARRAY,
             TagType.TAG_LONG_ARRAY,
-            TagType.TAG_LIST -> ExpandableValue(value)
+            TagType.TAG_LIST -> ExpandableValue(value, selected)
         TagType.TAG_END -> { /* impossible */ }
     }
 }
@@ -215,7 +232,7 @@ fun NbtItemTreeView(
                 .fillMaxWidth()
                 .height(50.dp)
         ) {
-            DoodleContent(doodle)
+            DoodleContent(doodle, false)
         }
     }
 }
@@ -231,9 +248,11 @@ fun NbtItem(
 ) {
     val hierarchy = getHierarchy(doodle)
 
+    val selected = state.selected.contains(doodle)
+
     ItemRoot(
         state.pressed == doodle,
-        state.selected.contains(doodle),
+        selected,
         state.focusedDirectly == doodle || state.focusedTree == doodle
     ) {
         Row (
@@ -253,14 +272,16 @@ fun NbtItem(
                     }
                     .onPointerEvent(PointerEventType.Release) { treeCollapse(current, current.collapse()) }
                 ) {
+                    val co = if (selected) 16 else 0
+
                     Spacer(modifier = Modifier.width(40.dp))
                     Box (
                         modifier = Modifier
                             .width(1.dp)
                             .fillMaxHeight()
                             .background(
-                                if (focused || state.focusedTreeView == current) Color(100, 100, 100)
-                                else Color(60, 60, 60)
+                                if (focused || state.focusedTreeView == current) Color(100 + co, 100 + co, 100 + co)
+                                else Color(60 + co, 60 + co, 60 + co)
                             )
                     ) { }
                 }
@@ -274,14 +295,17 @@ fun NbtItem(
                     }
                     .onPointerEvent(PointerEventType.Press) { state.press(doodle) }
                     .onPointerEvent(PointerEventType.Release) { state.unPress(doodle) }
-                    .mouseClickable(onClick = { if (buttons.isPrimaryPressed) onExpand() })
+                    .mouseClickable(onClick = {
+                        if (buttons.isPrimaryPressed) onSelect()
+                        else if (buttons.isSecondaryPressed) onExpand()
+                    })
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxHeight()
                 ) {
-                    DoodleContent(doodle)
+                    DoodleContent(doodle, selected)
                 }
             }
         }
@@ -289,15 +313,15 @@ fun NbtItem(
 }
 
 @Composable
-fun DoodleContent(doodle: Doodle) {
+fun DoodleContent(doodle: Doodle, selected: Boolean) {
     when (doodle) {
         is NbtDoodle -> {
-            Indicator(doodle.type)
+            Indicator(doodle.type, selected)
             Spacer(modifier = Modifier.width(20.dp))
-            KeyValue(doodle.type, doodle.name, doodle.value, doodle.index)
+            KeyValue(doodle.type, doodle.name, doodle.value, doodle.index, selected)
         }
         is PrimitiveValueDoodle -> {
-            Index(doodle.index)
+            Index(doodle.index, selected)
             Spacer(modifier = Modifier.width(10.dp))
             NumberValue(doodle.value)
         }

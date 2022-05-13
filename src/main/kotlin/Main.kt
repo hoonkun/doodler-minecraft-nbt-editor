@@ -6,6 +6,10 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,11 +55,18 @@ fun main() = application {
     }
 }
 
+val keys = mutableStateListOf<Key>()
+
 @Composable
 private fun DoodlerWindow(
     appState: DoodlerApplicationState,
     windowState: DoodlerWindowData
 ) = Window(
+    onKeyEvent = {
+        if (it.type == KeyEventType.KeyDown) keys.add(it.key)
+        else if (it.type == KeyEventType.KeyUp) keys.remove(it.key)
+        false
+    },
     onCloseRequest = if (windowState.type == DoodlerWindowType.MAIN) appState::exit else windowState::close,
     state = WindowState(
         size = if (windowState.type == DoodlerWindowType.MAIN) DpSize(700.dp, 650.dp) else DpSize(1400.dp, 1100.dp)

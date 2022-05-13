@@ -10,17 +10,20 @@ import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import composables.main.*
 import composables.themed.*
 import doodler.doodle.*
+import keys
 import kotlinx.coroutines.launch
 
 @Composable
@@ -218,6 +221,7 @@ fun BoxScope.Selector(holder: MultipleEditableHolder, selected: Boolean) {
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.EditableField(
     editable: Editable
@@ -253,15 +257,23 @@ fun BoxScope.EditableField(
 
     LazyColumn (state = lazyColumnState) {
         itemsIndexed(doodle, key = { _, item -> item.path }) { index, item ->
-            val onExpand = click@ {
+            val onExpand: () -> Unit = click@ {
                 if (item !is NbtDoodle) return@click
                 if (!item.hasChildren) return@click
 
                 if (!item.expanded) doodle.addAll(index + 1, item.expand())
                 else doodle.removeRange(index + 1, index + item.collapse() + 1)
             }
-            val onSelect = {
-
+            val onSelect: () -> Unit = {
+                if (!doodleState.selected.contains(item)) {
+                    if (keys.contains(Key.CtrlLeft)) doodleState.addToSelected(item)
+                    else doodleState.setSelected(item)
+                } else {
+                    if (keys.contains(Key.CtrlLeft) || doodleState.selected.size == 1)
+                        doodleState.removeFromSelected(item)
+                    else if (doodleState.selected.size > 1)
+                        doodleState.setSelected(item)
+                }
             }
             NbtItem(item, onSelect, onExpand, doodleState, treeCollapse)
         }

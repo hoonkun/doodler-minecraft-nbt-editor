@@ -172,6 +172,19 @@ class DoodleState(
         if (pressed == target) pressed = null
     }
 
+    fun addToSelected(target: Doodle) {
+        if (!selected.contains(target)) selected.add(target)
+    }
+
+    fun removeFromSelected(target: Doodle) {
+        if (selected.contains(target)) selected.remove(target)
+    }
+
+    fun setSelected(target: Doodle) {
+        selected.clear()
+        selected.add(target)
+    }
+
     fun focusDirectly(target: Doodle) {
         if (focusedDirectly != target) focusedDirectly = target
     }
