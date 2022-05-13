@@ -20,10 +20,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import composables.main.*
 import composables.themed.*
-import doodler.doodle.Doodle
-import doodler.doodle.NbtDoodle
-import doodler.doodle.doodle
-import doodler.doodle.rememberDoodleState
+import doodler.doodle.*
 import kotlinx.coroutines.launch
 
 @Composable
@@ -241,9 +238,17 @@ fun BoxScope.EditableField(
         }
     }
 
-    val tree = doodleState.focusedTree
-    if (tree != null && lazyColumnState.firstVisibleItemIndex > doodle.indexOf(tree)) {
-        NbtItemTreeView(tree)
+    val treeViewTarget = if (doodleState.focusedTree == null) doodleState.focusedTreeView else doodleState.focusedTree
+    if (treeViewTarget != null && lazyColumnState.firstVisibleItemIndex > doodle.indexOf(treeViewTarget)) {
+        NbtItemTreeView(treeViewTarget, doodleState) {
+            val index = doodle.indexOf(treeViewTarget)
+            coroutineScope.launch {
+                lazyColumnState.scrollToItem(index)
+            }
+            doodleState.unFocusTreeView(treeViewTarget)
+            doodleState.unFocusTree(treeViewTarget)
+            doodleState.focusDirectly(treeViewTarget)
+        }
     }
 
     LazyColumn (state = lazyColumnState) {

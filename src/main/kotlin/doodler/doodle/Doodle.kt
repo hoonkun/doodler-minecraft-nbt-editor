@@ -146,20 +146,23 @@ fun rememberDoodleState(
     selected: SnapshotStateList<Doodle?> = remember { mutableStateListOf() },
     pressed: MutableState<Doodle?> = remember { mutableStateOf(null) },
     focusedDirectly: MutableState<Doodle?> = remember { mutableStateOf(null) },
-    focusedTree: MutableState<Doodle?> = remember { mutableStateOf(null) }
-) = remember(selected, pressed, focusedDirectly, focusedTree) {
-    DoodleState(selected, pressed, focusedDirectly, focusedTree)
+    focusedTree: MutableState<Doodle?> = remember { mutableStateOf(null) },
+    focusedTreeView: MutableState<Doodle?> = remember { mutableStateOf(null) }
+) = remember(selected, pressed, focusedDirectly, focusedTree, focusedTreeView) {
+    DoodleState(selected, pressed, focusedDirectly, focusedTree, focusedTreeView)
 }
 
 class DoodleState(
     val selected: SnapshotStateList<Doodle?>,
     pressed: MutableState<Doodle?>,
     focusedDirectly: MutableState<Doodle?>,
-    focusedTree: MutableState<Doodle?>
+    focusedTree: MutableState<Doodle?>,
+    focusedTreeView: MutableState<Doodle?>
 ) {
     var pressed by pressed
     var focusedDirectly by focusedDirectly
     var focusedTree by focusedTree
+    var focusedTreeView by focusedTreeView
 
     fun press(target: Doodle) {
         pressed = target
@@ -170,15 +173,23 @@ class DoodleState(
     }
 
     fun focusDirectly(target: Doodle) {
-        focusedDirectly = target
+        if (focusedDirectly != target) focusedDirectly = target
     }
 
     fun unFocusDirectly(target: Doodle) {
         if (focusedDirectly == target) focusedDirectly = null
     }
 
+    fun focusTreeView(target: Doodle) {
+        if (focusedTreeView != target) focusedTreeView = target
+    }
+
+    fun unFocusTreeView(target: Doodle) {
+        if (focusedTreeView == target) focusedTreeView = null
+    }
+
     fun focusTree(target: Doodle) {
-        focusedTree = target
+        if (focusedTree != target) focusedTree = target
     }
 
     fun unFocusTree(target: Doodle) {

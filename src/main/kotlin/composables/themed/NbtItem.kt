@@ -1,10 +1,7 @@
 package composables.themed
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.mouseClickable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
@@ -19,10 +16,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import doodler.doodle.Doodle
-import doodler.doodle.DoodleState
-import doodler.doodle.NbtDoodle
-import doodler.doodle.PrimitiveValueDoodle
+import doodler.doodle.*
 import nbt.TagType
 
 @Composable
@@ -190,18 +184,33 @@ private fun KeyValue(type: TagType, key: String?, value: String, index: Int) {
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun NbtItemTreeView(
-    doodle: Doodle
+    doodle: Doodle,
+    state: DoodleState,
+    scrollTo: () -> Unit
 ) {
+    var focused by remember { mutableStateOf(false) }
+    var pressed by remember { mutableStateOf(false) }
+
+    val color = if (pressed) Color(30, 30, 30)
+    else if (focused) Color(36, 36, 36)
+    else Color(43, 43, 43)
+
     Box (modifier = Modifier
         .border(2.dp, Color(75, 75, 75))
+        .onPointerEvent(PointerEventType.Enter) { focused = true; state.focusTreeView(doodle) }
+        .onPointerEvent(PointerEventType.Exit) { focused = false; state.unFocusTreeView(doodle) }
+        .onPointerEvent(PointerEventType.Press) { pressed = true }
+        .onPointerEvent(PointerEventType.Release) { pressed = false }
+        .mouseClickable(onClick = { scrollTo() })
+        .background(color)
         .zIndex(999f)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .background(Color(43, 43, 43))
                 .padding(start = (20 + 50 * doodle.depth).dp)
                 .fillMaxWidth()
                 .height(60.dp)
@@ -232,16 +241,17 @@ fun NbtItem(
             modifier = Modifier.padding(start = 20.dp).height(60.dp)
         ) {
             for (i in 0 until doodle.depth) {
-                val focused = state.focusedDirectly == hierarchy[i] || state.focusedTree == hierarchy[i]
+                val current = hierarchy[i]
+                val focused = state.focusedDirectly == current || state.focusedTree == current
                 Box (modifier = Modifier
                     .fillMaxHeight()
                     .wrapContentWidth()
-                    .onPointerEvent(PointerEventType.Enter) { state.focusTree(hierarchy[i]) }
-                    .onPointerEvent(PointerEventType.Exit) { state.unFocusTree(hierarchy[i]) }
+                    .onPointerEvent(PointerEventType.Enter) { state.focusTree(current) }
+                    .onPointerEvent(PointerEventType.Exit) { state.unFocusTree(current) }
                     .onPointerEvent(PointerEventType.Move) {
-                        if (state.focusedTree != hierarchy[i]) state.focusTree(hierarchy[i])
+                        if (state.focusedTree != current) state.focusTree(current)
                     }
-                    .onPointerEvent(PointerEventType.Release) { treeCollapse(hierarchy[i], hierarchy[i].collapse()) }
+                    .onPointerEvent(PointerEventType.Release) { treeCollapse(current, current.collapse()) }
                 ) {
                     Spacer(modifier = Modifier.width(50.dp))
                     Box (
@@ -249,7 +259,7 @@ fun NbtItem(
                             .width(1.dp)
                             .fillMaxHeight()
                             .background(
-                                if (focused) Color(100, 100, 100)
+                                if (focused || state.focusedTreeView == current) Color(100, 100, 100)
                                 else Color(60, 60, 60)
                             )
                     ) { }
