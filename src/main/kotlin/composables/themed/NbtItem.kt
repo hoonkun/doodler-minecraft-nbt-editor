@@ -199,7 +199,7 @@ fun NbtItemTreeView(
     else Color(43, 43, 43)
 
     Box (modifier = Modifier
-        .border(2.dp, Color(75, 75, 75))
+        .border(2.dp, Color(100, 100, 100))
         .onPointerEvent(PointerEventType.Enter) { focused = true; state.focusTreeView(doodle) }
         .onPointerEvent(PointerEventType.Exit) { focused = false; state.unFocusTreeView(doodle) }
         .onPointerEvent(PointerEventType.Press) { pressed = true }
@@ -211,9 +211,9 @@ fun NbtItemTreeView(
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .padding(start = (20 + 50 * doodle.depth).dp)
+                .padding(start = (20 + 40 * doodle.depth).dp)
                 .fillMaxWidth()
-                .height(60.dp)
+                .height(50.dp)
         ) {
             DoodleContent(doodle)
         }
@@ -238,7 +238,7 @@ fun NbtItem(
     ) {
         Row (
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(start = 20.dp).height(60.dp)
+            modifier = Modifier.padding(start = 20.dp).height(50.dp)
         ) {
             for (i in 0 until doodle.depth) {
                 val current = hierarchy[i]
@@ -253,7 +253,7 @@ fun NbtItem(
                     }
                     .onPointerEvent(PointerEventType.Release) { treeCollapse(current, current.collapse()) }
                 ) {
-                    Spacer(modifier = Modifier.width(50.dp))
+                    Spacer(modifier = Modifier.width(40.dp))
                     Box (
                         modifier = Modifier
                             .width(1.dp)
@@ -279,7 +279,6 @@ fun NbtItem(
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .padding(top = 10.dp, bottom = 10.dp)
                         .fillMaxHeight()
                 ) {
                     DoodleContent(doodle)
