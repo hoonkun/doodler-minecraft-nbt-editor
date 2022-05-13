@@ -25,6 +25,10 @@ import composables.themed.*
 import doodler.doodle.*
 import keys
 import kotlinx.coroutines.launch
+import java.awt.Desktop
+import java.net.URI
+import java.util.*
+
 
 @Composable
 fun MainColumn(content: @Composable ColumnScope.() -> Unit) {
@@ -331,6 +335,31 @@ fun WhatIsThis(link: String) {
         color = ThemedColor.Link,
         fontSize = 22.sp
     ) {
+        openBrowser(link)
+    }
+}
 
+fun openBrowser(url: String) {
+    val osName = System.getProperty("os.name").lowercase(Locale.getDefault())
+
+    val others: () -> Unit = {
+        val runtime = Runtime.getRuntime()
+        if (osName.contains("mac")) {
+            runtime.exec("open $url")
+        } else if (osName.contains("nix") || osName.contains("nux")) {
+            runtime.exec("xdg-open $url")
+        }
+    }
+
+    try {
+        if (Desktop.isDesktopSupported()) {
+            val desktop = Desktop.getDesktop()
+            if (desktop.isSupported(Desktop.Action.BROWSE)) desktop.browse(URI(url))
+            else others()
+        } else {
+            others()
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
     }
 }
