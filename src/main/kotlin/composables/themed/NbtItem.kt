@@ -53,7 +53,7 @@ private fun ItemRoot(
 @Composable
 private fun ItemIndicator(selected: Boolean, content: @Composable BoxScope.() -> Unit) {
     val color =
-        if (selected) Color(80, 80, 80)
+        if (selected) Color(70, 70, 70)
         else Color(60, 60, 60)
     Box (
         modifier = Modifier
@@ -139,10 +139,10 @@ private fun StringValue(value: String) {
 @Composable
 private fun ExpandableValue(value: String, selected: Boolean) {
     val color =
-        if (selected) Color(80, 80, 80)
+        if (selected) Color(70, 70, 70)
         else Color(60, 60, 60)
     val textColor =
-        if (selected) Color(165, 165, 165)
+        if (selected) Color(157, 157, 157)
         else Color(150, 150, 150)
 
     Box (
@@ -158,10 +158,10 @@ private fun ExpandableValue(value: String, selected: Boolean) {
 @Composable
 private fun Index(index: Int, selected: Boolean) {
     val color =
-        if (selected) Color(80, 80, 80)
+        if (selected) Color(70, 70, 70)
         else Color(60, 60, 60)
     val textColor =
-        if (selected) Color(165, 165, 165)
+        if (selected) Color(157, 157, 157)
         else Color(150, 150, 150)
 
     Box (
