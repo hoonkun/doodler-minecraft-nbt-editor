@@ -133,13 +133,13 @@ fun RowScope.BottomBarText(text: String) {
 }
 
 @Composable
-fun ColumnScope.FileCategoryItems(
-    parent: CategoryData,
+fun ColumnScope.PhylumCategoryItems(
+    parent: PhylumCategoryData,
     selected: String,
-    onClick: (CategoryItemData) -> Unit
+    onClick: (PhylumCategoryItemData) -> Unit
 ) {
     for (item in parent.items) {
-        FileCategoryItem(item, selected, onClick)
+        PhylumCategoryItem(item, selected, onClick)
     }
 }
 

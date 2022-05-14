@@ -73,7 +73,7 @@ fun WorldEditor(
     val tree = states.worldSpec.requireTree
     val name = states.worldSpec.requireName
 
-    val onCategoryItemClick: (CategoryItemData) -> Unit = lambda@ { data ->
+    val onCategoryItemClick: (PhylumCategoryItemData) -> Unit = lambda@ { data ->
         states.phylum.list.find { it.ident == data.key }?.let {
             states.phylum.species = it
             return@lambda
@@ -86,46 +86,14 @@ fun WorldEditor(
                     NbtSpecies("", LevelData.read(tree.level.readBytes()), mutableStateOf(NbtState.new()))
                 )
             } else {
-                MultipleSpeciesHolder(data.key, data.format, data.contentType, data.extra)
+                MultipleSpeciesHolder(data.key, data.format, data.contentType, data.extras)
             }
 
         states.phylum.list.add(newHolder)
         states.phylum.species = newHolder
     }
 
-    val generalItems: (String) -> List<CategoryItemData> = {
-        listOf(
-            CategoryItemData(it, SpeciesHolder.Type.Single, Species.Format.DAT, Species.ContentType.LEVEL),
-            CategoryItemData(it, SpeciesHolder.Type.Multiple, Species.Format.DAT, Species.ContentType.PLAYER),
-            CategoryItemData(it, SpeciesHolder.Type.Multiple, Species.Format.DAT, Species.ContentType.STATISTICS),
-            CategoryItemData(it, SpeciesHolder.Type.Multiple, Species.Format.DAT, Species.ContentType.ADVANCEMENTS)
-        )
-    }
-
-    val dimensionItems: (String) -> List<CategoryItemData> = {
-        val holderType = SpeciesHolder.Type.Multiple
-        val prefix = display(it)
-        val result = mutableListOf<CategoryItemData>()
-        val extra = mapOf("dimension" to it)
-
-        if (tree[it].region.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Species.Format.MCA, Species.ContentType.TERRAIN, extra))
-        if (tree[it].entities.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Species.Format.MCA, Species.ContentType.ENTITY, extra))
-        if (tree[it].poi.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Species.Format.MCA, Species.ContentType.POI, extra))
-        if (tree[it].data.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Species.Format.DAT, Species.ContentType.OTHERS, extra))
-
-        result
-    }
-
-    val categories = listOf(
-        CategoryData("General", false, generalItems("General")),
-        CategoryData(display(""), false, dimensionItems("")).withDescription(""),
-        CategoryData(display("DIM-1"), true, dimensionItems("DIM-1")).withDescription("DIM-1"),
-        CategoryData(display("DIM1"), true, dimensionItems("DIM1")).withDescription("DIM1")
-    )
+    val categories = createCategories(tree)
 
     MaterialTheme {
         MainColumn {
@@ -135,8 +103,8 @@ fun WorldEditor(
                 MainFiles {
                     FileCategoryListScrollable(scrollState) {
                         for (category in categories) {
-                            FilesCategory(category) {
-                                FileCategoryItems(
+                            PhylumCategory(category) {
+                                PhylumCategoryItems(
                                     category,
                                     states.phylum.species?.ident ?: "",
                                     onCategoryItemClick

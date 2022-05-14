@@ -15,13 +15,52 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import composables.states.holder.Species
 import composables.states.holder.SpeciesHolder
+import composables.states.holder.display
+import doodler.file.WorldData
+
+
+fun createCategories(tree: WorldData): List<PhylumCategoryData> {
+    val generalItems: (String) -> List<PhylumCategoryItemData> = {
+        listOf(
+            PhylumCategoryItemData(it, SpeciesHolder.Type.Single, Species.Format.DAT, Species.ContentType.LEVEL),
+            PhylumCategoryItemData(it, SpeciesHolder.Type.Multiple, Species.Format.DAT, Species.ContentType.PLAYER),
+            PhylumCategoryItemData(it, SpeciesHolder.Type.Multiple, Species.Format.DAT, Species.ContentType.STATISTICS),
+            PhylumCategoryItemData(it, SpeciesHolder.Type.Multiple, Species.Format.DAT, Species.ContentType.ADVANCEMENTS)
+        )
+    }
+
+    val dimensionItems: (String) -> List<PhylumCategoryItemData> = {
+        val holderType = SpeciesHolder.Type.Multiple
+        val prefix = display(it)
+        val result = mutableListOf<PhylumCategoryItemData>()
+        val extra = mapOf("dimension" to it)
+
+        if (tree[it].region.isNotEmpty())
+            result.add(PhylumCategoryItemData(prefix, holderType, Species.Format.MCA, Species.ContentType.TERRAIN, extra))
+        if (tree[it].entities.isNotEmpty())
+            result.add(PhylumCategoryItemData(prefix, holderType, Species.Format.MCA, Species.ContentType.ENTITY, extra))
+        if (tree[it].poi.isNotEmpty())
+            result.add(PhylumCategoryItemData(prefix, holderType, Species.Format.MCA, Species.ContentType.POI, extra))
+        if (tree[it].data.isNotEmpty())
+            result.add(PhylumCategoryItemData(prefix, holderType, Species.Format.DAT, Species.ContentType.OTHERS, extra))
+
+        result
+    }
+
+    return listOf(
+        PhylumCategoryData("General", false, generalItems("General")),
+        PhylumCategoryData(display(""), false, dimensionItems("")),
+        PhylumCategoryData(display("DIM-1"), true, dimensionItems("DIM-1")).withDescription("DIM-1"),
+        PhylumCategoryData(display("DIM1"), true, dimensionItems("DIM1")).withDescription("DIM1")
+    )
+}
 
 @Composable
-fun ColumnScope.FilesCategory(
-    data: CategoryData,
+fun ColumnScope.PhylumCategory(
+    data: PhylumCategoryData,
     content: @Composable ColumnScope.() -> Unit = { }
 ) {
-    var folded by remember { mutableStateOf(data.defaultFoldState) }
+    var folded by remember { mutableStateOf(data.defaultFolded) }
 
     Column {
         Row(
@@ -48,10 +87,10 @@ fun ColumnScope.FilesCategory(
 
 
 @Composable
-fun ColumnScope.FileCategoryItem(
-    data: CategoryItemData,
+fun ColumnScope.PhylumCategoryItem(
+    data: PhylumCategoryItemData,
     selected: String,
-    onClick: (CategoryItemData) -> Unit = { }
+    onClick: (PhylumCategoryItemData) -> Unit = { }
 ) {
     val key = data.key
     ListItem (selected == key, onClick = { onClick(data) }) {
@@ -66,26 +105,26 @@ fun ColumnScope.FileCategoryItem(
     }
 }
 
-class CategoryData(
+class PhylumCategoryData(
     val name: String,
-    val defaultFoldState: Boolean,
-    val items: List<CategoryItemData>
+    val defaultFolded: Boolean,
+    val items: List<PhylumCategoryItemData>
 ) {
     var description: String? = null
         private set
 
-    fun withDescription(description: String): CategoryData {
+    fun withDescription(description: String): PhylumCategoryData {
         this.description = description
         return this
     }
 }
 
-class CategoryItemData (
+class PhylumCategoryItemData (
     parent: String,
     val holderType: SpeciesHolder.Type,
     val format: Species.Format,
     val contentType: Species.ContentType,
-    val extra: Map<String, String> = mapOf()
+    val extras: Map<String, String> = mapOf()
 ) {
     val key = "$parent/${contentType.displayName}"
 }
