@@ -67,6 +67,13 @@ abstract class Tag<T: Any> protected constructor(
             TAG_LONG_ARRAY -> LongArrayTag(buffer, name, parent)
         }
 
+        fun canHaveChildren(tagType: TagType) =
+            tagType == TAG_BYTE_ARRAY ||
+            tagType == TAG_INT_ARRAY ||
+            tagType == TAG_LONG_ARRAY ||
+            tagType == TAG_LIST ||
+            tagType == TAG_COMPOUND
+
     }
 
 }

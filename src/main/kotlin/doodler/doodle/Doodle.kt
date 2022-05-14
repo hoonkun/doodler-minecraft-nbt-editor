@@ -55,7 +55,7 @@ abstract class Doodle(val depth: Int, val index: Int, val parentTag: NbtDoodle?)
 }
 
 class NbtDoodle(
-    private val tag: AnyTag,
+    val tag: AnyTag,
     depth: Int,
     index: Int = -1,
     parentTag: NbtDoodle? = null
