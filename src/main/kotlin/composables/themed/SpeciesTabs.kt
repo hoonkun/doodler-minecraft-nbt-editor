@@ -19,17 +19,17 @@ import composables.states.holder.Species
 import composables.themed.ThemedColor.Companion.selectable
 
 @Composable
-fun ColumnScope.TabGroup(
+fun ColumnScope.SpeciesTabGroup(
     tabs: List<TabData>,
     onSelectEditable: (Species) -> Unit,
     onCloseEditable: (Species) -> Unit
 ) {
     val scrollState = rememberScrollState()
 
-    Box (modifier = Modifier.background(Color(50, 51, 53)).fillMaxWidth().wrapContentHeight()) {
+    Box (modifier = Modifier.background(ThemedColor.TabBar).fillMaxWidth().wrapContentHeight()) {
         Row(modifier = Modifier.wrapContentWidth().horizontalScroll(scrollState)) {
             for (data in tabs) {
-                Tab(data, onSelectEditable, onCloseEditable)
+                SpeciesTab(data, onSelectEditable, onCloseEditable)
             }
         }
     }
@@ -37,7 +37,7 @@ fun ColumnScope.TabGroup(
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun Tab(
+fun SpeciesTab(
     data: TabData,
     onSelectEditable: (Species) -> Unit,
     onCloseEditable: (Species) -> Unit
@@ -63,7 +63,7 @@ fun Tab(
                 Spacer(modifier = Modifier.width(20.dp))
                 Text(
                     data.species.ident,
-                    color = if (data.species is NbtSpecies && data.species.hasChanges) Color(255, 160, 0) else Color.White,
+                    color = if (data.species is NbtSpecies && data.species.hasChanges) ThemedColor.Editor.HasChanges else Color.White,
                     fontSize = 22.sp,
                     fontFamily = JetBrainsMono
                 )
@@ -89,7 +89,7 @@ fun Tab(
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun RowScope.CloseButton(onCloseEditable: () -> Unit) {
+private fun RowScope.CloseButton(onCloseEditable: () -> Unit) {
     var hover by remember { mutableStateOf(false) }
 
     Box (
@@ -97,12 +97,12 @@ fun RowScope.CloseButton(onCloseEditable: () -> Unit) {
             .onPointerEvent(PointerEventType.Enter) { hover = true }
             .onPointerEvent(PointerEventType.Exit) { hover = false }
             .mouseClickable(onClick = { onCloseEditable() })
-            .background(if (hover) Color(255, 255, 255, 75) else Color.Transparent, CircleShape)
+            .background(ThemedColor.Editor.tabCloseButtonBackground(hover), CircleShape)
             .width(26.dp).height(26.dp)
     ) {
         Text (
             "\u2715",
-            color = if (hover) Color(0, 0, 0, 200) else Color(255, 255, 255, 100),
+            color = ThemedColor.Editor.tabCloseButtonIcon(hover),
             fontWeight = FontWeight.Bold,
             fontSize = 20.sp,
             modifier = Modifier

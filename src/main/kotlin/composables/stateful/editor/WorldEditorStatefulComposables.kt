@@ -33,12 +33,11 @@ import composables.stateless.editor.*
 import composables.states.holder.*
 import composables.themed.*
 import doodler.anvil.AnvilLocation
-import doodler.anvil.AnvilManager
+import doodler.anvil.AnvilWorker
 import doodler.anvil.BlockLocation
 import doodler.anvil.ChunkLocation
-import doodler.file.LevelData
-import doodler.file.WorldData
-import doodler.file.WorldDirectory
+import doodler.file.WorldTree
+import doodler.file.IOUtils
 import keys
 import kotlinx.coroutines.launch
 import nbt.Tag
@@ -57,10 +56,10 @@ fun WorldEditor(
     val states = rememberWorldEditorState()
 
     if (states.worldSpec.tree == null)
-        states.worldSpec.tree = WorldDirectory.load(worldPath)
+        states.worldSpec.tree = IOUtils.load(worldPath)
 
     if (states.worldSpec.name == null)
-        states.worldSpec.name = LevelData.read(states.worldSpec.requireTree.level.readBytes())["Data"]
+        states.worldSpec.name = IOUtils.readLevel(states.worldSpec.requireTree.level.readBytes())["Data"]
             ?.getAs<CompoundTag>()!!["LevelName"]
             ?.getAs<StringTag>()
             ?.value
@@ -73,7 +72,7 @@ fun WorldEditor(
     val tree = states.worldSpec.requireTree
     val name = states.worldSpec.requireName
 
-    val onCategoryItemClick: (CategoryItemData) -> Unit = lambda@ { data ->
+    val onCategoryItemClick: (PhylumCategoryItemData) -> Unit = lambda@ { data ->
         states.phylum.list.find { it.ident == data.key }?.let {
             states.phylum.species = it
             return@lambda
@@ -83,49 +82,17 @@ fun WorldEditor(
             if (data.holderType == SpeciesHolder.Type.Single) {
                 SingleSpeciesHolder(
                     data.key, data.format, data.contentType,
-                    NbtSpecies("", LevelData.read(tree.level.readBytes()), mutableStateOf(NbtState.new()))
+                    NbtSpecies("", IOUtils.readLevel(tree.level.readBytes()), mutableStateOf(NbtState.new()))
                 )
             } else {
-                MultipleSpeciesHolder(data.key, data.format, data.contentType, data.extra)
+                MultipleSpeciesHolder(data.key, data.format, data.contentType, data.extras)
             }
 
         states.phylum.list.add(newHolder)
         states.phylum.species = newHolder
     }
 
-    val generalItems: (String) -> List<CategoryItemData> = {
-        listOf(
-            CategoryItemData(it, SpeciesHolder.Type.Single, Species.Format.DAT, Species.ContentType.LEVEL),
-            CategoryItemData(it, SpeciesHolder.Type.Multiple, Species.Format.DAT, Species.ContentType.PLAYER),
-            CategoryItemData(it, SpeciesHolder.Type.Multiple, Species.Format.DAT, Species.ContentType.STATISTICS),
-            CategoryItemData(it, SpeciesHolder.Type.Multiple, Species.Format.DAT, Species.ContentType.ADVANCEMENTS)
-        )
-    }
-
-    val dimensionItems: (String) -> List<CategoryItemData> = {
-        val holderType = SpeciesHolder.Type.Multiple
-        val prefix = display(it)
-        val result = mutableListOf<CategoryItemData>()
-        val extra = mapOf("dimension" to it)
-
-        if (tree[it].region.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Species.Format.MCA, Species.ContentType.TERRAIN, extra))
-        if (tree[it].entities.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Species.Format.MCA, Species.ContentType.ENTITY, extra))
-        if (tree[it].poi.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Species.Format.MCA, Species.ContentType.POI, extra))
-        if (tree[it].data.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Species.Format.DAT, Species.ContentType.OTHERS, extra))
-
-        result
-    }
-
-    val categories = listOf(
-        CategoryData("General", false, generalItems("General")),
-        CategoryData(display(""), false, dimensionItems("")).withDescription(""),
-        CategoryData(display("DIM-1"), true, dimensionItems("DIM-1")).withDescription("DIM-1"),
-        CategoryData(display("DIM1"), true, dimensionItems("DIM1")).withDescription("DIM1")
-    )
+    val categories = createCategories(tree)
 
     MaterialTheme {
         MainColumn {
@@ -135,8 +102,8 @@ fun WorldEditor(
                 MainFiles {
                     FileCategoryListScrollable(scrollState) {
                         for (category in categories) {
-                            FilesCategory(category) {
-                                FileCategoryItems(
+                            PhylumCategory(category) {
+                                PhylumCategoryItems(
                                     category,
                                     states.phylum.species?.ident ?: "",
                                     onCategoryItemClick
@@ -169,7 +136,7 @@ fun WorldEditor(
 
 @Composable
 fun BoxScope.Editor(
-    tree: WorldData,
+    tree: WorldTree,
     holder: SpeciesHolder,
     selected: Boolean
 ) {
@@ -177,7 +144,7 @@ fun BoxScope.Editor(
 
     EditorRoot {
         if (holder is MultipleSpeciesHolder) {
-            TabGroup(
+            SpeciesTabGroup(
                 holder.species.map { TabData(holder.selected == it, it) },
                 { holder.select(it) },
                 { holder.remove(it) }
@@ -199,7 +166,7 @@ fun BoxScope.Editor(
 
 @Composable
 fun BoxScope.Selector(
-    tree: WorldData,
+    tree: WorldTree,
     holder: MultipleSpeciesHolder,
     selected: Boolean
 ) {
@@ -210,7 +177,7 @@ fun BoxScope.Selector(
         val newIdent = "[${loc.x}, ${loc.z}]"
         if (holder.hasSpecies(newIdent)) return@select
 
-        val root = AnvilManager.instance.loadChunk(loc, file.readBytes()) ?: return@select
+        val root = AnvilWorker.loadChunk(loc, file.readBytes()) ?: return@select
 
         holder.add(NbtSpecies(newIdent, root, mutableStateOf(NbtState.new())))
     }
@@ -234,7 +201,7 @@ fun BoxScope.Selector(
             Spacer(modifier = Modifier.height(25.dp))
             Text(
                 "No files opened",
-                color = Color(255, 255, 255, 185),
+                color = ThemedColor.WhiteSecondary,
                 fontSize = 33.sp
             )
             Spacer(modifier = Modifier.height(10.dp))
@@ -253,7 +220,7 @@ fun BoxScope.Selector(
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun ColumnScope.AnvilSelector(
-    tree: WorldData,
+    tree: WorldTree,
     holder: MultipleSpeciesHolder,
     onSelectChunk: (ChunkLocation, File?) -> Unit
 ) {
@@ -273,7 +240,7 @@ fun ColumnScope.AnvilSelector(
     anvils.forEach {
         val segments = it.name.split(".")
         val location = AnvilLocation(segments[1].toInt(), segments[2].toInt())
-        chunks.addAll(AnvilManager.instance.loadChunkList(location, it.readBytes()))
+        chunks.addAll(AnvilWorker.loadChunkList(location, it.readBytes()))
     }
 
     val selector = holder.species.find { it is SelectorSpecies } as SelectorSpecies
@@ -300,7 +267,7 @@ fun ColumnScope.AnvilSelector(
         val int = actual.text.toIntOrNull()
         if (int == null) {
             TransformedText(
-                AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = Color(100, 100, 100)), 0, actual.text.length))),
+                AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Selector.Malformed), 0, actual.text.length))),
                 OffsetMapping.Identity
             ) to false
         } else {
@@ -308,7 +275,7 @@ fun ColumnScope.AnvilSelector(
                 TransformedText(AnnotatedString(actual.text), OffsetMapping.Identity) to true
             } else {
                 TransformedText(
-                    AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = Color(230, 81, 0)), 0, actual.text.length))),
+                    AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Selector.Invalid), 0, actual.text.length))),
                     OffsetMapping.Identity
                 ) to false
             }
@@ -319,7 +286,7 @@ fun ColumnScope.AnvilSelector(
         val int = actual.text.toIntOrNull()
         if (int == null) {
             TransformedText(
-                AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = Color(100, 100, 100)), 0, actual.text.length))),
+                AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Selector.Malformed), 0, actual.text.length))),
                 OffsetMapping.Identity
             )
         } else {
@@ -359,14 +326,12 @@ fun ColumnScope.AnvilSelector(
         }
     }
 
-    var openerEvtType by remember { mutableStateOf(PointerEventType.Release) }
-    val updateOpenerEvtType: AwaitPointerEventScope.(PointerEvent) -> Unit = {
-        openerEvtType = this.currentEvent.type
-    }
+    var openPressed by remember { mutableStateOf(false) }
+    var openFocused by remember { mutableStateOf(false) }
 
     Row (
         modifier = Modifier
-            .background(Color(36, 36, 36))
+            .background(ThemedColor.SelectorArea)
             .height(60.dp)
             .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -416,20 +381,13 @@ fun ColumnScope.AnvilSelector(
         Row (
             modifier = Modifier
                 .background(
-                    if (state.selectedChunk == null) {
-                        Color.Transparent
-                    } else {
-                        when (openerEvtType) {
-                            PointerEventType.Enter -> Color(255, 255, 255, 30)
-                            PointerEventType.Press -> Color(255, 255, 255, 60)
-                            else -> Color.Transparent
-                        }
-                    }
+                    if (state.selectedChunk == null) Color.Transparent
+                    else ThemedColor.clickable(openPressed, openFocused)
                 )
-                .onPointerEvent(PointerEventType.Enter, onEvent = updateOpenerEvtType)
-                .onPointerEvent(PointerEventType.Exit, onEvent = updateOpenerEvtType)
-                .onPointerEvent(PointerEventType.Press, onEvent = updateOpenerEvtType)
-                .onPointerEvent(PointerEventType.Release, onEvent = updateOpenerEvtType)
+                .onPointerEvent(PointerEventType.Enter) { openFocused = true }
+                .onPointerEvent(PointerEventType.Exit) { openFocused = false }
+                .onPointerEvent(PointerEventType.Press) { openPressed = true }
+                .onPointerEvent(PointerEventType.Release) { openPressed = false }
                 .height(60.dp)
                 .width(60.dp)
                 .alpha(if (state.selectedChunk == null) 0.5f else 1f)
@@ -448,7 +406,7 @@ fun ColumnScope.AnvilSelector(
                 "->",
                 fontSize = 21.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(175, 175, 175),
+                color = ThemedColor.Editor.Selector.ButtonText,
                 fontFamily = JetBrainsMono
             )
         }
@@ -538,22 +496,22 @@ fun BoxScope.EditableField(
             ) {
                 Column(
                     modifier = Modifier
-                        .background(Color(255, 255, 255, 25), RoundedCornerShape(4.dp))
+                        .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
                         .wrapContentSize()
                         .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
                         .padding(5.dp)
                 ) {
                     ToolBarAction {
-                        IndicatorText("DEL", Color(227, 93, 48))
+                        IndicatorText("DEL", ThemedColor.Editor.Action.Delete)
                     }
                     ToolBarAction {
-                        IndicatorText("YNK", Color(88, 163, 126))
+                        IndicatorText("YNK", ThemedColor.Editor.Action.Yank)
                     }
                     if (doodleState.selected.size == 1) {
                         val selectedDoodle = doodleState.selected[0]
                         if (selectedDoodle is NbtDoodle && !Tag.canHaveChildren(selectedDoodle.type)) {
                             ToolBarAction {
-                                IndicatorText("EDT", Color(88, 132, 163))
+                                IndicatorText("EDT", ThemedColor.Editor.Action.Edit)
                             }
                         }
                     }
@@ -572,7 +530,7 @@ fun BoxScope.EditableField(
                         Spacer(modifier = Modifier.height(20.dp))
                         Column(
                             modifier = Modifier
-                                .background(Color(255, 255, 255, 25), RoundedCornerShape(4.dp))
+                                .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
                                 .wrapContentSize()
                                 .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
                                 .padding(5.dp)

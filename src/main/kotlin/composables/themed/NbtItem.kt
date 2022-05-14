@@ -32,17 +32,7 @@ private fun ItemRoot(
 ) {
     Box (
         modifier = Modifier
-            .background(
-                if (selected) {
-                    if (pressed) Color(91, 115, 65, 50)
-                    else if (focused) Color(91, 115, 65, 40)
-                    else Color(91, 115, 65, 40)
-                } else {
-                    if (pressed) Color(0, 0, 0, 80)
-                    else if (focused) Color(0, 0, 0, 40)
-                    else Color.Transparent
-                }
-            )
+            .background(ThemedColor.Editor.item(selected, pressed, focused))
     ) {
         Row(
             modifier = Modifier.fillMaxWidth()
@@ -55,13 +45,10 @@ private fun ItemRoot(
 
 @Composable
 private fun ItemIndicator(selected: Boolean, content: @Composable BoxScope.() -> Unit) {
-    val color =
-        if (selected) Color(70, 70, 70)
-        else Color(60, 60, 60)
     Box (
         modifier = Modifier
             .wrapContentSize()
-            .background(color, shape = RoundedCornerShape(5.dp))
+            .background(ThemedColor.Editor.indicator(selected), RoundedCornerShape(5.dp))
             .padding(top = 2.dp, bottom = 2.dp, start = 3.dp, end = 3.dp),
         content = content
     )
@@ -78,7 +65,10 @@ private fun ToolBarItemIndicator(content: @Composable BoxScope.() -> Unit) {
             .onPointerEvent(PointerEventType.Enter) { hover = true }
             .onPointerEvent(PointerEventType.Exit) { hover = false }
             .padding(top = 5.dp, bottom = 5.dp)
-            .background(if (hover) Color(0, 0, 0, 30) else Color.Transparent, RoundedCornerShape(3.dp))
+            .background(
+                if (hover) ThemedColor.from(Color.Black, alpha = 30)
+                else Color.Transparent, RoundedCornerShape(3.dp)
+            )
     ) {
         Box(
             modifier = Modifier
@@ -102,27 +92,27 @@ fun IndicatorText(text: String, color: Color) {
 
 @Composable
 private fun NumberTypeIndicator(typeString: String) {
-    IndicatorText(" $typeString ", color = Color(104, 151, 187))
+    IndicatorText(" $typeString ", color = ThemedColor.Editor.Tag.Number)
 }
 
 @Composable
 private fun StringTypeIndicator() {
-    IndicatorText("...", color = Color(106, 135, 89))
+    IndicatorText("...", color = ThemedColor.Editor.Tag.String)
 }
 
 @Composable
 private fun CompoundTypeIndicator() {
-    IndicatorText("{ }", color = Color(255, 199, 109))
+    IndicatorText("{ }", color = ThemedColor.Editor.Tag.Compound)
 }
 
 @Composable
 private fun ListTypeIndicator() {
-    IndicatorText("[ ]", color = Color(204, 120, 50))
+    IndicatorText("[ ]", color = ThemedColor.Editor.Tag.List)
 }
 
 @Composable
 private fun ArrayTypeIndicator(typeString: String) {
-    IndicatorText("[$typeString]", color = Color(104, 151, 187))
+    IndicatorText("[$typeString]", color = ThemedColor.Editor.Tag.NumberArray)
 }
 
 @Composable
@@ -161,8 +151,7 @@ fun IndicatorText(type: TagType) {
         TagType.TAG_STRING -> StringTypeIndicator()
         TagType.TAG_COMPOUND -> CompoundTypeIndicator()
         TagType.TAG_LIST -> ListTypeIndicator()
-        TagType.TAG_END -> { /* impossible */
-        }
+        TagType.TAG_END -> { /* impossible */ }
     }
 }
 
@@ -173,54 +162,40 @@ private fun ItemText(text: String, color: Color, fontSize: TextUnit = 20.sp) {
 
 @Composable
 private fun Key(key: String) {
-    ItemText(key, Color(169, 183, 198))
+    ItemText(key, ThemedColor.Editor.Tag.General)
 }
 
 @Composable
 private fun NumberValue(value: String) {
-    ItemText(value, Color(104, 151, 187))
+    ItemText(value, ThemedColor.Editor.Tag.Number)
 }
 
 @Composable
 private fun StringValue(value: String) {
-    ItemText(value, Color(106, 135, 89))
+    ItemText(value, ThemedColor.Editor.Tag.String)
 }
 
 @Composable
 private fun ExpandableValue(value: String, selected: Boolean) {
-    val color =
-        if (selected) Color(70, 70, 70)
-        else Color(60, 60, 60)
-    val textColor =
-        if (selected) Color(157, 157, 157)
-        else Color(150, 150, 150)
-
     Box (
         modifier = Modifier
             .wrapContentSize()
-            .background(color, shape = RoundedCornerShape(5.dp))
+            .background(ThemedColor.Editor.indicator(selected), RoundedCornerShape(5.dp))
             .padding(top = 2.dp, bottom = 2.dp, start = 10.dp, end = 10.dp)
     ) {
-        ItemText(value, textColor, 18.sp)
+        ItemText(value, ThemedColor.Editor.indicatorText(selected), 18.sp)
     }
 }
 
 @Composable
 private fun Index(index: Int, selected: Boolean) {
-    val color =
-        if (selected) Color(70, 70, 70)
-        else Color(60, 60, 60)
-    val textColor =
-        if (selected) Color(157, 157, 157)
-        else Color(150, 150, 150)
-
     Box (
         modifier = Modifier
             .wrapContentSize()
-            .background(color, shape = RoundedCornerShape(5.dp))
+            .background(ThemedColor.Editor.indicator(selected), shape = RoundedCornerShape(5.dp))
             .padding(top = 2.dp, bottom = 2.dp, start = 5.dp, end = 5.dp)
     ) {
-        ItemText("$index:", textColor, 18.sp)
+        ItemText("$index:", ThemedColor.Editor.indicatorText(selected), 18.sp)
     }
 }
 
@@ -261,28 +236,29 @@ fun NbtItemTreeView(
     var focused by remember { mutableStateOf(false) }
     var pressed by remember { mutableStateOf(false) }
 
-    val color = if (pressed) Color(30, 30, 30)
-    else if (focused) Color(36, 36, 36)
-    else Color(43, 43, 43)
-
     Box (modifier = Modifier
-        .border(2.dp, Color(100, 100, 100))
-        .onPointerEvent(PointerEventType.Enter) { focused = true; state.focusTreeView(doodle) }
-        .onPointerEvent(PointerEventType.Exit) { focused = false; state.unFocusTreeView(doodle) }
-        .onPointerEvent(PointerEventType.Press) { pressed = true }
-        .onPointerEvent(PointerEventType.Release) { pressed = false }
-        .mouseClickable(onClick = { scrollTo() })
-        .background(color)
-        .zIndex(999f)
+        .background(ThemedColor.EditorArea)
+        .wrapContentSize()
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .padding(start = (20 + 40 * doodle.depth).dp)
-                .fillMaxWidth()
-                .height(50.dp)
+        Box(modifier = Modifier
+            .border(2.dp, ThemedColor.Editor.TreeBorder)
+            .onPointerEvent(PointerEventType.Enter) { focused = true; state.focusTreeView(doodle) }
+            .onPointerEvent(PointerEventType.Exit) { focused = false; state.unFocusTreeView(doodle) }
+            .onPointerEvent(PointerEventType.Press) { pressed = true }
+            .onPointerEvent(PointerEventType.Release) { pressed = false }
+            .mouseClickable(onClick = { scrollTo() })
+            .background(ThemedColor.Editor.normalItem(pressed, focused))
+            .zIndex(999f)
         ) {
-            DoodleContent(doodle, false)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .padding(start = (20 + 40 * doodle.depth).dp)
+                    .fillMaxWidth()
+                    .height(50.dp)
+            ) {
+                DoodleContent(doodle, false)
+            }
         }
     }
 }
@@ -319,16 +295,16 @@ fun NbtItem(
                     .onPointerEvent(PointerEventType.Exit) { state.unFocusTree(current) }
                     .onPointerEvent(PointerEventType.Release) { treeCollapse(current, current.collapse()) }
                 ) {
-                    val co = if (selected) 16 else 0
-
                     Spacer(modifier = Modifier.width(40.dp))
                     Box (
                         modifier = Modifier
                             .width(1.dp)
                             .fillMaxHeight()
                             .background(
-                                if (focused || state.focusedTreeView == current) Color(100 + co, 100 + co, 100 + co)
-                                else Color(60 + co, 60 + co, 60 + co)
+                                ThemedColor.Editor.depthLine(
+                                    selected,
+                                    focused || state.focusedTreeView == current
+                                )
                             )
                     ) { }
                 }

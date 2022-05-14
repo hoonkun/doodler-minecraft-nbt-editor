@@ -5,7 +5,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -17,6 +16,7 @@ import androidx.compose.ui.window.WindowState
 import composables.stateful.editor.SingleEditor
 import composables.stateful.editor.WorldEditor
 import composables.stateless.main.NoWorldsSelected
+import composables.themed.ThemedColor
 
 @Composable
 @Preview
@@ -30,14 +30,14 @@ fun App(
             NoWorldsSelected(addWorld, addSingle)
             BottomAppBar(
                 elevation = 15.dp,
-                backgroundColor = Color(60, 63, 65),
+                backgroundColor = ThemedColor.TaskArea,
                 contentPadding = PaddingValues(top = 0.dp, bottom = 0.dp, start = 25.dp, end = 25.dp),
                 modifier = Modifier.height(40.dp)
             ) {
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
                     "by kiwicraft",
-                    color = Color(255, 255, 255, 180),
+                    color = ThemedColor.Copyright,
                     fontSize = 14.sp
                 )
             }

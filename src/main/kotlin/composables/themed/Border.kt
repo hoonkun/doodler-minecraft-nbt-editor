@@ -14,14 +14,9 @@ fun border(
         val width = size.width
         val height = size.height
 
-        val topOffset = Pair(Offset(0f, 0f), Offset(width, 0f))
-        val rightOffset = Pair(Offset(width, 0f), Offset(width, height))
-        val bottomOffset = Pair(Offset(0f, height), Offset(width, height))
-        val leftOffset = Pair(Offset(0f, 0f), Offset(0f, height))
-
-        if (top != null) drawLine(top.second, topOffset.first, topOffset.second, top.first)
-        if (right != null) drawLine(right.second, rightOffset.first, rightOffset.second, right.first)
-        if (bottom != null) drawLine(bottom.second, bottomOffset.first, bottomOffset.second, bottom.first)
-        if (left != null) drawLine(left.second, leftOffset.first, leftOffset.second, left.first)
+        if (top != null) drawLine(top.second, Offset(0f, 0f), Offset(width, 0f), top.first)
+        if (right != null) drawLine(right.second, Offset(width, 0f), Offset(width, height), right.first)
+        if (bottom != null) drawLine(bottom.second, Offset(0f, height), Offset(width, height), bottom.first)
+        if (left != null) drawLine(left.second, Offset(0f, 0f), Offset(0f, height), left.first)
     }
 }

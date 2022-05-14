@@ -6,7 +6,6 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import composables.themed.LinkText
@@ -20,13 +19,13 @@ fun ColumnScope.NoWorldsSelected(
     Column (
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(43, 43, 43))
+            .background(ThemedColor.EditorArea)
             .weight(1.0f)
     ) {
         Spacer(modifier = Modifier.weight(1f))
         Text(
             "Doodler: Minecraft NBT Editor",
-            color = Color(255, 255, 255, 125),
+            color = ThemedColor.WhiteSecondary,
             fontSize = 30.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )
@@ -41,7 +40,7 @@ fun ColumnScope.NoWorldsSelected(
         }
         LinkText(
             "...or single NBT file",
-            color = Color(174, 213, 129, 195),
+            color = ThemedColor.from(ThemedColor.Bright, alpha = 195),
             fontSize = 22.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
@@ -50,7 +49,7 @@ fun ColumnScope.NoWorldsSelected(
         Spacer(modifier = Modifier.height(80.dp))
         Text(
             "Getting started?",
-            color = Color(255, 255, 255, 85),
+            color = ThemedColor.DocumentationDescription,
             fontSize = 26.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         )

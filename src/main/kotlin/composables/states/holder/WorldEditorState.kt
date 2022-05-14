@@ -5,7 +5,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.text.input.TextFieldValue
 import doodler.anvil.ChunkLocation
-import doodler.file.WorldData
+import doodler.file.WorldTree
 import nbt.AnyTag
 import nbt.Tag
 import nbt.TagType
@@ -40,10 +40,10 @@ fun rememberPhylum (
 }
 
 class WorldSpecification (
-    tree: MutableState<WorldData?>,
+    tree: MutableState<WorldTree?>,
     name: MutableState<String?>
 ) {
-    var tree: WorldData? by tree
+    var tree: WorldTree? by tree
     val requireTree get() = tree!!
 
     var name by name
@@ -414,7 +414,7 @@ class DoodleUi (
 
 @Composable
 fun rememberWorldSpec (
-    tree: MutableState<WorldData?> = remember { mutableStateOf(null) },
+    tree: MutableState<WorldTree?> = remember { mutableStateOf(null) },
     name: MutableState<String?> = remember { mutableStateOf(null) }
 ) = remember (tree, name) {
     WorldSpecification(tree, name)
