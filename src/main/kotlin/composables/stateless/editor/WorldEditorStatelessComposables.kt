@@ -39,12 +39,12 @@ fun MainColumn(content: @Composable ColumnScope.() -> Unit) {
 fun ColumnScope.TopBar(content: @Composable RowScope.() -> Unit) {
     TopAppBar(
         elevation = 0.dp,
-        backgroundColor = Color(55, 55, 57),
+        backgroundColor = ThemedColor.ActionBar,
         contentPadding = PaddingValues(start = 25.dp, top = 10.dp, bottom = 10.dp),
         modifier = Modifier
             .height(60.dp)
             .zIndex(1f)
-            .drawBehind(border(bottom = Pair(1f, Color(30, 30, 30)))),
+            .drawBehind(border(bottom = Pair(1f, ThemedColor.TopBar))),
         content = content
     )
 }
@@ -60,7 +60,7 @@ fun ColumnScope.MainArea(content: @Composable RowScope.() -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .weight(1f)
-            .background(Color(43, 43, 43))
+            .background(ThemedColor.EditorArea)
             .zIndex(0f),
         content = content
     )
@@ -77,7 +77,7 @@ fun BoxScope.FileCategoryListScrollable(scrollState: ScrollState, content: @Comp
     Column(
         modifier = Modifier
             .fillMaxHeight()
-            .background(Color(60, 63, 65))
+            .background(ThemedColor.TaskArea)
             .verticalScroll(scrollState),
         content = content
     )
@@ -92,8 +92,8 @@ fun BoxScope.FileCategoryListScrollbar(scrollState: ScrollState) {
             15.dp,
             RectangleShape,
             250,
-            Color(255, 255, 255, 50),
-            Color(255, 255, 255, 100)
+            ThemedColor.ScrollBarNormal,
+            ThemedColor.ScrollBarHover
         ),
         modifier = Modifier.align(Alignment.TopEnd)
     )
@@ -113,12 +113,12 @@ fun RowScope.MainContents(content: @Composable BoxScope.() -> Unit) {
 fun ColumnScope.BottomBar(content: @Composable RowScope.() -> Unit) {
     BottomAppBar(
         elevation = 0.dp,
-        backgroundColor = Color(60, 63, 65),
+        backgroundColor = ThemedColor.TaskArea,
         contentPadding = PaddingValues(top = 0.dp, bottom = 0.dp, start = 25.dp, end = 25.dp),
         modifier = Modifier
             .height(40.dp)
             .zIndex(1f)
-            .drawBehind(border(top = Pair(1f, Color(36, 36, 36)))),
+            .drawBehind(border(top = Pair(1f, ThemedColor.TopBarBorder))),
         content = content
     )
 }
@@ -127,7 +127,7 @@ fun ColumnScope.BottomBar(content: @Composable RowScope.() -> Unit) {
 fun RowScope.BottomBarText(text: String) {
     Text(
         text,
-        color = Color(255, 255, 255, 180),
+        color = ThemedColor.Copyright,
         fontSize = 14.sp
     )
 }
@@ -173,7 +173,7 @@ fun RowScope.CoordinateText(text: String, invalid: Boolean = false) {
     Text(
         text,
         fontSize = 21.sp,
-        color = if (invalid) Color(100, 100, 100) else Color(169, 183, 198),
+        color = if (invalid) ThemedColor.Editor.Selector.Malformed else ThemedColor.Editor.Tag.General,
         fontFamily = JetBrainsMono,
         modifier = Modifier.focusable(false)
     )
@@ -190,12 +190,12 @@ fun RowScope.CoordinateInput(
         onValueChange,
         textStyle = TextStyle(
             fontSize = 21.sp,
-            color = Color(169, 183, 198),
+            color = ThemedColor.Editor.Tag.General,
             fontFamily = JetBrainsMono
         ),
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         singleLine = true,
-        cursorBrush = SolidColor(Color(169, 183, 198)),
+        cursorBrush = SolidColor(ThemedColor.Editor.Tag.General),
         visualTransformation = transformer,
         modifier = Modifier
             .width((value.text.length.coerceAtLeast(1) * 12.75).dp)
@@ -209,9 +209,7 @@ fun RowScope.AnvilSelectorDropdown(prefix: String, accent: Boolean = false, vali
     Row (
         modifier = Modifier
             .background(
-                if (accent && valid) Color(50, 54, 47)
-                else if (accent) Color(64, 55, 52)
-                else Color(42, 42, 42),
+                ThemedColor.Editor.Selector.background(accent, valid),
                 RoundedCornerShape(4.dp)
             )
             .wrapContentWidth()
@@ -222,7 +220,7 @@ fun RowScope.AnvilSelectorDropdown(prefix: String, accent: Boolean = false, vali
         Text(
             prefix,
             fontSize = 18.sp,
-            color = Color(125, 125, 125),
+            color = ThemedColor.Editor.Selector.Normal,
             fontFamily = JetBrainsMono
         )
         Spacer(modifier = Modifier.width(10.dp))
@@ -240,7 +238,7 @@ fun BoxScope.NoFileSelected(worldName: String) {
     ) {
         Text(
             "< world >",
-            color = Color(255, 255, 255, 100),
+            color = ThemedColor.WhiteOthers,
             fontSize = 29.sp
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -252,7 +250,7 @@ fun BoxScope.NoFileSelected(worldName: String) {
         Spacer(modifier = Modifier.height(35.dp))
         Text(
             "Select Tab in Left Area!",
-            color = Color(255, 255, 255, 185),
+            color = ThemedColor.WhiteSecondary,
             fontSize = 33.sp
         )
         Spacer(modifier = Modifier.height(25.dp))
@@ -265,7 +263,7 @@ fun WhatIsThis(link: String) {
     Spacer(modifier = Modifier.height(60.dp))
     Text(
         "What is this?",
-        color = Color(255, 255, 255, 145),
+        color = ThemedColor.DocumentationDescription,
         fontSize = 25.sp
     )
     Spacer(modifier = Modifier.height(10.dp))

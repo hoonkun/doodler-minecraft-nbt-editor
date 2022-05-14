@@ -70,7 +70,7 @@ fun ColumnScope.PhylumCategory(
             Text(data.name, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color.White)
             if (data.description != null) {
                 Text(
-                    " ${data.description}", fontSize = 16.sp, color = Color(255, 255, 255, 125),
+                    " ${data.description}", fontSize = 16.sp, color = ThemedColor.WhiteOthers,
                     modifier = Modifier.align(Alignment.Bottom).padding(start = 7.dp)
                 )
             }
@@ -95,10 +95,10 @@ fun ColumnScope.PhylumCategoryItem(
     val key = data.key
     ListItem (selected == key, onClick = { onClick(data) }) {
         Row(horizontalArrangement = Arrangement.Start, modifier = Modifier.fillMaxWidth().padding(start = 25.dp, end = 25.dp)) {
-            Text(data.contentType.displayName, fontSize = 24.sp, color = Color(255, 255, 255, 200))
+            Text(data.contentType.displayName, fontSize = 24.sp, color = ThemedColor.WhiteSecondary)
             Spacer(modifier = Modifier.weight(1f))
             Text(
-                " ${data.contentType.description}", fontSize = 16.sp, color = Color(255, 255, 255, 100),
+                " ${data.contentType.description}", fontSize = 16.sp, color = ThemedColor.WhiteOthers,
                 modifier = Modifier.align(Alignment.Bottom).padding(start = 7.dp)
             )
         }

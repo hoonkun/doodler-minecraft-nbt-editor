@@ -202,7 +202,7 @@ fun BoxScope.Selector(
             Spacer(modifier = Modifier.height(25.dp))
             Text(
                 "No files opened",
-                color = Color(255, 255, 255, 185),
+                color = ThemedColor.WhiteSecondary,
                 fontSize = 33.sp
             )
             Spacer(modifier = Modifier.height(10.dp))
@@ -268,7 +268,7 @@ fun ColumnScope.AnvilSelector(
         val int = actual.text.toIntOrNull()
         if (int == null) {
             TransformedText(
-                AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = Color(100, 100, 100)), 0, actual.text.length))),
+                AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Selector.Malformed), 0, actual.text.length))),
                 OffsetMapping.Identity
             ) to false
         } else {
@@ -276,7 +276,7 @@ fun ColumnScope.AnvilSelector(
                 TransformedText(AnnotatedString(actual.text), OffsetMapping.Identity) to true
             } else {
                 TransformedText(
-                    AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = Color(230, 81, 0)), 0, actual.text.length))),
+                    AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Selector.Invalid), 0, actual.text.length))),
                     OffsetMapping.Identity
                 ) to false
             }
@@ -287,7 +287,7 @@ fun ColumnScope.AnvilSelector(
         val int = actual.text.toIntOrNull()
         if (int == null) {
             TransformedText(
-                AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = Color(100, 100, 100)), 0, actual.text.length))),
+                AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Selector.Malformed), 0, actual.text.length))),
                 OffsetMapping.Identity
             )
         } else {
@@ -327,14 +327,12 @@ fun ColumnScope.AnvilSelector(
         }
     }
 
-    var openerEvtType by remember { mutableStateOf(PointerEventType.Release) }
-    val updateOpenerEvtType: AwaitPointerEventScope.(PointerEvent) -> Unit = {
-        openerEvtType = this.currentEvent.type
-    }
+    var openPressed by remember { mutableStateOf(false) }
+    var openFocused by remember { mutableStateOf(false) }
 
     Row (
         modifier = Modifier
-            .background(Color(36, 36, 36))
+            .background(ThemedColor.SelectorArea)
             .height(60.dp)
             .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -384,20 +382,13 @@ fun ColumnScope.AnvilSelector(
         Row (
             modifier = Modifier
                 .background(
-                    if (state.selectedChunk == null) {
-                        Color.Transparent
-                    } else {
-                        when (openerEvtType) {
-                            PointerEventType.Enter -> Color(255, 255, 255, 30)
-                            PointerEventType.Press -> Color(255, 255, 255, 60)
-                            else -> Color.Transparent
-                        }
-                    }
+                    if (state.selectedChunk == null) Color.Transparent
+                    else ThemedColor.clickable(openPressed, openFocused)
                 )
-                .onPointerEvent(PointerEventType.Enter, onEvent = updateOpenerEvtType)
-                .onPointerEvent(PointerEventType.Exit, onEvent = updateOpenerEvtType)
-                .onPointerEvent(PointerEventType.Press, onEvent = updateOpenerEvtType)
-                .onPointerEvent(PointerEventType.Release, onEvent = updateOpenerEvtType)
+                .onPointerEvent(PointerEventType.Enter) { openFocused = true }
+                .onPointerEvent(PointerEventType.Exit) { openFocused = false }
+                .onPointerEvent(PointerEventType.Press) { openPressed = true }
+                .onPointerEvent(PointerEventType.Release) { openPressed = false }
                 .height(60.dp)
                 .width(60.dp)
                 .alpha(if (state.selectedChunk == null) 0.5f else 1f)
@@ -416,7 +407,7 @@ fun ColumnScope.AnvilSelector(
                 "->",
                 fontSize = 21.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(175, 175, 175),
+                color = ThemedColor.Editor.Selector.ButtonText,
                 fontFamily = JetBrainsMono
             )
         }
@@ -506,22 +497,22 @@ fun BoxScope.EditableField(
             ) {
                 Column(
                     modifier = Modifier
-                        .background(Color(255, 255, 255, 25), RoundedCornerShape(4.dp))
+                        .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
                         .wrapContentSize()
                         .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
                         .padding(5.dp)
                 ) {
                     ToolBarAction {
-                        IndicatorText("DEL", Color(227, 93, 48))
+                        IndicatorText("DEL", ThemedColor.Editor.Action.Delete)
                     }
                     ToolBarAction {
-                        IndicatorText("YNK", Color(88, 163, 126))
+                        IndicatorText("YNK", ThemedColor.Editor.Action.Yank)
                     }
                     if (doodleState.selected.size == 1) {
                         val selectedDoodle = doodleState.selected[0]
                         if (selectedDoodle is NbtDoodle && !Tag.canHaveChildren(selectedDoodle.type)) {
                             ToolBarAction {
-                                IndicatorText("EDT", Color(88, 132, 163))
+                                IndicatorText("EDT", ThemedColor.Editor.Action.Edit)
                             }
                         }
                     }
@@ -540,7 +531,7 @@ fun BoxScope.EditableField(
                         Spacer(modifier = Modifier.height(20.dp))
                         Column(
                             modifier = Modifier
-                                .background(Color(255, 255, 255, 25), RoundedCornerShape(4.dp))
+                                .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
                                 .wrapContentSize()
                                 .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
                                 .padding(5.dp)
