@@ -1,6 +1,5 @@
 package composables.themed
 
-import androidx.compose.foundation.background
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -20,7 +19,7 @@ fun LinkText(
     text: String,
     color: Color,
     fontSize: TextUnit,
-    modifier: Modifier = Modifier.background(Color.Transparent),
+    modifier: Modifier = Modifier,
     fontFamily: FontFamily = FontFamily.Default,
     onClick: () -> Unit
 ) {

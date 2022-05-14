@@ -18,9 +18,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
@@ -371,6 +373,11 @@ fun ColumnScope.AnvilSelector(
         }
     }
 
+    var openerEvtType by remember { mutableStateOf(PointerEventType.Release) }
+    val updateOpenerEvtType: AwaitPointerEventScope.(PointerEvent) -> Unit = {
+        openerEvtType = this.currentEvent.type
+    }
+
     Row (
         modifier = Modifier
             .background(Color(36, 36, 36))
@@ -395,7 +402,7 @@ fun ColumnScope.AnvilSelector(
             CoordinateText("]")
         }
         Spacer(modifier = Modifier.width(10.dp))
-        AnvilSelectorDropdown("chunk:", true) {
+        AnvilSelectorDropdown("chunk:", true, selectedChunk != null) {
             CoordinateText("[")
             CoordinateInput(
                 chunkXValue,
@@ -421,8 +428,23 @@ fun ColumnScope.AnvilSelector(
         Spacer(modifier = Modifier.weight(1f))
         Row (
             modifier = Modifier
-                .background(Color(57, 64, 52), RoundedCornerShape(4.dp))
-                .wrapContentWidth()
+                .background(
+                    if (selectedChunk == null) {
+                        Color.Transparent
+                    } else {
+                        when (openerEvtType) {
+                            PointerEventType.Enter -> Color(255, 255, 255, 30)
+                            PointerEventType.Press -> Color(255, 255, 255, 60)
+                            else -> Color.Transparent
+                        }
+                    }
+                )
+                .onPointerEvent(PointerEventType.Enter, PointerEventPass.Final, updateOpenerEvtType)
+                .onPointerEvent(PointerEventType.Exit, PointerEventPass.Final, updateOpenerEvtType)
+                .onPointerEvent(PointerEventType.Press, PointerEventPass.Final, updateOpenerEvtType)
+                .onPointerEvent(PointerEventType.Release, PointerEventPass.Final, updateOpenerEvtType)
+                .height(60.dp)
+                .width(60.dp)
                 .alpha(if (selectedChunk == null) 0.5f else 1f)
                 .mouseClickable {
                     val chunk = selectedChunk
@@ -432,18 +454,17 @@ fun ColumnScope.AnvilSelector(
                     }
                 }
                 .height(45.dp),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
         ) {
-            Spacer(modifier = Modifier.width(17.dp))
             Text(
-                "GO!",
+                "->",
                 fontSize = 21.sp,
+                fontWeight = FontWeight.Bold,
                 color = Color(175, 175, 175),
                 fontFamily = JetBrainsMono
             )
-            Spacer(modifier = Modifier.width(17.dp))
         }
-        Spacer(modifier = Modifier.width(10.dp))
     }
 }
 
@@ -484,10 +505,15 @@ fun RowScope.CoordinateInput(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun RowScope.AnvilSelectorDropdown(prefix: String, accent: Boolean = false, content: @Composable RowScope.() -> Unit) {
+fun RowScope.AnvilSelectorDropdown(prefix: String, accent: Boolean = false, valid: Boolean = true, content: @Composable RowScope.() -> Unit) {
     Row (
         modifier = Modifier
-            .background(if (accent) Color(50, 54, 47) else Color(42, 42, 42), RoundedCornerShape(4.dp))
+            .background(
+                if (accent && valid) Color(50, 54, 47)
+                else if (accent) Color(64, 55, 52)
+                else Color(42, 42, 42),
+                RoundedCornerShape(4.dp)
+            )
             .wrapContentWidth()
             .height(45.dp),
         verticalAlignment = Alignment.CenterVertically

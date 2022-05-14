@@ -1,9 +1,8 @@
 package composables.themed
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -12,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import composables.main.Editable
@@ -52,12 +52,13 @@ fun Tab(
             .onPointerEvent(PointerEventType.Enter) { hover = true }
             .onPointerEvent(PointerEventType.Exit) { hover = false }
             .background(selectable(data.selected, press, hover))
+            .height(50.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(modifier = Modifier.height(10.dp))
-            Row(verticalAlignment = Alignment.Bottom) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Spacer(modifier = Modifier.width(20.dp))
                 Text(
                     data.editable.ident,
@@ -67,9 +68,7 @@ fun Tab(
                 )
                 if (data.editable.ident != "+") {
                     Spacer(modifier = Modifier.width(15.dp))
-                    LinkText("x", color = Color(255, 255, 255, 65), fontSize = 20.sp, fontFamily = JetBrainsMono) {
-                        onCloseEditable(data.editable)
-                    }
+                    CloseButton { onCloseEditable(data.editable) }
                 }
                 Spacer(modifier = Modifier.width(18.dp))
             }
@@ -84,6 +83,30 @@ fun Tab(
                     .background(if (data.selected) ThemedColor.Bright else Color.Transparent)
             ) { }
         }
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@Composable
+fun RowScope.CloseButton(onCloseEditable: () -> Unit) {
+    var hover by remember { mutableStateOf(false) }
+
+    Box (
+        modifier = Modifier
+            .onPointerEvent(PointerEventType.Enter) { hover = true }
+            .onPointerEvent(PointerEventType.Exit) { hover = false }
+            .mouseClickable(onClick = { onCloseEditable() })
+            .background(if (hover) Color(255, 255, 255, 75) else Color.Transparent, CircleShape)
+            .width(26.dp).height(26.dp)
+    ) {
+        Text (
+            "\u2715",
+            color = if (hover) Color(0, 0, 0, 200) else Color(255, 255, 255, 100),
+            fontWeight = FontWeight.Bold,
+            fontSize = 20.sp,
+            modifier = Modifier
+                .align(Alignment.Center)
+        )
     }
 }
 
