@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import composables.main.*
 import composables.stateless.editor.*
+import composables.states.holder.rememberWorldEditorState
 import composables.themed.*
 import doodler.anvil.AnvilLocation
 import doodler.anvil.AnvilManager
@@ -56,35 +57,45 @@ fun WorldEditor(
 ) {
     val scrollState = rememberScrollState()
 
-    val editorFiles = remember { mutableStateListOf<EditableHolder>() }
-    var selectedFile by remember { mutableStateOf("") }
+    val states = rememberWorldEditorState()
 
-    var worldName by remember { mutableStateOf("") }
+    if (states.worldSpec.tree == null)
+        states.worldSpec.tree = WorldDirectory.load(worldPath)
 
-    val worldData = WorldDirectory.load(worldPath)
-    rootWorldData = worldData
-    val level = LevelData.read(worldData.level.readBytes())
+    if (states.worldSpec.name == null)
+        states.worldSpec.name = LevelData.read(states.worldSpec.requireTree.level.readBytes())["Data"]
+            ?.getAs<CompoundTag>()!!["LevelName"]
+            ?.getAs<StringTag>()
+            ?.value
 
-    val levelName = level["Data"]?.getAs<CompoundTag>()!!["LevelName"]?.getAs<StringTag>()?.value
+    rootWorldData = states.worldSpec.requireTree
 
-    if (levelName == null) {
-        // TODO: Handle world name reading error here.
-    } else {
-        worldName = levelName
+    if (states.worldSpec.tree == null || states.worldSpec.name == null) {
+        // TODO: Handle Loading or Parse Error here
+        return
     }
 
+    val tree = states.worldSpec.requireTree
+    val name = states.worldSpec.requireName
+
     val onCategoryItemClick: (CategoryItemData) -> Unit = lambda@ { data ->
-        selectedFile = data.key
+        states.phylum.list.find { it.which == data.key }?.let {
+            states.phylum.current = it
+            return@lambda
+        }
 
-        if (editorFiles.find { it.which == selectedFile } != null) return@lambda
-
-        editorFiles.add(
+        val newHolder =
             if (data.holderType == EditableHolder.Type.Single) {
-                SingleEditableHolder(data.key, data.format, data.contentType, Editable("", level))
+                SingleEditableHolder(
+                    data.key, data.format, data.contentType,
+                    Editable("", LevelData.read(tree.level.readBytes()))
+                )
             } else {
                 MultipleEditableHolder(data.key, data.format, data.contentType, data.extra)
             }
-        )
+
+        states.phylum.list.add(newHolder)
+        states.phylum.current = newHolder
     }
 
     val generalItems: (String) -> List<CategoryItemData> = {
@@ -102,13 +113,13 @@ fun WorldEditor(
         val result = mutableListOf<CategoryItemData>()
         val extra = mapOf("dimension" to it)
 
-        if (worldData[it].region.isNotEmpty())
+        if (tree[it].region.isNotEmpty())
             result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.TERRAIN, extra))
-        if (worldData[it].entities.isNotEmpty())
+        if (tree[it].entities.isNotEmpty())
             result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.ENTITY, extra))
-        if (worldData[it].poi.isNotEmpty())
+        if (tree[it].poi.isNotEmpty())
             result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.POI, extra))
-        if (worldData[it].data.isNotEmpty())
+        if (tree[it].data.isNotEmpty())
             result.add(CategoryItemData(prefix, holderType, Editable.Format.DAT, Editable.ContentType.OTHERS, extra))
 
         result
@@ -123,24 +134,30 @@ fun WorldEditor(
 
     MaterialTheme {
         MainColumn {
-            TopBar { TopBarText(worldName) }
+            TopBar { TopBarText(name) }
 
             MainArea {
                 MainFiles {
                     FileCategoryListScrollable(scrollState) {
                         for (category in categories) {
-                            FilesCategory(category) { FileCategoryItems(category, selectedFile, onCategoryItemClick) }
+                            FilesCategory(category) {
+                                FileCategoryItems(
+                                    category,
+                                    states.phylum.current?.which ?: "",
+                                    onCategoryItemClick
+                                )
+                            }
                         }
                         CategoriesBottomMargin()
                     }
                     FileCategoryListScrollbar(scrollState)
                 }
                 MainContents {
-                    if (editorFiles.size == 0) {
-                        NoFileSelected(worldName)
+                    if (states.phylum.list.size == 0) {
+                        NoFileSelected(name)
                     } else {
-                        for (editorFile in editorFiles) {
-                            Editor(editorFile, selectedFile == editorFile.which)
+                        for (phylum in states.phylum.list) {
+                            Editor(phylum, states.phylum.current?.which == phylum.which)
                         }
                     }
                 }
