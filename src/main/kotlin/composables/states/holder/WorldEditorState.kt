@@ -138,8 +138,8 @@ class SelectorState (
     selectedChunk: MutableState<ChunkLocation?> = mutableStateOf(null),
     chunkXValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("")),
     chunkZValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("")),
-    blockXValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("")),
-    blockZValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("")),
+    blockXValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("-")),
+    blockZValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("-")),
     isChunkXValid: MutableState<Boolean> = mutableStateOf(false),
     isChunkZValid: MutableState<Boolean> = mutableStateOf(false)
 ) {
