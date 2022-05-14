@@ -1,131 +1,18 @@
 package composables.main
 
-import androidx.compose.foundation.*
-import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.TextFieldValue
-import composables.editor.*
-import composables.themed.*
 import doodler.anvil.ChunkLocation
 import doodler.doodle.Doodle
 import doodler.doodle.DoodleState
 import doodler.doodle.rememberDoodleState
-import doodler.file.LevelData
 import doodler.file.WorldData
-import doodler.file.WorldDirectory
 import nbt.tag.CompoundTag
-import nbt.tag.StringTag
 
 var rootWorldData by mutableStateOf<WorldData?>(null)
-
-@Composable
-fun WorldEditor(
-    worldPath: String
-) {
-    val scrollState = rememberScrollState()
-
-    val editorFiles = remember { mutableStateListOf<EditableHolder>() }
-    var selectedFile by remember { mutableStateOf("") }
-
-    var worldName by remember { mutableStateOf("") }
-
-    val worldData = WorldDirectory.load(worldPath)
-    rootWorldData = worldData
-    val level = LevelData.read(worldData.level.readBytes())
-
-    val levelName = level["Data"]?.getAs<CompoundTag>()!!["LevelName"]?.getAs<StringTag>()?.value
-
-    if (levelName == null) {
-        // TODO: Handle world name reading error here.
-    } else {
-        worldName = levelName
-    }
-
-    val onCategoryItemClick: (CategoryItemData) -> Unit = lambda@ { data ->
-        selectedFile = data.key
-
-        if (editorFiles.find { it.which == selectedFile } != null) return@lambda
-
-        editorFiles.add(
-            if (data.holderType == EditableHolder.Type.Single) {
-                SingleEditableHolder(data.key, data.format, data.contentType, Editable("", level))
-            } else {
-                MultipleEditableHolder(data.key, data.format, data.contentType, data.extra)
-            }
-        )
-    }
-
-    val generalItems: (String) -> List<CategoryItemData> = {
-        listOf(
-            CategoryItemData(it, EditableHolder.Type.Single, Editable.Format.DAT, Editable.ContentType.LEVEL),
-            CategoryItemData(it, EditableHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.PLAYER),
-            CategoryItemData(it, EditableHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.STATISTICS),
-            CategoryItemData(it, EditableHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.ADVANCEMENTS)
-        )
-    }
-
-    val dimensionItems: (String) -> List<CategoryItemData> = {
-        val holderType = EditableHolder.Type.Multiple
-        val prefix = display(it)
-        val result = mutableListOf<CategoryItemData>()
-        val extra = mapOf("dimension" to it)
-
-        if (worldData[it].region.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.TERRAIN, extra))
-        if (worldData[it].entities.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.ENTITY, extra))
-        if (worldData[it].poi.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.POI, extra))
-        if (worldData[it].data.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Editable.Format.DAT, Editable.ContentType.OTHERS, extra))
-
-        result
-    }
-
-    val categories = listOf(
-        CategoryData("General", false, generalItems("General")),
-        CategoryData(display(""), false, dimensionItems("")).withDescription(""),
-        CategoryData(display("DIM-1"), true, dimensionItems("DIM-1")).withDescription("DIM-1"),
-        CategoryData(display("DIM1"), true, dimensionItems("DIM1")).withDescription("DIM1")
-    )
-
-    MaterialTheme {
-        MainColumn {
-            TopBar { TopBarText(worldName) }
-
-            MainArea {
-                MainFiles {
-                    FileCategoryListScrollable(scrollState) {
-                        for (category in categories) {
-                            FilesCategory(category) { FileCategoryItems(category, selectedFile, onCategoryItemClick) }
-                        }
-                        CategoriesBottomMargin()
-                    }
-                    FileCategoryListScrollbar(scrollState)
-                }
-                MainContents {
-                    if (editorFiles.size == 0) {
-                        NoFileSelected(worldName)
-                    } else {
-                        for (editorFile in editorFiles) {
-                            Editor(editorFile, selectedFile == editorFile.which)
-                        }
-                    }
-                }
-            }
-
-            BottomBar {
-                Spacer(modifier = Modifier.weight(1f))
-                BottomBarText("by kiwicraft")
-            }
-        }
-    }
-}
 
 fun display(dimension: String): String {
     return when (dimension) {
