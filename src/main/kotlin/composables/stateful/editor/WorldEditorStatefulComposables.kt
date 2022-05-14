@@ -509,7 +509,7 @@ fun BoxScope.EditableField(
                     }
                     if (doodleState.selected.size == 1) {
                         val selectedDoodle = doodleState.selected[0]
-                        if (selectedDoodle is NbtDoodle && !Tag.canHaveChildren(selectedDoodle.type)) {
+                        if (selectedDoodle is NbtDoodle && (selectedDoodle.tag.name != null || !Tag.canHaveChildren(selectedDoodle.type))) {
                             ToolBarAction {
                                 IndicatorText("EDT", ThemedColor.Editor.Action.Edit)
                             }
