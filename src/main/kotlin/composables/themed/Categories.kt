@@ -16,10 +16,10 @@ import androidx.compose.ui.unit.sp
 import composables.states.holder.Species
 import composables.states.holder.SpeciesHolder
 import composables.states.holder.display
-import doodler.file.WorldData
+import doodler.file.WorldTree
 
 
-fun createCategories(tree: WorldData): List<PhylumCategoryData> {
+fun createCategories(tree: WorldTree): List<PhylumCategoryData> {
     val generalItems: (String) -> List<PhylumCategoryItemData> = {
         listOf(
             PhylumCategoryItemData(it, SpeciesHolder.Type.Single, Species.Format.DAT, Species.ContentType.LEVEL),

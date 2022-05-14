@@ -33,12 +33,11 @@ import composables.stateless.editor.*
 import composables.states.holder.*
 import composables.themed.*
 import doodler.anvil.AnvilLocation
-import doodler.anvil.AnvilManager
+import doodler.anvil.AnvilWorker
 import doodler.anvil.BlockLocation
 import doodler.anvil.ChunkLocation
-import doodler.file.LevelData
-import doodler.file.WorldData
-import doodler.file.WorldDirectory
+import doodler.file.WorldTree
+import doodler.file.IOUtils
 import keys
 import kotlinx.coroutines.launch
 import nbt.Tag
@@ -57,10 +56,10 @@ fun WorldEditor(
     val states = rememberWorldEditorState()
 
     if (states.worldSpec.tree == null)
-        states.worldSpec.tree = WorldDirectory.load(worldPath)
+        states.worldSpec.tree = IOUtils.load(worldPath)
 
     if (states.worldSpec.name == null)
-        states.worldSpec.name = LevelData.read(states.worldSpec.requireTree.level.readBytes())["Data"]
+        states.worldSpec.name = IOUtils.readLevel(states.worldSpec.requireTree.level.readBytes())["Data"]
             ?.getAs<CompoundTag>()!!["LevelName"]
             ?.getAs<StringTag>()
             ?.value
@@ -83,7 +82,7 @@ fun WorldEditor(
             if (data.holderType == SpeciesHolder.Type.Single) {
                 SingleSpeciesHolder(
                     data.key, data.format, data.contentType,
-                    NbtSpecies("", LevelData.read(tree.level.readBytes()), mutableStateOf(NbtState.new()))
+                    NbtSpecies("", IOUtils.readLevel(tree.level.readBytes()), mutableStateOf(NbtState.new()))
                 )
             } else {
                 MultipleSpeciesHolder(data.key, data.format, data.contentType, data.extras)
@@ -137,7 +136,7 @@ fun WorldEditor(
 
 @Composable
 fun BoxScope.Editor(
-    tree: WorldData,
+    tree: WorldTree,
     holder: SpeciesHolder,
     selected: Boolean
 ) {
@@ -167,7 +166,7 @@ fun BoxScope.Editor(
 
 @Composable
 fun BoxScope.Selector(
-    tree: WorldData,
+    tree: WorldTree,
     holder: MultipleSpeciesHolder,
     selected: Boolean
 ) {
@@ -178,7 +177,7 @@ fun BoxScope.Selector(
         val newIdent = "[${loc.x}, ${loc.z}]"
         if (holder.hasSpecies(newIdent)) return@select
 
-        val root = AnvilManager.instance.loadChunk(loc, file.readBytes()) ?: return@select
+        val root = AnvilWorker.loadChunk(loc, file.readBytes()) ?: return@select
 
         holder.add(NbtSpecies(newIdent, root, mutableStateOf(NbtState.new())))
     }
@@ -221,7 +220,7 @@ fun BoxScope.Selector(
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun ColumnScope.AnvilSelector(
-    tree: WorldData,
+    tree: WorldTree,
     holder: MultipleSpeciesHolder,
     onSelectChunk: (ChunkLocation, File?) -> Unit
 ) {
@@ -241,7 +240,7 @@ fun ColumnScope.AnvilSelector(
     anvils.forEach {
         val segments = it.name.split(".")
         val location = AnvilLocation(segments[1].toInt(), segments[2].toInt())
-        chunks.addAll(AnvilManager.instance.loadChunkList(location, it.readBytes()))
+        chunks.addAll(AnvilWorker.loadChunkList(location, it.readBytes()))
     }
 
     val selector = holder.species.find { it is SelectorSpecies } as SelectorSpecies
