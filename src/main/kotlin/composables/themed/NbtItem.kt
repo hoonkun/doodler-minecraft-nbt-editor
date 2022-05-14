@@ -64,8 +64,36 @@ private fun ItemIndicator(selected: Boolean, content: @Composable BoxScope.() ->
     )
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-private fun IndicatorText(text: String, color: Color) {
+private fun ToolBarItemIndicator(content: @Composable BoxScope.() -> Unit) {
+    var hover by remember { mutableStateOf(false) }
+
+    Box (
+        modifier = Modifier
+            .wrapContentSize()
+            .onPointerEvent(PointerEventType.Enter) { hover = true }
+            .onPointerEvent(PointerEventType.Exit) { hover = false }
+            .padding(top = 5.dp, bottom = 5.dp)
+            .background(if (hover) Color(0, 0, 0, 30) else Color.Transparent, RoundedCornerShape(3.dp))
+    ) {
+        Box(
+            modifier = Modifier
+                .wrapContentSize()
+                .padding(5.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .padding(top = 2.dp, bottom = 2.dp, start = 3.dp, end = 3.dp),
+                content = content
+            )
+        }
+    }
+}
+
+@Composable
+fun IndicatorText(text: String, color: Color) {
     Text(text, color = color, fontFamily = JetBrainsMono, fontSize = 18.sp)
 }
 
@@ -81,7 +109,7 @@ private fun StringTypeIndicator() {
 
 @Composable
 private fun CompoundTypeIndicator() {
-    IndicatorText("{C}", color = Color(255, 199, 109))
+    IndicatorText("{ }", color = Color(255, 199, 109))
 }
 
 @Composable
@@ -97,21 +125,40 @@ private fun ArrayTypeIndicator(typeString: String) {
 @Composable
 private fun Indicator(type: TagType, selected: Boolean) {
     ItemIndicator (selected) {
-        when (type) {
-            TagType.TAG_BYTE -> NumberTypeIndicator("B")
-            TagType.TAG_INT -> NumberTypeIndicator("I")
-            TagType.TAG_SHORT -> NumberTypeIndicator("S")
-            TagType.TAG_FLOAT -> NumberTypeIndicator("F")
-            TagType.TAG_DOUBLE -> NumberTypeIndicator("D")
-            TagType.TAG_LONG -> NumberTypeIndicator("L")
-            TagType.TAG_BYTE_ARRAY -> ArrayTypeIndicator("B")
-            TagType.TAG_INT_ARRAY -> ArrayTypeIndicator("I")
-            TagType.TAG_LONG_ARRAY -> ArrayTypeIndicator("L")
-            TagType.TAG_STRING -> StringTypeIndicator()
-            TagType.TAG_COMPOUND -> CompoundTypeIndicator()
-            TagType.TAG_LIST -> ListTypeIndicator()
-            TagType.TAG_END -> { /* impossible */
-            }
+        IndicatorText(type)
+    }
+}
+
+@Composable
+fun ToolBarIndicator(type: TagType) {
+    ToolBarItemIndicator {
+        IndicatorText(type)
+    }
+}
+
+@Composable
+fun ToolBarAction(content: @Composable () -> Unit) {
+    ToolBarItemIndicator {
+        content()
+    }
+}
+
+@Composable
+fun IndicatorText(type: TagType) {
+    when (type) {
+        TagType.TAG_BYTE -> NumberTypeIndicator("B")
+        TagType.TAG_INT -> NumberTypeIndicator("I")
+        TagType.TAG_SHORT -> NumberTypeIndicator("S")
+        TagType.TAG_FLOAT -> NumberTypeIndicator("F")
+        TagType.TAG_DOUBLE -> NumberTypeIndicator("D")
+        TagType.TAG_LONG -> NumberTypeIndicator("L")
+        TagType.TAG_BYTE_ARRAY -> ArrayTypeIndicator("B")
+        TagType.TAG_INT_ARRAY -> ArrayTypeIndicator("I")
+        TagType.TAG_LONG_ARRAY -> ArrayTypeIndicator("L")
+        TagType.TAG_STRING -> StringTypeIndicator()
+        TagType.TAG_COMPOUND -> CompoundTypeIndicator()
+        TagType.TAG_LIST -> ListTypeIndicator()
+        TagType.TAG_END -> { /* impossible */
         }
     }
 }

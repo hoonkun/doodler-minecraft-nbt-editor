@@ -39,6 +39,7 @@ import doodler.anvil.ChunkLocation
 import doodler.doodle.*
 import keys
 import kotlinx.coroutines.launch
+import nbt.TagType
 import java.awt.Desktop
 import java.io.File
 import java.net.URI
@@ -568,35 +569,83 @@ fun BoxScope.EditableField(
         }
     }
 
-    LazyColumn (state = lazyColumnState) {
-        itemsIndexed(doodles, key = { _, item -> item.path }) { index, item ->
-            val onExpand: () -> Unit = click@ {
-                if (item !is NbtDoodle) return@click
-                if (!item.hasChildren) return@click
+    val onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit = {
+        val target = doodleState.focusedDirectly
+        if (target != null) doodleState.unFocusDirectly(target)
+    }
 
-                if (!item.expanded) doodles.addAll(index + 1, item.expand())
-                else doodles.removeRange(index + 1, index + item.collapse() + 1)
+    Box {
+        LazyColumn (state = lazyColumnState) {
+            itemsIndexed(doodles, key = { _, item -> item.path }) { index, item ->
+                val onExpand: () -> Unit = click@ {
+                    if (item !is NbtDoodle) return@click
+                    if (!item.hasChildren) return@click
+
+                    if (!item.expanded) doodles.addAll(index + 1, item.expand())
+                    else doodles.removeRange(index + 1, index + item.collapse() + 1)
+                }
+                val onSelect: () -> Unit = {
+                    if (!doodleState.selected.contains(item)) {
+                        if (keys.contains(Key.CtrlLeft)) doodleState.addToSelected(item)
+                        else if (keys.contains(Key.ShiftLeft)) {
+                            val lastSelected = doodleState.getLastSelected()
+                            if (lastSelected == null) doodleState.addToSelected(item)
+                            else {
+                                doodleState.addRangeToSelected(doodles.slice(
+                                    doodles.indexOf(lastSelected) + 1 until doodles.indexOf(item) + 1
+                                ))
+                            }
+                        } else doodleState.setSelected(item)
+                    } else {
+                        if (keys.contains(Key.CtrlLeft) || doodleState.selected.size == 1)
+                            doodleState.removeFromSelected(item)
+                        else if (doodleState.selected.size > 1)
+                            doodleState.setSelected(item)
+                    }
+                }
+                NbtItem(item, onSelect, onExpand, doodleState, treeCollapse)
             }
-            val onSelect: () -> Unit = {
-                if (!doodleState.selected.contains(item)) {
-                    if (keys.contains(Key.CtrlLeft)) doodleState.addToSelected(item)
-                    else if (keys.contains(Key.ShiftLeft)) {
-                        val lastSelected = doodleState.getLastSelected()
-                        if (lastSelected == null) doodleState.addToSelected(item)
-                        else {
-                            doodleState.addRangeToSelected(doodles.slice(
-                                doodles.indexOf(lastSelected) + 1 until doodles.indexOf(item) + 1
-                            ))
-                        }
-                    } else doodleState.setSelected(item)
-                } else {
-                    if (keys.contains(Key.CtrlLeft) || doodleState.selected.size == 1)
-                        doodleState.removeFromSelected(item)
-                    else if (doodleState.selected.size > 1)
-                        doodleState.setSelected(item)
+        }
+        Column (
+            modifier = Modifier
+                .wrapContentSize()
+                .align(Alignment.TopEnd)
+                .padding(40.dp)
+        ) {
+            Column (
+                modifier = Modifier
+                    .background(Color(255, 255, 255, 25), RoundedCornerShape(4.dp))
+                    .wrapContentSize()
+                    .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
+                    .padding(5.dp)
+            ) {
+                ToolBarAction {
+                    IndicatorText("DEL", Color(227, 93, 48))
+                }
+                ToolBarAction {
+                    IndicatorText("YNK", Color(88, 163, 126))
                 }
             }
-            NbtItem(item, onSelect, onExpand, doodleState, treeCollapse)
+            Spacer (modifier = Modifier.height(20.dp))
+            Column (
+                modifier = Modifier
+                    .background(Color(255, 255, 255, 25), RoundedCornerShape(4.dp))
+                    .wrapContentSize()
+                    .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
+                    .padding(5.dp)
+            ) {
+                ToolBarIndicator(TagType.TAG_BYTE)
+                ToolBarIndicator(TagType.TAG_SHORT)
+                ToolBarIndicator(TagType.TAG_INT)
+                ToolBarIndicator(TagType.TAG_FLOAT)
+                ToolBarIndicator(TagType.TAG_DOUBLE)
+                ToolBarIndicator(TagType.TAG_BYTE_ARRAY)
+                ToolBarIndicator(TagType.TAG_INT_ARRAY)
+                ToolBarIndicator(TagType.TAG_LONG_ARRAY)
+                ToolBarIndicator(TagType.TAG_STRING)
+                ToolBarIndicator(TagType.TAG_LIST)
+                ToolBarIndicator(TagType.TAG_COMPOUND)
+            }
         }
     }
 }
