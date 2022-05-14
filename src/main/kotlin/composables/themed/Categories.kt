@@ -13,8 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import composables.main.Editable
-import composables.main.EditableHolder
+import composables.states.holder.Species
+import composables.states.holder.SpeciesHolder
 
 @Composable
 fun ColumnScope.FilesCategory(
@@ -82,9 +82,9 @@ class CategoryData(
 
 class CategoryItemData (
     parent: String,
-    val holderType: EditableHolder.Type,
-    val format: Editable.Format,
-    val contentType: Editable.ContentType,
+    val holderType: SpeciesHolder.Type,
+    val format: Species.Format,
+    val contentType: Species.ContentType,
     val extra: Map<String, String> = mapOf()
 ) {
     val key = "$parent/${contentType.displayName}"

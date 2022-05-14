@@ -1,246 +1,222 @@
-package composables.editor
+package composables.stateful.editor
 
-import androidx.compose.foundation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.mouseClickable
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.*
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.pointer.*
+import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.PointerEvent
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import composables.main.*
+import composables.stateless.editor.*
+import composables.states.holder.*
 import composables.themed.*
 import doodler.anvil.AnvilLocation
 import doodler.anvil.AnvilManager
 import doodler.anvil.BlockLocation
 import doodler.anvil.ChunkLocation
-import doodler.doodle.*
+import doodler.file.LevelData
+import doodler.file.WorldData
+import doodler.file.WorldDirectory
 import keys
 import kotlinx.coroutines.launch
 import nbt.Tag
 import nbt.TagType
+import nbt.tag.CompoundTag
 import nbt.tag.ListTag
-import java.awt.Desktop
+import nbt.tag.StringTag
 import java.io.File
-import java.net.URI
-import java.util.*
-
 
 @Composable
-fun MainColumn(content: @Composable ColumnScope.() -> Unit) {
-    Column(modifier = Modifier.fillMaxSize(), content = content)
-}
-
-@Composable
-fun ColumnScope.TopBar(content: @Composable RowScope.() -> Unit) {
-    TopAppBar(
-        elevation = 0.dp,
-        backgroundColor = Color(55, 55, 57),
-        contentPadding = PaddingValues(start = 25.dp, top = 10.dp, bottom = 10.dp),
-        modifier = Modifier
-            .height(60.dp)
-            .zIndex(1f)
-            .drawBehind(border(bottom = Pair(1f, Color(30, 30, 30)))),
-        content = content
-    )
-}
-
-@Composable
-fun RowScope.TopBarText(text: String) {
-    Text(text, color = Color.White, fontSize = 25.sp)
-}
-
-@Composable
-fun ColumnScope.MainArea(content: @Composable RowScope.() -> Unit) {
-    Row (
-        modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f)
-            .background(Color(43, 43, 43))
-            .zIndex(0f),
-        content = content
-    )
-}
-
-@Composable
-fun RowScope.MainFiles(content: @Composable BoxScope.() -> Unit) {
-    Box (modifier = Modifier.fillMaxHeight().weight(0.3f), content = content)
-}
-
-@Composable
-fun BoxScope.FileCategoryListScrollable(scrollState: ScrollState, content: @Composable ColumnScope.() -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxHeight()
-            .background(Color(60, 63, 65))
-            .verticalScroll(scrollState),
-        content = content
-    )
-}
-
-@Composable
-fun BoxScope.FileCategoryListScrollbar(scrollState: ScrollState) {
-    VerticalScrollbar(
-        ScrollbarAdapter(scrollState),
-        style = ScrollbarStyle(
-            100.dp,
-            15.dp,
-            RectangleShape,
-            250,
-            Color(255, 255, 255, 50),
-            Color(255, 255, 255, 100)
-        ),
-        modifier = Modifier.align(Alignment.TopEnd)
-    )
-}
-
-@Composable
-fun RowScope.MainContents(content: @Composable BoxScope.() -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxHeight()
-            .weight(0.7f),
-        content = content
-    )
-}
-
-@Composable
-fun ColumnScope.BottomBar(content: @Composable RowScope.() -> Unit) {
-    BottomAppBar(
-        elevation = 0.dp,
-        backgroundColor = Color(60, 63, 65),
-        contentPadding = PaddingValues(top = 0.dp, bottom = 0.dp, start = 25.dp, end = 25.dp),
-        modifier = Modifier
-            .height(40.dp)
-            .zIndex(1f)
-            .drawBehind(border(top = Pair(1f, Color(36, 36, 36)))),
-        content = content
-    )
-}
-
-@Composable
-fun RowScope.BottomBarText(text: String) {
-    Text(
-        text,
-        color = Color(255, 255, 255, 180),
-        fontSize = 14.sp
-    )
-}
-
-@Composable
-fun ColumnScope.FileCategoryItems(
-    parent: CategoryData,
-    selected: String,
-    onClick: (CategoryItemData) -> Unit
+fun WorldEditor(
+    worldPath: String
 ) {
-    for (item in parent.items) {
-        FileCategoryItem(item, selected, onClick)
+    val scrollState = rememberScrollState()
+
+    val states = rememberWorldEditorState()
+
+    if (states.worldSpec.tree == null)
+        states.worldSpec.tree = WorldDirectory.load(worldPath)
+
+    if (states.worldSpec.name == null)
+        states.worldSpec.name = LevelData.read(states.worldSpec.requireTree.level.readBytes())["Data"]
+            ?.getAs<CompoundTag>()!!["LevelName"]
+            ?.getAs<StringTag>()
+            ?.value
+
+    if (states.worldSpec.tree == null || states.worldSpec.name == null) {
+        // TODO: Handle Loading or Parse Error here
+        return
     }
-}
 
-@Composable
-fun ColumnScope.CategoriesBottomMargin() {
-    Spacer(modifier = Modifier.height(25.dp))
-}
+    val tree = states.worldSpec.requireTree
+    val name = states.worldSpec.requireName
 
-@Composable
-fun BoxScope.Editor(holder: EditableHolder, selected: Boolean) {
-    if (holder is MultipleEditableHolder) {
-        if (holder.selectorStateOrNull() == null)
-            holder.setSelectorState(rememberSelectorState())
-
-        for (editable in holder.editables) {
-            if (editable.ident == "+") continue
-
-            if (editable.editorStateOrNull() != null) continue
-            editable.setEditorState(rememberEditorState())
+    val onCategoryItemClick: (CategoryItemData) -> Unit = lambda@ { data ->
+        states.phylum.list.find { it.ident == data.key }?.let {
+            states.phylum.species = it
+            return@lambda
         }
-    } else if (holder is SingleEditableHolder) {
-        if (holder.editable.editorStateOrNull() == null)
-            holder.editable.setEditorState(rememberEditorState())
+
+        val newHolder =
+            if (data.holderType == SpeciesHolder.Type.Single) {
+                SingleSpeciesHolder(
+                    data.key, data.format, data.contentType,
+                    NbtSpecies("", LevelData.read(tree.level.readBytes()), mutableStateOf(NbtState.new()))
+                )
+            } else {
+                MultipleSpeciesHolder(data.key, data.format, data.contentType, data.extra)
+            }
+
+        states.phylum.list.add(newHolder)
+        states.phylum.species = newHolder
     }
 
+    val generalItems: (String) -> List<CategoryItemData> = {
+        listOf(
+            CategoryItemData(it, SpeciesHolder.Type.Single, Species.Format.DAT, Species.ContentType.LEVEL),
+            CategoryItemData(it, SpeciesHolder.Type.Multiple, Species.Format.DAT, Species.ContentType.PLAYER),
+            CategoryItemData(it, SpeciesHolder.Type.Multiple, Species.Format.DAT, Species.ContentType.STATISTICS),
+            CategoryItemData(it, SpeciesHolder.Type.Multiple, Species.Format.DAT, Species.ContentType.ADVANCEMENTS)
+        )
+    }
+
+    val dimensionItems: (String) -> List<CategoryItemData> = {
+        val holderType = SpeciesHolder.Type.Multiple
+        val prefix = display(it)
+        val result = mutableListOf<CategoryItemData>()
+        val extra = mapOf("dimension" to it)
+
+        if (tree[it].region.isNotEmpty())
+            result.add(CategoryItemData(prefix, holderType, Species.Format.MCA, Species.ContentType.TERRAIN, extra))
+        if (tree[it].entities.isNotEmpty())
+            result.add(CategoryItemData(prefix, holderType, Species.Format.MCA, Species.ContentType.ENTITY, extra))
+        if (tree[it].poi.isNotEmpty())
+            result.add(CategoryItemData(prefix, holderType, Species.Format.MCA, Species.ContentType.POI, extra))
+        if (tree[it].data.isNotEmpty())
+            result.add(CategoryItemData(prefix, holderType, Species.Format.DAT, Species.ContentType.OTHERS, extra))
+
+        result
+    }
+
+    val categories = listOf(
+        CategoryData("General", false, generalItems("General")),
+        CategoryData(display(""), false, dimensionItems("")).withDescription(""),
+        CategoryData(display("DIM-1"), true, dimensionItems("DIM-1")).withDescription("DIM-1"),
+        CategoryData(display("DIM1"), true, dimensionItems("DIM1")).withDescription("DIM1")
+    )
+
+    MaterialTheme {
+        MainColumn {
+            TopBar { TopBarText(name) }
+
+            MainArea {
+                MainFiles {
+                    FileCategoryListScrollable(scrollState) {
+                        for (category in categories) {
+                            FilesCategory(category) {
+                                FileCategoryItems(
+                                    category,
+                                    states.phylum.species?.ident ?: "",
+                                    onCategoryItemClick
+                                )
+                            }
+                        }
+                        CategoriesBottomMargin()
+                    }
+                    FileCategoryListScrollbar(scrollState)
+                }
+                MainContents {
+                    if (states.phylum.list.size == 0) {
+                        NoFileSelected(name)
+                    } else {
+                        val phylum = states.phylum.list.find { states.phylum.species?.ident == it.ident }
+                            ?: return@MainContents
+
+                        Editor(tree, phylum, true)
+                    }
+                }
+            }
+
+            BottomBar {
+                Spacer(modifier = Modifier.weight(1f))
+                BottomBarText("by kiwicraft")
+            }
+        }
+    }
+}
+
+@Composable
+fun BoxScope.Editor(
+    tree: WorldData,
+    holder: SpeciesHolder,
+    selected: Boolean
+) {
     if (!selected) return
 
     EditorRoot {
-        if (holder is MultipleEditableHolder) {
+        if (holder is MultipleSpeciesHolder) {
             TabGroup(
-                holder.editables.map { TabData(holder.selected == it.ident, it) },
+                holder.species.map { TabData(holder.selected == it, it) },
                 { holder.select(it) },
                 { holder.remove(it) }
             )
             Editables {
-                for (editable in holder.editables) {
-                    if (editable.ident == "+" && holder.selected == editable.ident) {
-                        Selector(holder, holder.selected == editable.ident)
-                    } else if (holder.selected == editable.ident) {
-                        EditableField(editable, editable.editorState)
+                for (species in holder.species) {
+                    if (species is SelectorSpecies && holder.selected == species) {
+                        Selector(tree, holder, holder.selected == species)
+                    } else if (species is NbtSpecies && holder.selected == species) {
+                        EditableField(species, species.state)
                     }
                 }
             }
-        } else if (holder is SingleEditableHolder) {
-            Editables { EditableField(holder.editable, holder.editable.editorState) }
+        } else if (holder is SingleSpeciesHolder) {
+            Editables { EditableField(holder.species, holder.species.state) }
         }
     }
 }
 
 @Composable
-fun BoxScope.EditorRoot(content: @Composable ColumnScope.() -> Unit) {
-    Column (
-        modifier = Modifier
-            .fillMaxSize()
-            .zIndex(100f),
-        content = content
-    )
-}
-
-@Composable
-fun ColumnScope.Editables(content: @Composable BoxScope.() -> Unit) {
-    Box (
-        modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f),
-        content = content
-    )
-}
-
-@Composable
-fun BoxScope.Selector(holder: MultipleEditableHolder, selected: Boolean) {
+fun BoxScope.Selector(
+    tree: WorldData,
+    holder: MultipleSpeciesHolder,
+    selected: Boolean
+) {
 
     val onSelectChunk: (ChunkLocation, File?) -> Unit = select@ { loc, file ->
         if (file == null) return@select
 
         val newIdent = "[${loc.x}, ${loc.z}]"
-        if (holder.hasEditable(newIdent)) return@select
+        if (holder.hasSpecies(newIdent)) return@select
 
-        val root = AnvilManager.instance.loadChunk(loc, file.readBytes())
-        holder.add(Editable(newIdent, root))
+        val root = AnvilManager.instance.loadChunk(loc, file.readBytes()) ?: return@select
+
+        holder.add(NbtSpecies(newIdent, root, mutableStateOf(NbtState.new())))
     }
 
     Column {
-        if (holder.format == Editable.Format.MCA) AnvilSelector(holder, onSelectChunk)
+        if (holder.format == Species.Format.MCA) AnvilSelector(tree, holder, onSelectChunk)
         Column (
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -251,7 +227,7 @@ fun BoxScope.Selector(holder: MultipleEditableHolder, selected: Boolean) {
                 .zIndex(if (selected) 100f else -1f)
         ) {
             Text(
-                holder.which,
+                holder.ident,
                 color = Color.White,
                 fontSize = 38.sp,
             )
@@ -267,7 +243,7 @@ fun BoxScope.Selector(holder: MultipleEditableHolder, selected: Boolean) {
                 color = ThemedColor.Bright,
                 fontSize = 30.sp
             ) {
-                holder.add(Editable("Some Name"))
+//                holder.add(Species("Some Name"))
             }
             WhatIsThis("")
         }
@@ -277,19 +253,19 @@ fun BoxScope.Selector(holder: MultipleEditableHolder, selected: Boolean) {
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun ColumnScope.AnvilSelector(
-    holder: MultipleEditableHolder,
+    tree: WorldData,
+    holder: MultipleSpeciesHolder,
     onSelectChunk: (ChunkLocation, File?) -> Unit
 ) {
 
-    val worldData = rootWorldData ?: return
     val dimension = holder.extra["dimension"] ?: return
 
-    val worldDimension = worldData[dimension]
+    val worldDimension = tree[dimension]
 
     val anvils = when(holder.contentType) {
-        Editable.ContentType.TERRAIN -> worldDimension.region
-        Editable.ContentType.POI -> worldDimension.poi
-        Editable.ContentType.ENTITY -> worldDimension.entities
+        Species.ContentType.TERRAIN -> worldDimension.region
+        Species.ContentType.POI -> worldDimension.poi
+        Species.ContentType.ENTITY -> worldDimension.entities
         else -> return
     }
 
@@ -300,32 +276,24 @@ fun ColumnScope.AnvilSelector(
         chunks.addAll(AnvilManager.instance.loadChunkList(location, it.readBytes()))
     }
 
-    val state = holder.selectorState
+    val selector = holder.species.find { it is SelectorSpecies } as SelectorSpecies
+    val state = selector.state
 
-    var selectedChunk by state.selectedChunk
+    if (state.selectedChunk == null && chunks.isNotEmpty())
+        state.selectedChunk = chunks[0]
 
-    if (selectedChunk == null && chunks.isNotEmpty())
-        selectedChunk = chunks[0]
-
-    var chunkXValue by state.chunkXValue
-    var chunkZValue by state.chunkZValue
-
-    if (chunkXValue.text == "") chunkXValue = TextFieldValue("${selectedChunk?.x ?: "-"}")
-    if (chunkZValue.text == "") chunkZValue = TextFieldValue("${selectedChunk?.z ?: "-"}")
-
-    var blockXValue by state.blockXValue
-    var blockZValue by state.blockZValue
-
-    var isChunkXValid by state.isChunkXValid
-    var isChunkZValid by state.isChunkZValid
+    if (state.chunkXValue.text == "") state.chunkXValue = TextFieldValue("${state.selectedChunk?.x ?: "-"}")
+    if (state.chunkZValue.text == "") state.chunkZValue = TextFieldValue("${state.selectedChunk?.z ?: "-"}")
 
     val validChunkX = chunks.map { chunk -> chunk.x }
     val validChunkZ = chunks.map { chunk -> chunk.z }
 
     val updateSelectedChunk: () -> Unit = {
-        selectedChunk =
-            if (!isChunkXValid || !isChunkZValid || chunkXValue.text.toIntOrNull() == null || chunkZValue.text.toIntOrNull() == null) null
-            else ChunkLocation(chunkXValue.text.toInt(), chunkZValue.text.toInt())
+        val isValid = state.isChunkXValid && state.isChunkZValid
+        val isInt = state.chunkXValue.text.toIntOrNull() != null && state.chunkZValue.text.toIntOrNull() != null
+        state.selectedChunk =
+            if (!isValid || !isInt) null
+            else ChunkLocation(state.chunkXValue.text.toInt(), state.chunkZValue.text.toInt())
     }
 
     val validate: (List<Int>, AnnotatedString) -> Pair<TransformedText, Boolean> = validate@ { valid, actual ->
@@ -362,7 +330,7 @@ fun ColumnScope.AnvilSelector(
     val validateChunkX: (AnnotatedString) -> TransformedText = validate@ {
         val validateResult = validate(validChunkX, it)
 
-        isChunkXValid = validateResult.second
+        state.isChunkXValid = validateResult.second
 
         updateSelectedChunk()
         validateResult.first
@@ -371,23 +339,23 @@ fun ColumnScope.AnvilSelector(
     val validateChunkZ: (AnnotatedString) -> TransformedText = validate@ {
         val validateResult = validate(validChunkZ, it)
 
-        isChunkZValid = validateResult.second
+        state.isChunkZValid = validateResult.second
 
         updateSelectedChunk()
         validateResult.first
     }
 
     val removeBlock: () -> Unit = {
-        blockXValue = TextFieldValue("-")
-        blockZValue = TextFieldValue("-")
+        state.blockXValue = TextFieldValue("-")
+        state.blockZValue = TextFieldValue("-")
     }
 
     val updateFromBlock: () -> Unit = {
-        if (blockXValue.text.toIntOrNull() != null && blockZValue.text.toIntOrNull() != null) {
-            val newChunk = BlockLocation(blockXValue.text.toInt(), blockZValue.text.toInt()).toChunkLocation()
-            chunkXValue = TextFieldValue("${newChunk.x}")
-            chunkZValue = TextFieldValue("${newChunk.z}")
-            selectedChunk = newChunk
+        if (state.blockXValue.text.toIntOrNull() != null && state.blockZValue.text.toIntOrNull() != null) {
+            val newChunk = BlockLocation(state.blockXValue.text.toInt(), state.blockZValue.text.toInt()).toChunkLocation()
+            state.chunkXValue = TextFieldValue("${newChunk.x}")
+            state.chunkZValue = TextFieldValue("${newChunk.z}")
+            state.selectedChunk = newChunk
         }
     }
 
@@ -407,47 +375,48 @@ fun ColumnScope.AnvilSelector(
         AnvilSelectorDropdown("block:") {
             CoordinateText("[")
             CoordinateInput(
-                blockXValue,
-                { blockXValue = it; updateFromBlock() },
+                state.blockXValue,
+                { state.blockXValue = it; updateFromBlock() },
                 validateIntOnly
             )
             CoordinateText(", ")
             CoordinateInput(
-                blockZValue,
-                { blockZValue = it; updateFromBlock() },
+                state.blockZValue,
+                { state.blockZValue = it; updateFromBlock() },
                 validateIntOnly
             )
             CoordinateText("]")
         }
         Spacer(modifier = Modifier.width(10.dp))
-        AnvilSelectorDropdown("chunk:", true, selectedChunk != null) {
+        AnvilSelectorDropdown("chunk:", true, state.selectedChunk != null) {
             CoordinateText("[")
             CoordinateInput(
-                chunkXValue,
-                { chunkXValue = it; removeBlock() },
+                state.chunkXValue,
+                { state.chunkXValue = it; removeBlock() },
                 validateChunkX
             )
             CoordinateText(", ")
             CoordinateInput(
-                chunkZValue,
-                { chunkZValue = it; removeBlock() },
+                state.chunkZValue,
+                { state.chunkZValue = it; removeBlock() },
                 validateChunkZ
             )
             CoordinateText("]")
         }
         Spacer(modifier = Modifier.width(10.dp))
         AnvilSelectorDropdown("region:") {
+            val isChunkValid = state.isChunkXValid && state.isChunkZValid
             CoordinateText("r.")
-            CoordinateText("${selectedChunk?.toAnvilLocation()?.x ?: "-"}", !isChunkXValid || !isChunkZValid)
+            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.x ?: "-"}", !isChunkValid)
             CoordinateText(".")
-            CoordinateText("${selectedChunk?.toAnvilLocation()?.z ?: "-"}", !isChunkXValid || !isChunkZValid)
+            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.z ?: "-"}", !isChunkValid)
             CoordinateText(".mca")
         }
         Spacer(modifier = Modifier.weight(1f))
         Row (
             modifier = Modifier
                 .background(
-                    if (selectedChunk == null) {
+                    if (state.selectedChunk == null) {
                         Color.Transparent
                     } else {
                         when (openerEvtType) {
@@ -457,15 +426,15 @@ fun ColumnScope.AnvilSelector(
                         }
                     }
                 )
-                .onPointerEvent(PointerEventType.Enter, PointerEventPass.Final, updateOpenerEvtType)
-                .onPointerEvent(PointerEventType.Exit, PointerEventPass.Final, updateOpenerEvtType)
-                .onPointerEvent(PointerEventType.Press, PointerEventPass.Final, updateOpenerEvtType)
-                .onPointerEvent(PointerEventType.Release, PointerEventPass.Final, updateOpenerEvtType)
+                .onPointerEvent(PointerEventType.Enter, onEvent = updateOpenerEvtType)
+                .onPointerEvent(PointerEventType.Exit, onEvent = updateOpenerEvtType)
+                .onPointerEvent(PointerEventType.Press, onEvent = updateOpenerEvtType)
+                .onPointerEvent(PointerEventType.Release, onEvent = updateOpenerEvtType)
                 .height(60.dp)
                 .width(60.dp)
-                .alpha(if (selectedChunk == null) 0.5f else 1f)
+                .alpha(if (state.selectedChunk == null) 0.5f else 1f)
                 .mouseClickable {
-                    val chunk = selectedChunk
+                    val chunk = state.selectedChunk
                     if (chunk != null) {
                         val anvil = chunk.toAnvilLocation()
                         onSelectChunk(chunk, anvils.find { it.name == "r.${anvil.x}.${anvil.z}.mca" })
@@ -486,81 +455,18 @@ fun ColumnScope.AnvilSelector(
     }
 }
 
-@Composable
-fun RowScope.CoordinateText(text: String, invalid: Boolean = false) {
-    Text(
-        text,
-        fontSize = 21.sp,
-        color = if (invalid) Color(100, 100, 100) else Color(169, 183, 198),
-        fontFamily = JetBrainsMono,
-        modifier = Modifier.focusable(false)
-    )
-}
-
-@Composable
-fun RowScope.CoordinateInput(
-    value: TextFieldValue,
-    onValueChange: (TextFieldValue) -> Unit,
-    transformer: (AnnotatedString) -> TransformedText = { TransformedText(it, OffsetMapping.Identity) }
-) {
-    BasicTextField(
-        value,
-        onValueChange,
-        textStyle = TextStyle(
-            fontSize = 21.sp,
-            color = Color(169, 183, 198),
-            fontFamily = JetBrainsMono
-        ),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-        singleLine = true,
-        cursorBrush = SolidColor(Color(169, 183, 198)),
-        visualTransformation = transformer,
-        modifier = Modifier
-            .width((value.text.length.coerceAtLeast(1) * 12.75).dp)
-            .focusable(false)
-    )
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun RowScope.AnvilSelectorDropdown(prefix: String, accent: Boolean = false, valid: Boolean = true, content: @Composable RowScope.() -> Unit) {
-    Row (
-        modifier = Modifier
-            .background(
-                if (accent && valid) Color(50, 54, 47)
-                else if (accent) Color(64, 55, 52)
-                else Color(42, 42, 42),
-                RoundedCornerShape(4.dp)
-            )
-            .wrapContentWidth()
-            .height(45.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Spacer(modifier = Modifier.width(17.dp))
-        Text(
-            prefix,
-            fontSize = 18.sp,
-            color = Color(125, 125, 125),
-            fontFamily = JetBrainsMono
-        )
-        Spacer(modifier = Modifier.width(10.dp))
-        content()
-        Spacer(modifier = Modifier.width(17.dp))
-    }
-}
-
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.EditableField(
-    editable: Editable,
-    state: EditorState
+    species: NbtSpecies,
+    state: NbtState
 ) {
-    val nbt = editable.root ?: return
+    val nbt = species.root
 
     val coroutineScope = rememberCoroutineScope()
 
     val doodles = state.doodles
-    val doodleState = state.doodleState
+    val doodleState = state.ui
     val lazyColumnState = state.lazyState
 
     if (doodles.isEmpty()) doodles.addAll(nbt.doodle(null, 0))
@@ -596,15 +502,15 @@ fun BoxScope.EditableField(
             itemsIndexed(doodles, key = { _, item -> item.path }) { index, item ->
                 val onExpand: () -> Unit = click@ {
                     if (item !is NbtDoodle) return@click
-                    if (!item.hasChildren) return@click
+                    if (!item.canHaveChildren) return@click
 
                     if (!item.expanded) doodles.addAll(index + 1, item.expand())
                     else doodles.removeRange(index + 1, index + item.collapse() + 1)
                 }
                 val onSelect: () -> Unit = {
                     if (!doodleState.selected.contains(item)) {
-                        if (keys.contains(Key.CtrlLeft)) doodleState.addToSelected(item)
-                        else if (keys.contains(Key.ShiftLeft)) {
+                        if (keys.contains(androidx.compose.ui.input.key.Key.CtrlLeft)) doodleState.addToSelected(item)
+                        else if (keys.contains(androidx.compose.ui.input.key.Key.ShiftLeft)) {
                             val lastSelected = doodleState.getLastSelected()
                             if (lastSelected == null) doodleState.addToSelected(item)
                             else {
@@ -614,7 +520,7 @@ fun BoxScope.EditableField(
                             }
                         } else doodleState.setSelected(item)
                     } else {
-                        if (keys.contains(Key.CtrlLeft) || doodleState.selected.size == 1)
+                        if (keys.contains(androidx.compose.ui.input.key.Key.CtrlLeft) || doodleState.selected.size == 1)
                             doodleState.removeFromSelected(item)
                         else if (doodleState.selected.size > 1)
                             doodleState.setSelected(item)
@@ -711,77 +617,5 @@ fun BoxScope.EditableField(
                 }
             }
         }
-    }
-}
-
-@Composable
-fun BoxScope.NoFileSelected(worldName: String) {
-    Column (
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Text(
-            "< world >",
-            color = Color(255, 255, 255, 100),
-            fontSize = 29.sp
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            worldName,
-            color = Color.White,
-            fontSize = 38.sp
-        )
-        Spacer(modifier = Modifier.height(35.dp))
-        Text(
-            "Select Tab in Left Area!",
-            color = Color(255, 255, 255, 185),
-            fontSize = 33.sp
-        )
-        Spacer(modifier = Modifier.height(25.dp))
-        WhatIsThis("")
-    }
-}
-
-@Composable
-fun WhatIsThis(link: String) {
-    Spacer(modifier = Modifier.height(60.dp))
-    Text(
-        "What is this?",
-        color = Color(255, 255, 255, 145),
-        fontSize = 25.sp
-    )
-    Spacer(modifier = Modifier.height(10.dp))
-    LinkText(
-        "Documentation",
-        color = ThemedColor.Link,
-        fontSize = 22.sp
-    ) {
-        openBrowser(link)
-    }
-}
-
-fun openBrowser(url: String) {
-    val osName = System.getProperty("os.name").lowercase(Locale.getDefault())
-
-    val others: () -> Unit = {
-        val runtime = Runtime.getRuntime()
-        if (osName.contains("mac")) {
-            runtime.exec("open $url")
-        } else if (osName.contains("nix") || osName.contains("nux")) {
-            runtime.exec("xdg-open $url")
-        }
-    }
-
-    try {
-        if (Desktop.isDesktopSupported()) {
-            val desktop = Desktop.getDesktop()
-            if (desktop.isSupported(Desktop.Action.BROWSE)) desktop.browse(URI(url))
-            else others()
-        } else {
-            others()
-        }
-    } catch (e: Exception) {
-        e.printStackTrace()
     }
 }

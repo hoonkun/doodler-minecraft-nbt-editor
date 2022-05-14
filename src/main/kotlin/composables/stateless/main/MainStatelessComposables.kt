@@ -1,4 +1,4 @@
-package composables.main
+package composables.stateless.main
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*

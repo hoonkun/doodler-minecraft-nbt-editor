@@ -14,9 +14,9 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.WindowState
-import composables.main.NoWorldsSelected
-import composables.main.SingleEditor
-import composables.main.WorldEditor
+import composables.stateful.editor.SingleEditor
+import composables.stateful.editor.WorldEditor
+import composables.stateless.main.NoWorldsSelected
 
 @Composable
 @Preview
