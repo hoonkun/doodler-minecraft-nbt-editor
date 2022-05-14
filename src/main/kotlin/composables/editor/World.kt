@@ -643,6 +643,14 @@ fun BoxScope.EditableField(
                     ToolBarAction {
                         IndicatorText("YNK", Color(88, 163, 126))
                     }
+                    if (doodleState.selected.size == 1) {
+                        val selectedDoodle = doodleState.selected[0]
+                        if (selectedDoodle is NbtDoodle && !Tag.canHaveChildren(selectedDoodle.type)) {
+                            ToolBarAction {
+                                IndicatorText("EDT", Color(88, 132, 163))
+                            }
+                        }
+                    }
                 }
                 if (doodleState.selected.size == 1) {
                     val selectedDoodle = doodleState.selected[0]
