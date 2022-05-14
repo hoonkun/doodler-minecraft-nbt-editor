@@ -166,7 +166,24 @@ fun ColumnScope.CategoriesBottomMargin() {
 }
 
 @Composable
-fun BoxScope.Editor(holder: EditableHolder) {
+fun BoxScope.Editor(holder: EditableHolder, selected: Boolean) {
+    if (holder is MultipleEditableHolder) {
+        if (holder.selectorStateOrNull() == null)
+            holder.setSelectorState(rememberSelectorState())
+
+        for (editable in holder.editables) {
+            if (editable.ident == "+") continue
+
+            if (editable.editorStateOrNull() != null) continue
+            editable.setEditorState(rememberEditorState())
+        }
+    } else if (holder is SingleEditableHolder) {
+        if (holder.editable.editorStateOrNull() == null)
+            holder.editable.setEditorState(rememberEditorState())
+    }
+
+    if (!selected) return
+
     EditorRoot {
         if (holder is MultipleEditableHolder) {
             TabGroup(
@@ -176,24 +193,14 @@ fun BoxScope.Editor(holder: EditableHolder) {
             )
             Editables {
                 for (editable in holder.editables) {
-                    if (editable.ident == "+") {
-                        if (holder.selected == editable.ident) {
-                            Selector(holder, holder.selected == editable.ident)
-                        }
-                    } else {
-                        if (editable.editorStateOrNull() == null)
-                            editable.setEditorState(rememberEditorState())
-
-                        if (holder.selected == editable.ident) {
-                            EditableField(editable, editable.editorState)
-                        }
+                    if (editable.ident == "+" && holder.selected == editable.ident) {
+                        Selector(holder, holder.selected == editable.ident)
+                    } else if (holder.selected == editable.ident) {
+                        EditableField(editable, editable.editorState)
                     }
                 }
             }
         } else if (holder is SingleEditableHolder) {
-            if (holder.editable.editorStateOrNull() == null)
-                holder.editable.setEditorState(rememberEditorState())
-
             Editables { EditableField(holder.editable, holder.editable.editorState) }
         }
     }
@@ -293,16 +300,24 @@ fun ColumnScope.AnvilSelector(
         chunks.addAll(AnvilManager.instance.loadChunkList(location, it.readBytes()))
     }
 
-    var selectedChunk by remember { mutableStateOf(if (chunks.isEmpty()) null else chunks[0]) }
+    val state = holder.selectorState
 
-    var chunkXValue by remember { mutableStateOf(TextFieldValue("${selectedChunk?.x ?: "-"}")) }
-    var chunkZValue by remember { mutableStateOf(TextFieldValue("${selectedChunk?.z ?: "-"}")) }
+    var selectedChunk by state.selectedChunk
 
-    var blockXValue by remember { mutableStateOf(TextFieldValue("-")) }
-    var blockZValue by remember { mutableStateOf(TextFieldValue("-")) }
+    if (selectedChunk == null && chunks.isNotEmpty())
+        selectedChunk = chunks[0]
 
-    var isChunkXValid by remember { mutableStateOf(true) }
-    var isChunkZValid by remember { mutableStateOf(true) }
+    var chunkXValue by state.chunkXValue
+    var chunkZValue by state.chunkZValue
+
+    if (chunkXValue.text == "") chunkXValue = TextFieldValue("${selectedChunk?.x ?: "-"}")
+    if (chunkZValue.text == "") chunkZValue = TextFieldValue("${selectedChunk?.z ?: "-"}")
+
+    var blockXValue by state.blockXValue
+    var blockZValue by state.blockZValue
+
+    var isChunkXValid by state.isChunkXValid
+    var isChunkZValid by state.isChunkZValid
 
     val validChunkX = chunks.map { chunk -> chunk.x }
     val validChunkZ = chunks.map { chunk -> chunk.z }

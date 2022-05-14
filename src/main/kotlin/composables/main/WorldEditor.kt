@@ -8,8 +8,10 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.TextFieldValue
 import composables.editor.*
 import composables.themed.*
+import doodler.anvil.ChunkLocation
 import doodler.doodle.Doodle
 import doodler.doodle.DoodleState
 import doodler.doodle.rememberDoodleState
@@ -27,7 +29,7 @@ fun WorldEditor(
 ) {
     val scrollState = rememberScrollState()
 
-    val editorFiles = remember { mutableStateMapOf<String, EditableHolder>() }
+    val editorFiles = remember { mutableStateListOf<EditableHolder>() }
     var selectedFile by remember { mutableStateOf("") }
 
     var worldName by remember { mutableStateOf("") }
@@ -47,13 +49,15 @@ fun WorldEditor(
     val onCategoryItemClick: (CategoryItemData) -> Unit = lambda@ { data ->
         selectedFile = data.key
 
-        if (editorFiles[selectedFile] != null) return@lambda
+        if (editorFiles.find { it.which == selectedFile } != null) return@lambda
 
-        editorFiles[data.key] = if (data.holderType == EditableHolder.Type.Single) {
-            SingleEditableHolder(data.key, data.format, data.contentType, Editable("", level))
-        } else {
-            MultipleEditableHolder(data.key, data.format, data.contentType, data.extra)
-        }
+        editorFiles.add(
+            if (data.holderType == EditableHolder.Type.Single) {
+                SingleEditableHolder(data.key, data.format, data.contentType, Editable("", level))
+            } else {
+                MultipleEditableHolder(data.key, data.format, data.contentType, data.extra)
+            }
+        )
     }
 
     val generalItems: (String) -> List<CategoryItemData> = {
@@ -108,8 +112,9 @@ fun WorldEditor(
                     if (editorFiles.size == 0) {
                         NoFileSelected(worldName)
                     } else {
-                        val selected = editorFiles.values.find { it.which == selectedFile }
-                        if (selected != null) Editor(selected)
+                        for (editorFile in editorFiles) {
+                            Editor(editorFile, selectedFile == editorFile.which)
+                        }
                     }
                 }
             }
@@ -191,6 +196,29 @@ class EditorState(
     val lazyState: LazyListState
 )
 
+@Composable
+fun rememberSelectorState(
+    selectedChunk: MutableState<ChunkLocation?> = remember { mutableStateOf(null) },
+    chunkXValue: MutableState<TextFieldValue> = remember { mutableStateOf(TextFieldValue("")) },
+    chunkZValue: MutableState<TextFieldValue> = remember { mutableStateOf(TextFieldValue("")) },
+    blockXValue: MutableState<TextFieldValue> = remember { mutableStateOf(TextFieldValue("-")) },
+    blockZValue: MutableState<TextFieldValue> = remember { mutableStateOf(TextFieldValue("-")) },
+    isChunkXValid: MutableState<Boolean> = remember { mutableStateOf(true) },
+    isChunkZValid: MutableState<Boolean> = remember { mutableStateOf(true) }
+) = remember(selectedChunk, chunkXValue, chunkZValue, blockXValue, blockZValue, isChunkXValid, isChunkZValid) {
+    SelectorState(selectedChunk, chunkXValue, chunkZValue, blockXValue, blockZValue, isChunkXValid, isChunkZValid)
+}
+
+class SelectorState(
+    val selectedChunk: MutableState<ChunkLocation?>,
+    val chunkXValue: MutableState<TextFieldValue>,
+    val chunkZValue: MutableState<TextFieldValue>,
+    val blockXValue: MutableState<TextFieldValue>,
+    val blockZValue: MutableState<TextFieldValue>,
+    val isChunkXValid: MutableState<Boolean>,
+    val isChunkZValid: MutableState<Boolean>,
+)
+
 abstract class EditableHolder(
     val which: String,
     val format: Editable.Format,
@@ -221,6 +249,17 @@ class MultipleEditableHolder(
 
     init {
         editables.add(Editable("+"))
+    }
+
+    private var _selectorState: SelectorState? = null
+    val selectorState get() = _selectorState!!
+
+    fun setSelectorState(selectorState: SelectorState) {
+        _selectorState = selectorState
+    }
+
+    fun selectorStateOrNull(): SelectorState? {
+        return _selectorState
     }
 
     fun hasEditable(ident: String) = editables.any { it.ident == ident }
