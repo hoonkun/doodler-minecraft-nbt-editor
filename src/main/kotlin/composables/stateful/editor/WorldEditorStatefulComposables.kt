@@ -505,13 +505,13 @@ fun BoxScope.EditableField(
                         IndicatorText("DEL", ThemedColor.Editor.Action.Delete)
                     }
                     ToolBarAction {
-                        IndicatorText("YNK", ThemedColor.Editor.Action.Yank)
+                        IndicatorText("YNK", ThemedColor.Editor.Tag.General)
                     }
                     if (doodleState.selected.size == 1) {
                         val selectedDoodle = doodleState.selected[0]
                         if (selectedDoodle is NbtDoodle && (selectedDoodle.tag.name != null || !Tag.canHaveChildren(selectedDoodle.type))) {
                             ToolBarAction {
-                                IndicatorText("EDT", ThemedColor.Editor.Action.Edit)
+                                IndicatorText("EDT", ThemedColor.Editor.Tag.General)
                             }
                         }
                     }
