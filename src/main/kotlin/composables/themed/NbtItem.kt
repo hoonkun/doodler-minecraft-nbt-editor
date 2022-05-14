@@ -17,7 +17,10 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import doodler.doodle.*
+import composables.states.holder.Doodle
+import composables.states.holder.DoodleUi
+import composables.states.holder.NbtDoodle
+import composables.states.holder.ValueDoodle
 import nbt.TagType
 
 @Composable
@@ -252,7 +255,7 @@ private fun KeyValue(type: TagType, key: String?, value: String, index: Int, sel
 @Composable
 fun NbtItemTreeView(
     doodle: Doodle,
-    state: DoodleState,
+    state: DoodleUi,
     scrollTo: () -> Unit
 ) {
     var focused by remember { mutableStateOf(false) }
@@ -290,7 +293,7 @@ fun NbtItem(
     doodle: Doodle,
     onSelect: () -> Unit,
     onExpand: () -> Unit,
-    state: DoodleState,
+    state: DoodleUi,
     treeCollapse: (Doodle, Int) -> Unit
 ) {
     val hierarchy = getHierarchy(doodle)
@@ -361,7 +364,7 @@ fun DoodleContent(doodle: Doodle, selected: Boolean) {
             Spacer(modifier = Modifier.width(20.dp))
             KeyValue(doodle.type, doodle.name, doodle.value, doodle.index, selected)
         }
-        is PrimitiveValueDoodle -> {
+        is ValueDoodle -> {
             Index(doodle.index, selected)
             Spacer(modifier = Modifier.width(10.dp))
             NumberValue(doodle.value)

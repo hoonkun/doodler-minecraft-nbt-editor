@@ -29,18 +29,15 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import composables.main.*
 import composables.stateless.editor.*
-import composables.states.holder.rememberWorldEditorState
+import composables.states.holder.*
 import composables.themed.*
 import doodler.anvil.AnvilLocation
 import doodler.anvil.AnvilManager
 import doodler.anvil.BlockLocation
 import doodler.anvil.ChunkLocation
-import doodler.doodle.Doodle
-import doodler.doodle.NbtDoodle
-import doodler.doodle.doodle
 import doodler.file.LevelData
+import doodler.file.WorldData
 import doodler.file.WorldDirectory
 import keys
 import kotlinx.coroutines.launch
@@ -68,8 +65,6 @@ fun WorldEditor(
             ?.getAs<StringTag>()
             ?.value
 
-    rootWorldData = states.worldSpec.requireTree
-
     if (states.worldSpec.tree == null || states.worldSpec.name == null) {
         // TODO: Handle Loading or Parse Error here
         return
@@ -88,7 +83,7 @@ fun WorldEditor(
             if (data.holderType == SpeciesHolder.Type.Single) {
                 SingleSpeciesHolder(
                     data.key, data.format, data.contentType,
-                    Editable("", LevelData.read(tree.level.readBytes()))
+                    NbtSpecies("", LevelData.read(tree.level.readBytes()), mutableStateOf(NbtState.new()))
                 )
             } else {
                 MultipleSpeciesHolder(data.key, data.format, data.contentType, data.extra)
@@ -100,10 +95,10 @@ fun WorldEditor(
 
     val generalItems: (String) -> List<CategoryItemData> = {
         listOf(
-            CategoryItemData(it, SpeciesHolder.Type.Single, Editable.Format.DAT, Editable.ContentType.LEVEL),
-            CategoryItemData(it, SpeciesHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.PLAYER),
-            CategoryItemData(it, SpeciesHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.STATISTICS),
-            CategoryItemData(it, SpeciesHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.ADVANCEMENTS)
+            CategoryItemData(it, SpeciesHolder.Type.Single, Species.Format.DAT, Species.ContentType.LEVEL),
+            CategoryItemData(it, SpeciesHolder.Type.Multiple, Species.Format.DAT, Species.ContentType.PLAYER),
+            CategoryItemData(it, SpeciesHolder.Type.Multiple, Species.Format.DAT, Species.ContentType.STATISTICS),
+            CategoryItemData(it, SpeciesHolder.Type.Multiple, Species.Format.DAT, Species.ContentType.ADVANCEMENTS)
         )
     }
 
@@ -114,13 +109,13 @@ fun WorldEditor(
         val extra = mapOf("dimension" to it)
 
         if (tree[it].region.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.TERRAIN, extra))
+            result.add(CategoryItemData(prefix, holderType, Species.Format.MCA, Species.ContentType.TERRAIN, extra))
         if (tree[it].entities.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.ENTITY, extra))
+            result.add(CategoryItemData(prefix, holderType, Species.Format.MCA, Species.ContentType.ENTITY, extra))
         if (tree[it].poi.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Editable.Format.MCA, Editable.ContentType.POI, extra))
+            result.add(CategoryItemData(prefix, holderType, Species.Format.MCA, Species.ContentType.POI, extra))
         if (tree[it].data.isNotEmpty())
-            result.add(CategoryItemData(prefix, holderType, Editable.Format.DAT, Editable.ContentType.OTHERS, extra))
+            result.add(CategoryItemData(prefix, holderType, Species.Format.DAT, Species.ContentType.OTHERS, extra))
 
         result
     }
@@ -156,9 +151,10 @@ fun WorldEditor(
                     if (states.phylum.list.size == 0) {
                         NoFileSelected(name)
                     } else {
-                        for (phylum in states.phylum.list) {
-                            Editor(phylum, states.phylum.species?.ident == phylum.ident)
-                        }
+                        val phylum = states.phylum.list.find { states.phylum.species?.ident == it.ident }
+                            ?: return@MainContents
+
+                        Editor(tree, phylum, true)
                     }
                 }
             }
@@ -172,61 +168,55 @@ fun WorldEditor(
 }
 
 @Composable
-fun BoxScope.Editor(holder: SpeciesHolder, selected: Boolean) {
-    if (holder is MultipleSpeciesHolder) {
-        if (holder.selectorStateOrNull() == null)
-            holder.setSelectorState(rememberSelectorState())
-
-        for (editable in holder.editables) {
-            if (editable.ident == "+") continue
-
-            if (editable.editorStateOrNull() != null) continue
-            editable.setEditorState(rememberEditorState())
-        }
-    } else if (holder is SingleSpeciesHolder) {
-        if (holder.editable.editorStateOrNull() == null)
-            holder.editable.setEditorState(rememberEditorState())
-    }
-
+fun BoxScope.Editor(
+    tree: WorldData,
+    holder: SpeciesHolder,
+    selected: Boolean
+) {
     if (!selected) return
 
     EditorRoot {
         if (holder is MultipleSpeciesHolder) {
             TabGroup(
-                holder.editables.map { TabData(holder.selected == it.ident, it) },
+                holder.species.map { TabData(holder.selected == it, it) },
                 { holder.select(it) },
                 { holder.remove(it) }
             )
             Editables {
-                for (editable in holder.editables) {
-                    if (editable.ident == "+" && holder.selected == editable.ident) {
-                        Selector(holder, holder.selected == editable.ident)
-                    } else if (holder.selected == editable.ident) {
-                        EditableField(editable, editable.editorState)
+                for (species in holder.species) {
+                    if (species is SelectorSpecies && holder.selected == species) {
+                        Selector(tree, holder, holder.selected == species)
+                    } else if (species is NbtSpecies && holder.selected == species) {
+                        EditableField(species, species.state)
                     }
                 }
             }
         } else if (holder is SingleSpeciesHolder) {
-            Editables { EditableField(holder.editable, holder.editable.editorState) }
+            Editables { EditableField(holder.species, holder.species.state) }
         }
     }
 }
 
 @Composable
-fun BoxScope.Selector(holder: MultipleSpeciesHolder, selected: Boolean) {
+fun BoxScope.Selector(
+    tree: WorldData,
+    holder: MultipleSpeciesHolder,
+    selected: Boolean
+) {
 
     val onSelectChunk: (ChunkLocation, File?) -> Unit = select@ { loc, file ->
         if (file == null) return@select
 
         val newIdent = "[${loc.x}, ${loc.z}]"
-        if (holder.hasEditable(newIdent)) return@select
+        if (holder.hasSpecies(newIdent)) return@select
 
-        val root = AnvilManager.instance.loadChunk(loc, file.readBytes())
-        holder.add(Editable(newIdent, root))
+        val root = AnvilManager.instance.loadChunk(loc, file.readBytes()) ?: return@select
+
+        holder.add(NbtSpecies(newIdent, root, mutableStateOf(NbtState.new())))
     }
 
     Column {
-        if (holder.format == Editable.Format.MCA) AnvilSelector(holder, onSelectChunk)
+        if (holder.format == Species.Format.MCA) AnvilSelector(tree, holder, onSelectChunk)
         Column (
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -253,7 +243,7 @@ fun BoxScope.Selector(holder: MultipleSpeciesHolder, selected: Boolean) {
                 color = ThemedColor.Bright,
                 fontSize = 30.sp
             ) {
-                holder.add(Editable("Some Name"))
+//                holder.add(Species("Some Name"))
             }
             WhatIsThis("")
         }
@@ -263,19 +253,19 @@ fun BoxScope.Selector(holder: MultipleSpeciesHolder, selected: Boolean) {
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun ColumnScope.AnvilSelector(
+    tree: WorldData,
     holder: MultipleSpeciesHolder,
     onSelectChunk: (ChunkLocation, File?) -> Unit
 ) {
 
-    val worldData = rootWorldData ?: return
     val dimension = holder.extra["dimension"] ?: return
 
-    val worldDimension = worldData[dimension]
+    val worldDimension = tree[dimension]
 
     val anvils = when(holder.contentType) {
-        Editable.ContentType.TERRAIN -> worldDimension.region
-        Editable.ContentType.POI -> worldDimension.poi
-        Editable.ContentType.ENTITY -> worldDimension.entities
+        Species.ContentType.TERRAIN -> worldDimension.region
+        Species.ContentType.POI -> worldDimension.poi
+        Species.ContentType.ENTITY -> worldDimension.entities
         else -> return
     }
 
@@ -286,32 +276,24 @@ fun ColumnScope.AnvilSelector(
         chunks.addAll(AnvilManager.instance.loadChunkList(location, it.readBytes()))
     }
 
-    val state = holder.selectorState
+    val selector = holder.species.find { it is SelectorSpecies } as SelectorSpecies
+    val state = selector.state
 
-    var selectedChunk by state.selectedChunk
+    if (state.selectedChunk == null && chunks.isNotEmpty())
+        state.selectedChunk = chunks[0]
 
-    if (selectedChunk == null && chunks.isNotEmpty())
-        selectedChunk = chunks[0]
-
-    var chunkXValue by state.chunkXValue
-    var chunkZValue by state.chunkZValue
-
-    if (chunkXValue.text == "") chunkXValue = TextFieldValue("${selectedChunk?.x ?: "-"}")
-    if (chunkZValue.text == "") chunkZValue = TextFieldValue("${selectedChunk?.z ?: "-"}")
-
-    var blockXValue by state.blockXValue
-    var blockZValue by state.blockZValue
-
-    var isChunkXValid by state.isChunkXValid
-    var isChunkZValid by state.isChunkZValid
+    if (state.chunkXValue.text == "") state.chunkXValue = TextFieldValue("${state.selectedChunk?.x ?: "-"}")
+    if (state.chunkZValue.text == "") state.chunkZValue = TextFieldValue("${state.selectedChunk?.z ?: "-"}")
 
     val validChunkX = chunks.map { chunk -> chunk.x }
     val validChunkZ = chunks.map { chunk -> chunk.z }
 
     val updateSelectedChunk: () -> Unit = {
-        selectedChunk =
-            if (!isChunkXValid || !isChunkZValid || chunkXValue.text.toIntOrNull() == null || chunkZValue.text.toIntOrNull() == null) null
-            else ChunkLocation(chunkXValue.text.toInt(), chunkZValue.text.toInt())
+        val isValid = state.isChunkXValid && state.isChunkZValid
+        val isInt = state.chunkXValue.text.toIntOrNull() != null && state.chunkZValue.text.toIntOrNull() != null
+        state.selectedChunk =
+            if (!isValid || !isInt) null
+            else ChunkLocation(state.chunkXValue.text.toInt(), state.chunkZValue.text.toInt())
     }
 
     val validate: (List<Int>, AnnotatedString) -> Pair<TransformedText, Boolean> = validate@ { valid, actual ->
@@ -348,7 +330,7 @@ fun ColumnScope.AnvilSelector(
     val validateChunkX: (AnnotatedString) -> TransformedText = validate@ {
         val validateResult = validate(validChunkX, it)
 
-        isChunkXValid = validateResult.second
+        state.isChunkXValid = validateResult.second
 
         updateSelectedChunk()
         validateResult.first
@@ -357,23 +339,23 @@ fun ColumnScope.AnvilSelector(
     val validateChunkZ: (AnnotatedString) -> TransformedText = validate@ {
         val validateResult = validate(validChunkZ, it)
 
-        isChunkZValid = validateResult.second
+        state.isChunkZValid = validateResult.second
 
         updateSelectedChunk()
         validateResult.first
     }
 
     val removeBlock: () -> Unit = {
-        blockXValue = TextFieldValue("-")
-        blockZValue = TextFieldValue("-")
+        state.blockXValue = TextFieldValue("-")
+        state.blockZValue = TextFieldValue("-")
     }
 
     val updateFromBlock: () -> Unit = {
-        if (blockXValue.text.toIntOrNull() != null && blockZValue.text.toIntOrNull() != null) {
-            val newChunk = BlockLocation(blockXValue.text.toInt(), blockZValue.text.toInt()).toChunkLocation()
-            chunkXValue = TextFieldValue("${newChunk.x}")
-            chunkZValue = TextFieldValue("${newChunk.z}")
-            selectedChunk = newChunk
+        if (state.blockXValue.text.toIntOrNull() != null && state.blockZValue.text.toIntOrNull() != null) {
+            val newChunk = BlockLocation(state.blockXValue.text.toInt(), state.blockZValue.text.toInt()).toChunkLocation()
+            state.chunkXValue = TextFieldValue("${newChunk.x}")
+            state.chunkZValue = TextFieldValue("${newChunk.z}")
+            state.selectedChunk = newChunk
         }
     }
 
@@ -393,47 +375,48 @@ fun ColumnScope.AnvilSelector(
         AnvilSelectorDropdown("block:") {
             CoordinateText("[")
             CoordinateInput(
-                blockXValue,
-                { blockXValue = it; updateFromBlock() },
+                state.blockXValue,
+                { state.blockXValue = it; updateFromBlock() },
                 validateIntOnly
             )
             CoordinateText(", ")
             CoordinateInput(
-                blockZValue,
-                { blockZValue = it; updateFromBlock() },
+                state.blockZValue,
+                { state.blockZValue = it; updateFromBlock() },
                 validateIntOnly
             )
             CoordinateText("]")
         }
         Spacer(modifier = Modifier.width(10.dp))
-        AnvilSelectorDropdown("chunk:", true, selectedChunk != null) {
+        AnvilSelectorDropdown("chunk:", true, state.selectedChunk != null) {
             CoordinateText("[")
             CoordinateInput(
-                chunkXValue,
-                { chunkXValue = it; removeBlock() },
+                state.chunkXValue,
+                { state.chunkXValue = it; removeBlock() },
                 validateChunkX
             )
             CoordinateText(", ")
             CoordinateInput(
-                chunkZValue,
-                { chunkZValue = it; removeBlock() },
+                state.chunkZValue,
+                { state.chunkZValue = it; removeBlock() },
                 validateChunkZ
             )
             CoordinateText("]")
         }
         Spacer(modifier = Modifier.width(10.dp))
         AnvilSelectorDropdown("region:") {
+            val isChunkValid = state.isChunkXValid && state.isChunkZValid
             CoordinateText("r.")
-            CoordinateText("${selectedChunk?.toAnvilLocation()?.x ?: "-"}", !isChunkXValid || !isChunkZValid)
+            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.x ?: "-"}", !isChunkValid)
             CoordinateText(".")
-            CoordinateText("${selectedChunk?.toAnvilLocation()?.z ?: "-"}", !isChunkXValid || !isChunkZValid)
+            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.z ?: "-"}", !isChunkValid)
             CoordinateText(".mca")
         }
         Spacer(modifier = Modifier.weight(1f))
         Row (
             modifier = Modifier
                 .background(
-                    if (selectedChunk == null) {
+                    if (state.selectedChunk == null) {
                         Color.Transparent
                     } else {
                         when (openerEvtType) {
@@ -449,9 +432,9 @@ fun ColumnScope.AnvilSelector(
                 .onPointerEvent(PointerEventType.Release, onEvent = updateOpenerEvtType)
                 .height(60.dp)
                 .width(60.dp)
-                .alpha(if (selectedChunk == null) 0.5f else 1f)
+                .alpha(if (state.selectedChunk == null) 0.5f else 1f)
                 .mouseClickable {
-                    val chunk = selectedChunk
+                    val chunk = state.selectedChunk
                     if (chunk != null) {
                         val anvil = chunk.toAnvilLocation()
                         onSelectChunk(chunk, anvils.find { it.name == "r.${anvil.x}.${anvil.z}.mca" })
@@ -475,15 +458,15 @@ fun ColumnScope.AnvilSelector(
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.EditableField(
-    editable: Editable,
-    state: EditorState
+    species: NbtSpecies,
+    state: NbtState
 ) {
-    val nbt = editable.root ?: return
+    val nbt = species.root
 
     val coroutineScope = rememberCoroutineScope()
 
     val doodles = state.doodles
-    val doodleState = state.doodleState
+    val doodleState = state.ui
     val lazyColumnState = state.lazyState
 
     if (doodles.isEmpty()) doodles.addAll(nbt.doodle(null, 0))
@@ -519,7 +502,7 @@ fun BoxScope.EditableField(
             itemsIndexed(doodles, key = { _, item -> item.path }) { index, item ->
                 val onExpand: () -> Unit = click@ {
                     if (item !is NbtDoodle) return@click
-                    if (!item.hasChildren) return@click
+                    if (!item.canHaveChildren) return@click
 
                     if (!item.expanded) doodles.addAll(index + 1, item.expand())
                     else doodles.removeRange(index + 1, index + item.collapse() + 1)
