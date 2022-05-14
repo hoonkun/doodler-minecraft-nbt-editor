@@ -239,6 +239,7 @@ fun NbtItemTreeView(
     Box (modifier = Modifier
         .background(ThemedColor.EditorArea)
         .wrapContentSize()
+        .zIndex(999f)
     ) {
         Box(modifier = Modifier
             .border(2.dp, ThemedColor.Editor.TreeBorder)
@@ -248,7 +249,6 @@ fun NbtItemTreeView(
             .onPointerEvent(PointerEventType.Release) { pressed = false }
             .mouseClickable(onClick = { scrollTo() })
             .background(ThemedColor.Editor.normalItem(pressed, focused))
-            .zIndex(999f)
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
