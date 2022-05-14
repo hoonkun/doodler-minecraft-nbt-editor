@@ -145,7 +145,7 @@ fun BoxScope.Editor(
 
     EditorRoot {
         if (holder is MultipleSpeciesHolder) {
-            TabGroup(
+            SpeciesTabGroup(
                 holder.species.map { TabData(holder.selected == it, it) },
                 { holder.select(it) },
                 { holder.remove(it) }

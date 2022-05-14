@@ -19,7 +19,7 @@ import composables.states.holder.Species
 import composables.themed.ThemedColor.Companion.selectable
 
 @Composable
-fun ColumnScope.TabGroup(
+fun ColumnScope.SpeciesTabGroup(
     tabs: List<TabData>,
     onSelectEditable: (Species) -> Unit,
     onCloseEditable: (Species) -> Unit
@@ -29,7 +29,7 @@ fun ColumnScope.TabGroup(
     Box (modifier = Modifier.background(ThemedColor.TabBar).fillMaxWidth().wrapContentHeight()) {
         Row(modifier = Modifier.wrapContentWidth().horizontalScroll(scrollState)) {
             for (data in tabs) {
-                Tab(data, onSelectEditable, onCloseEditable)
+                SpeciesTab(data, onSelectEditable, onCloseEditable)
             }
         }
     }
@@ -37,7 +37,7 @@ fun ColumnScope.TabGroup(
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun Tab(
+fun SpeciesTab(
     data: TabData,
     onSelectEditable: (Species) -> Unit,
     onCloseEditable: (Species) -> Unit
@@ -89,7 +89,7 @@ fun Tab(
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun RowScope.CloseButton(onCloseEditable: () -> Unit) {
+private fun RowScope.CloseButton(onCloseEditable: () -> Unit) {
     var hover by remember { mutableStateOf(false) }
 
     Box (
