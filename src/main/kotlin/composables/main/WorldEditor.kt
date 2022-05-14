@@ -106,8 +106,8 @@ class SelectorState(
     val isChunkZValid: MutableState<Boolean>,
 )
 
-abstract class EditableHolder(
-    val which: String,
+abstract class SpeciesHolder(
+    val ident: String,
     val format: Editable.Format,
     val contentType: Editable.ContentType,
 ) {
@@ -116,21 +116,21 @@ abstract class EditableHolder(
     }
 }
 
-class SingleEditableHolder(
+class SingleSpeciesHolder(
     which: String,
     format: Editable.Format,
     contentType: Editable.ContentType,
     editable: Editable
-): EditableHolder(which, format, contentType) {
+): SpeciesHolder(which, format, contentType) {
     val editable by mutableStateOf(editable)
 }
 
-class MultipleEditableHolder(
+class MultipleSpeciesHolder(
     which: String,
     format: Editable.Format,
     contentType: Editable.ContentType,
     val extra: Map<String, String> = mapOf()
-): EditableHolder(which, format, contentType) {
+): SpeciesHolder(which, format, contentType) {
     val editables = mutableStateListOf<Editable>()
     var selected by mutableStateOf("+")
 

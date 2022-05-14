@@ -2,7 +2,7 @@ package composables.states.holder
 
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import composables.main.EditableHolder
+import composables.main.SpeciesHolder
 import doodler.file.WorldData
 
 class WorldEditorState (
@@ -19,16 +19,16 @@ fun rememberWorldEditorState (
 }
 
 class Phylum (
-    val list: SnapshotStateList<EditableHolder>,
-    current: MutableState<EditableHolder?>
+    val list: SnapshotStateList<SpeciesHolder>,
+    species: MutableState<SpeciesHolder?>
 ) {
-    var current by current
+    var species by species
 }
 
 @Composable
 fun rememberPhylum (
-    list: SnapshotStateList<EditableHolder> = remember { mutableStateListOf() },
-    current: MutableState<EditableHolder?> = remember { mutableStateOf(null) }
+    list: SnapshotStateList<SpeciesHolder> = remember { mutableStateListOf() },
+    current: MutableState<SpeciesHolder?> = remember { mutableStateOf(null) }
 ) = remember (list, current) {
     Phylum(list, current)
 }

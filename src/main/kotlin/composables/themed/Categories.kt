@@ -14,7 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import composables.main.Editable
-import composables.main.EditableHolder
+import composables.main.SpeciesHolder
 
 @Composable
 fun ColumnScope.FilesCategory(
@@ -82,7 +82,7 @@ class CategoryData(
 
 class CategoryItemData (
     parent: String,
-    val holderType: EditableHolder.Type,
+    val holderType: SpeciesHolder.Type,
     val format: Editable.Format,
     val contentType: Editable.ContentType,
     val extra: Map<String, String> = mapOf()

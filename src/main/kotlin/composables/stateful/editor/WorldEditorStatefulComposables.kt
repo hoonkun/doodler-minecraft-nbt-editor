@@ -79,36 +79,36 @@ fun WorldEditor(
     val name = states.worldSpec.requireName
 
     val onCategoryItemClick: (CategoryItemData) -> Unit = lambda@ { data ->
-        states.phylum.list.find { it.which == data.key }?.let {
-            states.phylum.current = it
+        states.phylum.list.find { it.ident == data.key }?.let {
+            states.phylum.species = it
             return@lambda
         }
 
         val newHolder =
-            if (data.holderType == EditableHolder.Type.Single) {
-                SingleEditableHolder(
+            if (data.holderType == SpeciesHolder.Type.Single) {
+                SingleSpeciesHolder(
                     data.key, data.format, data.contentType,
                     Editable("", LevelData.read(tree.level.readBytes()))
                 )
             } else {
-                MultipleEditableHolder(data.key, data.format, data.contentType, data.extra)
+                MultipleSpeciesHolder(data.key, data.format, data.contentType, data.extra)
             }
 
         states.phylum.list.add(newHolder)
-        states.phylum.current = newHolder
+        states.phylum.species = newHolder
     }
 
     val generalItems: (String) -> List<CategoryItemData> = {
         listOf(
-            CategoryItemData(it, EditableHolder.Type.Single, Editable.Format.DAT, Editable.ContentType.LEVEL),
-            CategoryItemData(it, EditableHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.PLAYER),
-            CategoryItemData(it, EditableHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.STATISTICS),
-            CategoryItemData(it, EditableHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.ADVANCEMENTS)
+            CategoryItemData(it, SpeciesHolder.Type.Single, Editable.Format.DAT, Editable.ContentType.LEVEL),
+            CategoryItemData(it, SpeciesHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.PLAYER),
+            CategoryItemData(it, SpeciesHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.STATISTICS),
+            CategoryItemData(it, SpeciesHolder.Type.Multiple, Editable.Format.DAT, Editable.ContentType.ADVANCEMENTS)
         )
     }
 
     val dimensionItems: (String) -> List<CategoryItemData> = {
-        val holderType = EditableHolder.Type.Multiple
+        val holderType = SpeciesHolder.Type.Multiple
         val prefix = display(it)
         val result = mutableListOf<CategoryItemData>()
         val extra = mapOf("dimension" to it)
@@ -143,7 +143,7 @@ fun WorldEditor(
                             FilesCategory(category) {
                                 FileCategoryItems(
                                     category,
-                                    states.phylum.current?.which ?: "",
+                                    states.phylum.species?.ident ?: "",
                                     onCategoryItemClick
                                 )
                             }
@@ -157,7 +157,7 @@ fun WorldEditor(
                         NoFileSelected(name)
                     } else {
                         for (phylum in states.phylum.list) {
-                            Editor(phylum, states.phylum.current?.which == phylum.which)
+                            Editor(phylum, states.phylum.species?.ident == phylum.ident)
                         }
                     }
                 }
@@ -172,8 +172,8 @@ fun WorldEditor(
 }
 
 @Composable
-fun BoxScope.Editor(holder: EditableHolder, selected: Boolean) {
-    if (holder is MultipleEditableHolder) {
+fun BoxScope.Editor(holder: SpeciesHolder, selected: Boolean) {
+    if (holder is MultipleSpeciesHolder) {
         if (holder.selectorStateOrNull() == null)
             holder.setSelectorState(rememberSelectorState())
 
@@ -183,7 +183,7 @@ fun BoxScope.Editor(holder: EditableHolder, selected: Boolean) {
             if (editable.editorStateOrNull() != null) continue
             editable.setEditorState(rememberEditorState())
         }
-    } else if (holder is SingleEditableHolder) {
+    } else if (holder is SingleSpeciesHolder) {
         if (holder.editable.editorStateOrNull() == null)
             holder.editable.setEditorState(rememberEditorState())
     }
@@ -191,7 +191,7 @@ fun BoxScope.Editor(holder: EditableHolder, selected: Boolean) {
     if (!selected) return
 
     EditorRoot {
-        if (holder is MultipleEditableHolder) {
+        if (holder is MultipleSpeciesHolder) {
             TabGroup(
                 holder.editables.map { TabData(holder.selected == it.ident, it) },
                 { holder.select(it) },
@@ -206,14 +206,14 @@ fun BoxScope.Editor(holder: EditableHolder, selected: Boolean) {
                     }
                 }
             }
-        } else if (holder is SingleEditableHolder) {
+        } else if (holder is SingleSpeciesHolder) {
             Editables { EditableField(holder.editable, holder.editable.editorState) }
         }
     }
 }
 
 @Composable
-fun BoxScope.Selector(holder: MultipleEditableHolder, selected: Boolean) {
+fun BoxScope.Selector(holder: MultipleSpeciesHolder, selected: Boolean) {
 
     val onSelectChunk: (ChunkLocation, File?) -> Unit = select@ { loc, file ->
         if (file == null) return@select
@@ -237,7 +237,7 @@ fun BoxScope.Selector(holder: MultipleEditableHolder, selected: Boolean) {
                 .zIndex(if (selected) 100f else -1f)
         ) {
             Text(
-                holder.which,
+                holder.ident,
                 color = Color.White,
                 fontSize = 38.sp,
             )
@@ -263,7 +263,7 @@ fun BoxScope.Selector(holder: MultipleEditableHolder, selected: Boolean) {
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun ColumnScope.AnvilSelector(
-    holder: MultipleEditableHolder,
+    holder: MultipleSpeciesHolder,
     onSelectChunk: (ChunkLocation, File?) -> Unit
 ) {
 
