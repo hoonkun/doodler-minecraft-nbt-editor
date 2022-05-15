@@ -123,7 +123,7 @@ class ThemedColor {
             companion object {
 
                 val Normal = Color(125, 125, 125)
-                val Malformed = Color(100, 100, 100)
+                val Malformed = Color(140, 140, 140)
                 val Invalid = Color(230, 81, 0)
 
                 val ButtonText = Color(255, 255, 255, 175)
