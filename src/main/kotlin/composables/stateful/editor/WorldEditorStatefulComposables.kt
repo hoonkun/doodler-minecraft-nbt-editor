@@ -1,12 +1,9 @@
 package composables.stateful.editor
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.mouseClickable
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -415,7 +412,7 @@ fun ColumnScope.AnvilSelector(
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun BoxScope.EditableField(
     species: NbtSpecies,
@@ -430,6 +427,9 @@ fun BoxScope.EditableField(
     val lazyColumnState = state.lazyState
 
     if (doodles.isEmpty()) doodles.addAll(nbt.doodle(null, 0))
+
+    if (state.initialComposition && nbt.value.size == 1 && nbt.value.values.toList()[0].canHaveChildren)
+        doodles.addAll((doodles[0] as NbtDoodle).expand())
 
     val treeCollapse: (Doodle, Int) -> Unit = { target, collapseCount ->
         val baseIndex = doodles.indexOf(target)
@@ -456,6 +456,21 @@ fun BoxScope.EditableField(
         val target = doodleState.focusedDirectly
         if (target != null) doodleState.unFocusDirectly(target)
     }
+
+    val deleteTag: MouseClickScope.() -> Unit = {
+        val deleteInfo = doodleState.selected.map { it.delete() }
+        deleteInfo.forEach {
+            if (it == null) return@forEach
+
+            val (parent, doodle, deletedCount) = it
+            val start = doodles.indexOf(doodle)
+            doodles.removeRange(start, start + deletedCount + 1)
+            parent.update(NbtDoodle.UpdateTarget.VALUE)
+        }
+        doodleState.selected.clear()
+    }
+
+    state.initialComposition = false
 
     Box {
         LazyColumn (state = lazyColumnState) {
@@ -503,7 +518,7 @@ fun BoxScope.EditableField(
                         .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
                         .padding(5.dp)
                 ) {
-                    ToolBarAction {
+                    ToolBarAction (onClick = deleteTag) {
                         IndicatorText("DEL", ThemedColor.Editor.Action.Delete)
                     }
                     ToolBarAction {

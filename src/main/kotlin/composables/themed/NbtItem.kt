@@ -9,10 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.isPrimaryPressed
-import androidx.compose.ui.input.pointer.isSecondaryPressed
-import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,9 +51,9 @@ private fun ItemIndicator(selected: Boolean, content: @Composable BoxScope.() ->
     )
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-private fun ToolBarItemIndicator(content: @Composable BoxScope.() -> Unit) {
+private fun ToolBarItemIndicator(onClick: MouseClickScope.() -> Unit, content: @Composable BoxScope.() -> Unit) {
     var hover by remember { mutableStateOf(false) }
 
     Box (
@@ -64,6 +61,7 @@ private fun ToolBarItemIndicator(content: @Composable BoxScope.() -> Unit) {
             .wrapContentSize()
             .onPointerEvent(PointerEventType.Enter) { hover = true }
             .onPointerEvent(PointerEventType.Exit) { hover = false }
+            .mouseClickable(onClick = onClick)
             .padding(top = 5.dp, bottom = 5.dp)
             .background(
                 if (hover) ThemedColor.from(Color.Black, alpha = 30)
@@ -122,16 +120,18 @@ private fun Indicator(type: TagType, selected: Boolean) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ToolBarIndicator(type: TagType) {
-    ToolBarItemIndicator {
+fun ToolBarIndicator(type: TagType, onClick: MouseClickScope.() -> Unit = { }) {
+    ToolBarItemIndicator (onClick) {
         IndicatorText(type)
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ToolBarAction(content: @Composable () -> Unit) {
-    ToolBarItemIndicator {
+fun ToolBarAction(onClick: MouseClickScope.() -> Unit = { }, content: @Composable () -> Unit) {
+    ToolBarItemIndicator (onClick) {
         content()
     }
 }

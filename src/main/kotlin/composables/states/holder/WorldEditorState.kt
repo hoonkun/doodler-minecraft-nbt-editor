@@ -177,7 +177,8 @@ class NbtSpecies (
 class NbtState (
     val doodles: SnapshotStateList<Doodle>,
     ui: MutableState<DoodleUi>,
-    val lazyState: LazyListState
+    val lazyState: LazyListState,
+    var initialComposition: Boolean = true
 ) {
     var ui by ui
 
@@ -196,6 +197,18 @@ abstract class Doodle (
     val parentTag: NbtDoodle?
 ) {
     abstract val path: String
+
+    abstract fun delete(): Triple<NbtDoodle, Doodle, Int>?
+
+    fun hasAnyDeletedAncestors(): Boolean {
+        val parent = parentTag ?: return true
+        val ancestors = mutableListOf(parent)
+
+        do { ancestors.add(ancestors.last().parentTag ?: break) }
+        while (true)
+
+        return ancestors.any { it.deleted }
+    }
 }
 
 class NbtDoodle (
@@ -210,11 +223,22 @@ class NbtDoodle (
     val type = tag.type
     val canHaveChildren = Tag.canHaveChildren(type)
 
-    val name = tag.name
-    val value = if (this.canHaveChildren) valueSuffix(tag) else tag.valueToString()
+    var name by mutableStateOf(tag.name)
+        private set
+    var value by mutableStateOf(if (this.canHaveChildren) valueSuffix(tag) else tag.valueToString())
+        private set
 
     var expanded = false
     private var children: List<Doodle>? = null
+
+    var deleted: Boolean = false
+
+    fun update(vararg targets: UpdateTarget) {
+        if (targets.contains(UpdateTarget.VALUE))
+            value = if (this.canHaveChildren) valueSuffix(tag) else tag.valueToString()
+        if (targets.contains(UpdateTarget.NAME))
+            name = tag.name
+    }
 
     fun expand(): List<Doodle> {
         expanded = true
@@ -232,6 +256,8 @@ class NbtDoodle (
     }
 
     fun collapse(): Int {
+        if (!expanded) return 0
+
         expanded = false
         val localChildren = children
         val collapsableChildren = if (localChildren == null) 0 else {
@@ -241,6 +267,7 @@ class NbtDoodle (
             }
             count
         }
+        children = null
         return when (tag) {
             is CompoundTag -> tag.value.size
             is ListTag -> tag.value.size
@@ -249,6 +276,34 @@ class NbtDoodle (
             is LongArrayTag -> tag.value.size
             else -> throw Exception("this tag is not collapsable!")
         } + collapsableChildren
+    }
+
+    override fun delete(): Triple<NbtDoodle, NbtDoodle, Int>? {
+        val parent = parentTag ?: return null
+
+        if (hasAnyDeletedAncestors()) return null
+
+        when (parent.tag.type) {
+            TagType.TAG_COMPOUND -> parent.tag.getAs<CompoundTag>().value.remove(tag.name)
+            TagType.TAG_LIST -> parent.tag.getAs<ListTag>().value.remove(tag)
+            else -> { /* no-op */ }
+        }
+
+        deleted = true
+
+        return Triple(parent, this, collapse())
+    }
+
+    fun yank() {
+
+    }
+
+    fun edit() {
+
+    }
+
+    enum class UpdateTarget {
+        NAME, VALUE
     }
     
     companion object {
@@ -335,10 +390,36 @@ class ValueDoodle (
     depth: Int,
     index: Int,
     parentTag: NbtDoodle? = null
-): Doodle(depth, index, parentTag)
+): Doodle(depth, index, parentTag) {
+
+    override fun delete(): Triple<NbtDoodle, ValueDoodle, Int>? {
+        val parent = parentTag ?: return null
+
+        if (hasAnyDeletedAncestors()) return null
+
+        when (parent.tag.type) {
+            TagType.TAG_BYTE_ARRAY -> {
+                val tag = parent.tag.getAs<ByteArrayTag>()
+                tag.value = tag.value.toMutableList().apply { removeAt(index) }.toByteArray()
+            }
+            TagType.TAG_INT_ARRAY -> {
+                val tag = parent.tag.getAs<IntArrayTag>()
+                tag.value = tag.value.toMutableList().apply { removeAt(index) }.toIntArray()
+            }
+            TagType.TAG_LONG_ARRAY -> {
+                val tag = parent.tag.getAs<LongArrayTag>()
+                tag.value = tag.value.toMutableList().apply { removeAt(index) }.toLongArray()
+            }
+            else -> { /* no-op */ }
+        }
+
+        return Triple(parent, this, 0)
+    }
+
+}
 
 class DoodleUi (
-    val selected: SnapshotStateList<Doodle?>,
+    val selected: SnapshotStateList<Doodle>,
     pressed: MutableState<Doodle?>,
     focusedDirectly: MutableState<Doodle?>,
     focusedTree: MutableState<Doodle?>,
@@ -351,7 +432,7 @@ class DoodleUi (
 
     companion object {
         fun new(
-            selected: SnapshotStateList<Doodle?> = mutableStateListOf(),
+            selected: SnapshotStateList<Doodle> = mutableStateListOf(),
             pressed: MutableState<Doodle?> = mutableStateOf(null),
             focusedDirectly: MutableState<Doodle?> = mutableStateOf(null),
             focusedTree: MutableState<Doodle?> = mutableStateOf(null),

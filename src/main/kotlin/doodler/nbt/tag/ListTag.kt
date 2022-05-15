@@ -8,7 +8,7 @@ import nbt.extensions.byte
 import nbt.extensions.indent
 import java.nio.ByteBuffer
 
-class ListTag private constructor(name: String? = null, parent: AnyTag?): Tag<List<AnyTag>>(TAG_LIST, name, parent) {
+class ListTag private constructor(name: String? = null, parent: AnyTag?): Tag<MutableList<AnyTag>>(TAG_LIST, name, parent) {
 
     override val sizeInBytes: Int
         get() = Byte.SIZE_BYTES + Int.SIZE_BYTES + value.sumOf { it.sizeInBytes }
@@ -21,7 +21,7 @@ class ListTag private constructor(name: String? = null, parent: AnyTag?): Tag<Li
         require(!typeCheck || typeCheck(elementsType, value)) { "ListTag's elements must be of a single type" }
 
         this.elementsType = elementsType
-        this.value = value.map { tag -> tag.ensureName(null) }.toList()
+        this.value = value.map { tag -> tag.ensureName(null) }.toMutableList()
     }
 
     constructor(buffer: ByteBuffer, name: String? = null, parent: AnyTag?): this(name, parent) {
@@ -32,7 +32,7 @@ class ListTag private constructor(name: String? = null, parent: AnyTag?): Tag<Li
 
     override fun read(buffer: ByteBuffer) {
         elementsType = TagType[buffer.byte]
-        value = List(buffer.int) { read(elementsType, buffer, null, this).apply { indexInList = it } }
+        value = MutableList(buffer.int) { read(elementsType, buffer, null, this).apply { indexInList = it } }
     }
 
     override fun write(buffer: ByteBuffer) {

@@ -33,6 +33,8 @@ abstract class Tag<T: Any> protected constructor(
 
     var indexInList: Int? = null
 
+    val canHaveChildren get() = canHaveChildren(type)
+
     inline fun <reified T: AnyTag?> getAs() = this as? T ?: throw Exception("Tag is not a ${T::class.java.simpleName}")
 
     fun ensureName(name: String?) = if (this.name == name) this else clone(name)
