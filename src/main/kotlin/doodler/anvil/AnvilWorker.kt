@@ -36,10 +36,8 @@ class AnvilWorker {
             for (m in 0 until 32 * 32) {
                 val x = m / 32
                 val z = m % 32
-                val i = 4 * ((x and 31) + (z and 31) * 32)
 
-                val offset = (bytes[i].u() * 65536 + bytes[i + 1].u() * 256 + bytes[i + 2].u()) * 4096
-                val sectors = bytes[i + 3] * 4096
+                val (offset, sectors) = parseHeader(parseIndex(x, z), bytes)
 
                 if (offset == 0 || sectors == 0) continue
 
@@ -51,41 +49,41 @@ class AnvilWorker {
 
         fun loadChunk(chunkLocation: ChunkLocation, bytes: ByteArray): CompoundTag? {
             val location = chunkLocation.toAnvilLocation()
-            var result: CompoundTag? = null
 
             if (bytes.isEmpty()) return null
 
-            for (m in 0 until 32 * 32) {
-                val x = m / 32
-                val z = m % 32
-                val i = 4 * ((x and 31) + (z and 31) * 32)
+            val x = chunkLocation.x - 32 * location.x
+            val z = chunkLocation.z - 32 * location.z
 
-                if (ChunkLocation(32 * location.x + x, 32 * location.z + z) != chunkLocation) continue
+            val (offset, sectors) = parseHeader(parseIndex(x, z), bytes)
 
-                val offset = (bytes[i].u() * 65536 + bytes[i + 1].u() * 256 + bytes[i + 2].u()) * 4096
-                val sectors = bytes[i + 3] * 4096
+            // Use below code when timestamp value is needed.
+            // val timestamp = ByteBuffer.wrap(bytes.slice(4096 + i until 4096 + i + 4).toByteArray()).int
 
-                // Use below code when timestamp value is needed.
-                // val timestamp = ByteBuffer.wrap(bytes.slice(4096 + i until 4096 + i + 4).toByteArray()).int
+            if (offset == 0 || sectors == 0) return null
 
-                if (offset == 0 || sectors == 0) continue
+            val data = ByteBuffer.wrap(bytes.slice(offset until offset + sectors).toByteArray())
+            val size = data.int
 
-                val data = ByteBuffer.wrap(bytes.slice(offset until offset + sectors).toByteArray())
-                val size = data.int
+            val compressionType = data.byte
+            val compressed = ByteArray(size).also { data.get(it) }
 
-                val compressionType = data.byte
-                val compressed = ByteArray(size).also { data.get(it) }
+            if (compressionType.toInt() != 2) throw Exception("unsupported compression type '$compressionType'")
 
-                if (compressionType.toInt() != 2) throw Exception("unsupported compression type '$compressionType'")
+            val chunkBuffer = ByteBuffer.wrap(decompress(compressed))
+            chunkBuffer.byte
+            chunkBuffer.short
 
-                val chunkBuffer = ByteBuffer.wrap(decompress(compressed))
-                chunkBuffer.byte
-                chunkBuffer.short
+            return Tag.read(TagType.TAG_COMPOUND, chunkBuffer, null, null).getAs()
+        }
 
-                result = Tag.read(TagType.TAG_COMPOUND, chunkBuffer, null, null).getAs()
-            }
+        private fun parseIndex(x: Int, z: Int) = 4 * ((x and 31) + (z and 31) * 32)
 
-            return result
+        private fun parseHeader(index: Int, bytes: ByteArray): Pair<Int, Int> {
+            val offset = (bytes[index].u() * 65536 + bytes[index + 1].u() * 256 + bytes[index + 2].u()) * 4096
+            val sectors = bytes[index + 3] * 4096
+
+            return Pair(offset, sectors)
         }
 
     }
