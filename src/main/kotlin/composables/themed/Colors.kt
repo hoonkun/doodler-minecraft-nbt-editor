@@ -94,9 +94,9 @@ class ThemedColor {
                 else Color.Transparent
 
             private fun selectedItem(pressed: Boolean, focused: Boolean) =
-                if (pressed) from(Selected, alpha = 30)
+                if (pressed) from(Selected, alpha = 20)
                 else if (focused) from(Selected, alpha = 35)
-                else from(Selected, alpha = 40)
+                else from(Selected, alpha = 50)
 
             fun indicator(selected: Boolean) = if (selected) SelectedIndicator else Indicator
             fun indicatorText(selected: Boolean) = if (selected) SelectedIndicatorText else IndicatorText
