@@ -246,7 +246,7 @@ fun ColumnScope.AnvilSelector(
     val selector = holder.species.find { it is SelectorSpecies } as SelectorSpecies
     val state = selector.state
 
-    if (state.selectedChunk == null && chunks.isNotEmpty())
+    if (state.initialComposition && state.selectedChunk == null && chunks.isNotEmpty())
         state.selectedChunk = chunks[0]
 
     if (state.chunkXValue.text == "") state.chunkXValue = TextFieldValue("${state.selectedChunk?.x ?: "-"}")
@@ -313,21 +313,23 @@ fun ColumnScope.AnvilSelector(
     }
 
     val removeBlock: () -> Unit = {
-        state.blockXValue = TextFieldValue("-")
-        state.blockZValue = TextFieldValue("-")
+        if (state.blockXValue.text != "-") state.blockXValue = TextFieldValue("-")
+        if (state.blockZValue.text != "-") state.blockZValue = TextFieldValue("-")
     }
 
     val updateFromBlock: () -> Unit = {
         if (state.blockXValue.text.toIntOrNull() != null && state.blockZValue.text.toIntOrNull() != null) {
             val newChunk = BlockLocation(state.blockXValue.text.toInt(), state.blockZValue.text.toInt()).toChunkLocation()
-            state.chunkXValue = TextFieldValue("${newChunk.x}")
-            state.chunkZValue = TextFieldValue("${newChunk.z}")
-            state.selectedChunk = newChunk
+            "${newChunk.x}".let { if (state.chunkXValue.text != it) state.chunkXValue = TextFieldValue(it) }
+            "${newChunk.z}".let { if (state.chunkZValue.text != it) state.chunkZValue = TextFieldValue(it) }
+            newChunk.let { if (state.selectedChunk != it) state.selectedChunk = it }
         }
     }
 
     var openPressed by remember { mutableStateOf(false) }
     var openFocused by remember { mutableStateOf(false) }
+
+    state.initialComposition = false
 
     Row (
         modifier = Modifier

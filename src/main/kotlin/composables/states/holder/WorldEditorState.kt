@@ -135,6 +135,7 @@ class SelectorSpecies (
 }
 
 class SelectorState (
+    var initialComposition: Boolean = true,
     selectedChunk: MutableState<ChunkLocation?> = mutableStateOf(null),
     chunkXValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("")),
     chunkZValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("")),
