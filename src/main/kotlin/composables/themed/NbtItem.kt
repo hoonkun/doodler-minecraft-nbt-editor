@@ -202,28 +202,29 @@ private fun Index(index: Int, selected: Boolean) {
 }
 
 @Composable
-private fun KeyValue(type: TagType, key: String?, value: String, index: Int, selected: Boolean) {
+private fun KeyValue(doodle: NbtDoodle, selected: Boolean) {
+    val key = doodle.name
     if (key != null) {
         Key(key)
         Spacer(modifier = Modifier.width(20.dp))
     }
-    if (index >= 0) {
-        Index(index, selected)
+    if ((doodle.parentTag?.type ?: TagType.TAG_COMPOUND) !== TagType.TAG_COMPOUND && doodle.index >= 0) {
+        Index(doodle.index, selected)
         Spacer(modifier = Modifier.width(10.dp))
     }
-    when (type) {
+    when (doodle.type) {
         TagType.TAG_BYTE,
             TagType.TAG_DOUBLE,
             TagType.TAG_FLOAT,
             TagType.TAG_INT,
             TagType.TAG_LONG,
-            TagType.TAG_SHORT -> NumberValue(value)
-        TagType.TAG_STRING -> StringValue(value)
+            TagType.TAG_SHORT -> NumberValue(doodle.value)
+        TagType.TAG_STRING -> StringValue(doodle.value)
         TagType.TAG_COMPOUND,
             TagType.TAG_BYTE_ARRAY,
             TagType.TAG_INT_ARRAY,
             TagType.TAG_LONG_ARRAY,
-            TagType.TAG_LIST -> ExpandableValue(value, selected)
+            TagType.TAG_LIST -> ExpandableValue(doodle.value, selected)
         TagType.TAG_END -> { /* impossible */ }
     }
 }
@@ -340,7 +341,7 @@ fun DoodleContent(doodle: Doodle, selected: Boolean) {
         is NbtDoodle -> {
             Indicator(doodle.type, selected)
             Spacer(modifier = Modifier.width(20.dp))
-            KeyValue(doodle.type, doodle.name, doodle.value, doodle.index, selected)
+            KeyValue(doodle, selected)
         }
         is ValueDoodle -> {
             Index(doodle.index, selected)

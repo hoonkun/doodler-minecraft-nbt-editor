@@ -342,7 +342,7 @@ fun display(dimension: String): String {
 }
 
 fun CompoundTag.doodle(parent: NbtDoodle?, depth: Int): List<Doodle> {
-    return this.value.values.map { NbtDoodle(it, depth, parentTag = parent) }
+    return this.value.mapIndexed { index, value -> NbtDoodle(value, depth, index, parent) }
 }
 
 fun ListTag.doodle(parent: NbtDoodle, depth: Int): List<Doodle> {
