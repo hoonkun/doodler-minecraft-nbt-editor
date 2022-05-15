@@ -507,91 +507,118 @@ fun BoxScope.EditableField(
                 NbtItem(item, onSelect, onExpand, doodleState, treeCollapse)
             }
         }
-        if (doodleState.selected.isNotEmpty()) {
+
+        if (doodleState.selected.isNotEmpty() || (state.history.flags.canBeUndo || state.history.flags.canBeRedo)) {
             Column(
                 modifier = Modifier
                     .wrapContentSize()
                     .align(Alignment.TopEnd)
                     .padding(40.dp)
             ) {
-                Column(
-                    modifier = Modifier
-                        .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
-                        .wrapContentSize()
-                        .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
-                        .padding(5.dp)
-                ) {
-                    ToolBarAction (onClick = deleteTag) {
-                        IndicatorText("DEL", ThemedColor.Editor.Action.Delete)
-                    }
-                    ToolBarAction {
-                        IndicatorText("YNK", ThemedColor.Editor.Tag.General)
+                if (doodleState.selected.isNotEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
+                            .wrapContentSize()
+                            .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
+                            .padding(5.dp)
+                    ) {
+                        ToolBarAction(onClick = deleteTag) {
+                            IndicatorText("DEL", ThemedColor.Editor.Action.Delete)
+                        }
+                        ToolBarAction {
+                            IndicatorText("YNK", ThemedColor.Editor.Tag.General)
+                        }
+                        if (doodleState.selected.size == 1) {
+                            val selectedDoodle = doodleState.selected[0]
+                            if (selectedDoodle is NbtDoodle && (selectedDoodle.tag.name != null || !Tag.canHaveChildren(
+                                    selectedDoodle.type
+                                ))
+                            ) {
+                                ToolBarAction {
+                                    IndicatorText("EDT", ThemedColor.Editor.Tag.General)
+                                }
+                            }
+                        }
                     }
                     if (doodleState.selected.size == 1) {
                         val selectedDoodle = doodleState.selected[0]
-                        if (selectedDoodle is NbtDoodle && (selectedDoodle.tag.name != null || !Tag.canHaveChildren(selectedDoodle.type))) {
-                            ToolBarAction {
-                                IndicatorText("EDT", ThemedColor.Editor.Tag.General)
+                        if (selectedDoodle is NbtDoodle && Tag.canHaveChildren(selectedDoodle.type)) {
+                            val isType: (TagType) -> Boolean = { it == selectedDoodle.type }
+                            val isListType: (TagType) -> Boolean = {
+                                if (selectedDoodle.tag !is ListTag) false
+                                else selectedDoodle.tag.elementsType == it || selectedDoodle.tag.elementsType == TagType.TAG_END
+                            }
+                            val isCompoundOrListType: (TagType) -> Boolean = {
+                                isType(TagType.TAG_COMPOUND) || isListType(it)
+                            }
+                            Spacer(modifier = Modifier.height(20.dp))
+                            Column(
+                                modifier = Modifier
+                                    .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
+                                    .wrapContentSize()
+                                    .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
+                                    .padding(5.dp)
+                            ) {
+                                if (isType(TagType.TAG_BYTE_ARRAY) || isCompoundOrListType(TagType.TAG_BYTE))
+                                    ToolBarIndicator(TagType.TAG_BYTE)
+
+                                if (isCompoundOrListType(TagType.TAG_SHORT))
+                                    ToolBarIndicator(TagType.TAG_SHORT)
+
+                                if (isType(TagType.TAG_INT_ARRAY) || isCompoundOrListType(TagType.TAG_INT))
+                                    ToolBarIndicator(TagType.TAG_INT)
+
+                                if (isType(TagType.TAG_LONG_ARRAY) || isCompoundOrListType(TagType.TAG_LONG))
+                                    ToolBarIndicator(TagType.TAG_LONG)
+
+                                if (isCompoundOrListType(TagType.TAG_FLOAT))
+                                    ToolBarIndicator(TagType.TAG_FLOAT)
+
+                                if (isCompoundOrListType(TagType.TAG_DOUBLE))
+                                    ToolBarIndicator(TagType.TAG_DOUBLE)
+
+                                if (isCompoundOrListType(TagType.TAG_BYTE_ARRAY))
+                                    ToolBarIndicator(TagType.TAG_BYTE_ARRAY)
+
+                                if (isCompoundOrListType(TagType.TAG_INT_ARRAY))
+                                    ToolBarIndicator(TagType.TAG_INT_ARRAY)
+
+                                if (isCompoundOrListType(TagType.TAG_LONG_ARRAY))
+                                    ToolBarIndicator(TagType.TAG_LONG_ARRAY)
+
+                                if (isCompoundOrListType(TagType.TAG_STRING))
+                                    ToolBarIndicator(TagType.TAG_STRING)
+
+                                if (isCompoundOrListType(TagType.TAG_LIST))
+                                    ToolBarIndicator(TagType.TAG_LIST)
+
+                                if (isCompoundOrListType(TagType.TAG_COMPOUND))
+                                    ToolBarIndicator(TagType.TAG_COMPOUND)
                             }
                         }
                     }
                 }
-                if (doodleState.selected.size == 1) {
-                    val selectedDoodle = doodleState.selected[0]
-                    if (selectedDoodle is NbtDoodle && Tag.canHaveChildren(selectedDoodle.type)) {
-                        val isType: (TagType) -> Boolean = { it == selectedDoodle.type }
-                        val isListType: (TagType) -> Boolean = {
-                            if (selectedDoodle.tag !is ListTag) false
-                            else selectedDoodle.tag.elementsType == it || selectedDoodle.tag.elementsType == TagType.TAG_END
+
+                if (state.history.flags.canBeUndo || state.history.flags.canBeRedo) {
+                    Spacer(modifier = Modifier.weight(1f))
+
+                    Column(
+                        modifier = Modifier
+                            .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
+                            .wrapContentSize()
+                            .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
+                            .padding(5.dp)
+                    ) {
+                        ToolBarAction(disabled = !state.history.flags.canBeUndo, onClick = undo) {
+                            IndicatorText("<- ", ThemedColor.Editor.Tag.General)
                         }
-                        val isCompoundOrListType: (TagType) -> Boolean = {
-                            isType(TagType.TAG_COMPOUND) || isListType(it)
-                        }
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Column(
-                            modifier = Modifier
-                                .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
-                                .wrapContentSize()
-                                .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
-                                .padding(5.dp)
-                        ) {
-                            if (isType(TagType.TAG_BYTE_ARRAY) || isCompoundOrListType(TagType.TAG_BYTE))
-                                ToolBarIndicator(TagType.TAG_BYTE)
-
-                            if (isCompoundOrListType(TagType.TAG_SHORT))
-                                ToolBarIndicator(TagType.TAG_SHORT)
-
-                            if (isType(TagType.TAG_INT_ARRAY) || isCompoundOrListType(TagType.TAG_INT))
-                                ToolBarIndicator(TagType.TAG_INT)
-
-                            if (isType(TagType.TAG_LONG_ARRAY) || isCompoundOrListType(TagType.TAG_LONG))
-                                ToolBarIndicator(TagType.TAG_LONG)
-
-                            if (isCompoundOrListType(TagType.TAG_FLOAT))
-                                ToolBarIndicator(TagType.TAG_FLOAT)
-
-                            if (isCompoundOrListType(TagType.TAG_DOUBLE))
-                                ToolBarIndicator(TagType.TAG_DOUBLE)
-
-                            if (isCompoundOrListType(TagType.TAG_BYTE_ARRAY))
-                                ToolBarIndicator(TagType.TAG_BYTE_ARRAY)
-
-                            if (isCompoundOrListType(TagType.TAG_INT_ARRAY))
-                                ToolBarIndicator(TagType.TAG_INT_ARRAY)
-
-                            if (isCompoundOrListType(TagType.TAG_LONG_ARRAY))
-                                ToolBarIndicator(TagType.TAG_LONG_ARRAY)
-
-                            if (isCompoundOrListType(TagType.TAG_STRING))
-                                ToolBarIndicator(TagType.TAG_STRING)
-
-                            if (isCompoundOrListType(TagType.TAG_LIST))
-                                ToolBarIndicator(TagType.TAG_LIST)
-
-                            if (isCompoundOrListType(TagType.TAG_COMPOUND))
-                                ToolBarIndicator(TagType.TAG_COMPOUND)
+                        ToolBarAction(disabled = !state.history.flags.canBeRedo, onClick = redo) {
+                            IndicatorText(" ->", ThemedColor.Editor.Tag.General)
                         }
                     }
+                    if (doodleState.selected.isNotEmpty())
+                        Spacer(modifier = Modifier.width(20.dp))
                 }
             }
         }
