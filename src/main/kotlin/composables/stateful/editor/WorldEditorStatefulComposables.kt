@@ -428,7 +428,7 @@ fun BoxScope.EditableField(
 
     if (doodles.isEmpty()) doodles.addAll(nbt.doodle(null, 0))
 
-    if (state.initialComposition && nbt.value.size == 1 && nbt.value.values.toList()[0].canHaveChildren)
+    if (state.initialComposition && nbt.value.size == 1 && nbt.value.toList()[0].canHaveChildren)
         doodles.addAll((doodles[0] as NbtDoodle).expand())
 
     val treeCollapse: (Doodle, Int) -> Unit = { target, collapseCount ->
@@ -468,6 +468,14 @@ fun BoxScope.EditableField(
             parent.update(NbtDoodle.UpdateTarget.VALUE)
         }
         doodleState.selected.clear()
+    }
+
+    val undo: MouseClickScope.() -> Unit = {
+
+    }
+
+    val redo: MouseClickScope.() -> Unit = {
+
     }
 
     state.initialComposition = false

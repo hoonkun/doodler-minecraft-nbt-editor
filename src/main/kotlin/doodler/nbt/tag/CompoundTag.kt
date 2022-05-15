@@ -9,24 +9,36 @@ import nbt.extensions.putString
 import nbt.extensions.string
 import java.nio.ByteBuffer
 
-typealias Compound = MutableMap<String, AnyTag>
+typealias Compound = MutableList<AnyTag>
 
 class CompoundTag private constructor(name: String? = null, parent: AnyTag?): Tag<Compound>(TAG_COMPOUND, name, parent) {
 
     private var complicated = false
 
     override val sizeInBytes: Int
-        get() = value.entries.sumOf { (name, tag) ->
-            Byte.SIZE_BYTES + Short.SIZE_BYTES + name.toByteArray().size + tag.sizeInBytes
+        get() = value.sumOf { tag ->
+            Byte.SIZE_BYTES + Short.SIZE_BYTES + (tag.name ?: "").toByteArray().size + tag.sizeInBytes
         } + Byte.SIZE_BYTES
 
-    operator fun get(key: String) = value[key]
-    operator fun set(key: String, nv: AnyTag) {
+    operator fun get(key: Int) = value[key]
+    operator fun get(key: String) = value.find { it.name == key }
+
+    operator fun set(key: Int, nv: AnyTag) {
         value[key] = nv
     }
 
+    fun insert(index: Int, nv: AnyTag) {
+        value.add(index, nv)
+    }
+
+    fun remove(name: String?) {
+        if (name == null) return
+
+        value.removeIf { it.name == name }
+    }
+
     constructor(value: Compound, name: String? = null, parent: AnyTag?): this(name, parent) {
-        this.value = value.map { (name, tag) -> name to tag.ensureName(name) }.toMap().toMutableMap()
+        this.value = value.map { tag -> tag.ensureName(tag.name ?: "") }.toMutableList()
     }
 
     constructor(buffer: ByteBuffer, name: String? = null, parent: AnyTag?): this(name, parent) {
@@ -34,7 +46,7 @@ class CompoundTag private constructor(name: String? = null, parent: AnyTag?): Ta
     }
 
     override fun read(buffer: ByteBuffer) {
-        val new = mutableMapOf<String, AnyTag>()
+        val new = mutableListOf<AnyTag>()
 
         var nextId: Byte
         do {
@@ -45,16 +57,16 @@ class CompoundTag private constructor(name: String? = null, parent: AnyTag?): Ta
             val nextName = buffer.string
             val nextTag = read(TagType[nextId], buffer, nextName, this)
 
-            new[nextName] = nextTag
+            new.add(nextTag)
         } while (true)
 
         value = new
     }
 
     override fun write(buffer: ByteBuffer) {
-        value.entries.forEach { (name, tag) ->
+        value.forEach { tag ->
             buffer.put(tag.type.id)
-            buffer.putString(name)
+            buffer.putString(tag.name ?: "")
 
             tag.write(buffer)
         }
@@ -68,16 +80,17 @@ class CompoundTag private constructor(name: String? = null, parent: AnyTag?): Ta
         write(buffer)
     }
 
-    override fun clone(name: String?) = CompoundTag(value.map { (name, tag) -> name to tag.clone(name) }.toMap().toMutableMap(), name, parent)
+    override fun clone(name: String?) = CompoundTag(value.map { tag -> tag.clone(tag.name) }.toMutableList(), name, parent)
 
     override fun valueToString(): String {
-        val result = "{\n${value.entries.sortedBy { it.key }.joinToString(",\n") { "${it.value}" }}\n}"
+        val result = "{\n${value.sortedBy { it.name ?: "" }.joinToString(",\n") { "${it.value}" }}\n}"
         return if (complicated) result else result.replace("\n", " ")
     }
 
     fun generateTypes(parentPath: String = ""): Map<String, Byte> {
         val result = mutableMapOf<String, Byte>()
-        value.entries.map { (k, v) ->
+        value.map { v ->
+            val k = v.name ?: ""
             val path = if (parentPath == "") k else "$parentPath.$k"
             result[path] = v.type.id
             if (v.type == TAG_COMPOUND) {

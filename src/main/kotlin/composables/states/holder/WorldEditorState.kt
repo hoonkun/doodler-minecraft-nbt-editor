@@ -6,6 +6,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.text.input.TextFieldValue
 import doodler.anvil.ChunkLocation
 import doodler.file.WorldTree
+import nbt.tag.CompoundTag
 import nbt.AnyTag
 import nbt.Tag
 import nbt.TagType
@@ -285,7 +286,7 @@ class NbtDoodle (
         if (hasAnyDeletedAncestors()) return null
 
         when (parent.tag.type) {
-            TagType.TAG_COMPOUND -> parent.tag.getAs<CompoundTag>().value.remove(tag.name)
+            TagType.TAG_COMPOUND -> parent.tag.getAs<CompoundTag>().remove(tag.name)
             TagType.TAG_LIST -> parent.tag.getAs<ListTag>().value.remove(tag)
             else -> { /* no-op */ }
         }
