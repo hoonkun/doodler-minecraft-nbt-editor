@@ -489,8 +489,11 @@ fun BoxScope.EditableField(
                             val lastSelected = doodleState.getLastSelected()
                             if (lastSelected == null) doodleState.addToSelected(item)
                             else {
+                                val from = doodles.indexOf(lastSelected)
+                                val to = doodles.indexOf(item)
                                 doodleState.addRangeToSelected(doodles.slice(
-                                    doodles.indexOf(lastSelected) + 1 until doodles.indexOf(item) + 1
+                                    if (from < to) from + 1 until to + 1
+                                    else to until from
                                 ))
                             }
                         } else doodleState.setSelected(item)
