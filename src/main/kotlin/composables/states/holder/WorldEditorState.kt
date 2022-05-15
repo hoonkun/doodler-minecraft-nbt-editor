@@ -178,6 +178,7 @@ class NbtState (
     val doodles: SnapshotStateList<Doodle>,
     ui: MutableState<DoodleUi>,
     val lazyState: LazyListState,
+    val history: DoodleActionHistory = DoodleActionHistory(),
     var initialComposition: Boolean = true
 ) {
     var ui by ui
@@ -501,3 +502,48 @@ fun rememberWorldSpec (
 ) = remember (tree, name) {
     WorldSpecification(tree, name)
 }
+
+class DoodleActionHistory(
+    private val undoStack: MutableList<DoodleAction> = mutableStateListOf(),
+    private val redoStack: MutableList<DoodleAction> = mutableStateListOf()
+) {
+    var flags by mutableStateOf(Flags(canBeUndo = undoStack.isNotEmpty(), canBeRedo = redoStack.isNotEmpty()))
+
+    fun newAction(action: DoodleAction) {
+        redoStack.clear()
+        undoStack.add(action)
+        updateFlags()
+    }
+
+    fun undo(): DoodleAction? {
+        if (!flags.canBeUndo) return null
+        redoStack.add(undoStack.removeLast())
+        updateFlags()
+        return redoStack.last()
+    }
+
+    fun redo(): DoodleAction? {
+        if (!flags.canBeRedo) return null
+        undoStack.add(redoStack.removeLast())
+        updateFlags()
+        return undoStack.last()
+    }
+
+    private fun updateFlags() {
+        flags = Flags(canBeUndo = undoStack.isNotEmpty(), canBeRedo = redoStack.isNotEmpty())
+    }
+
+    class Flags (
+        val canBeUndo: Boolean,
+        val canBeRedo: Boolean
+    )
+
+}
+
+abstract class DoodleAction
+
+class DeleteDoodleAction(
+    deleted: List<List<Doodle>>,
+    updated: List<Doodle>,
+    unselected: List<Doodle>
+): DoodleAction()
