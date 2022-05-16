@@ -208,11 +208,11 @@ private fun KeyValue(doodle: NbtDoodle, selected: Boolean) {
         Key(key)
         Spacer(modifier = Modifier.width(20.dp))
     }
-    if ((doodle.parent?.type ?: TagType.TAG_COMPOUND) !== TagType.TAG_COMPOUND && doodle.index >= 0) {
+    if ((doodle.parent?.tag?.type ?: TagType.TAG_COMPOUND) !== TagType.TAG_COMPOUND && doodle.index >= 0) {
         Index(doodle.index, selected)
         Spacer(modifier = Modifier.width(10.dp))
     }
-    when (doodle.type) {
+    when (doodle.tag.type) {
         TagType.TAG_BYTE,
             TagType.TAG_DOUBLE,
             TagType.TAG_FLOAT,
@@ -339,7 +339,7 @@ fun NbtItem(
 fun DoodleContent(doodle: Doodle, selected: Boolean) {
     when (doodle) {
         is NbtDoodle -> {
-            Indicator(doodle.type, selected)
+            Indicator(doodle.tag.type, selected)
             Spacer(modifier = Modifier.width(20.dp))
             KeyValue(doodle, selected)
         }

@@ -458,7 +458,7 @@ fun BoxScope.EditableField(
             items(doodles, key = { item -> item.path }) { item ->
                 val onExpand: () -> Unit = click@ {
                     if (item !is NbtDoodle) return@click
-                    if (!item.canHaveChildren) return@click
+                    if (!item.tag.canHaveChildren) return@click
 
                     if (!item.expanded) item.expand()
                     else item.collapse()
@@ -503,7 +503,7 @@ fun BoxScope.EditableField(
                             .wrapContentSize()
                             .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
                             .padding(5.dp)
-                    ) {
+                    ) actionColumn@ {
                         ToolBarAction(onClick = { state.delete() }) {
                             IndicatorText("DEL", ThemedColor.Editor.Action.Delete)
                         }
@@ -511,11 +511,8 @@ fun BoxScope.EditableField(
                             IndicatorText("YNK", ThemedColor.Editor.Tag.General)
                         }
                         if (doodleState.selected.size == 1) {
-                            val selectedDoodle = doodleState.selected[0]
-                            if (selectedDoodle is NbtDoodle && (selectedDoodle.tag.name != null || !Tag.canHaveChildren(
-                                    selectedDoodle.type
-                                ))
-                            ) {
+                            val selectedDoodle = doodleState.selected[0] as? NbtDoodle ?: return@actionColumn
+                            if ((selectedDoodle.tag.name != null || !Tag.canHaveChildren(selectedDoodle.tag.type))) {
                                 ToolBarAction {
                                     IndicatorText("EDT", ThemedColor.Editor.Tag.General)
                                 }
@@ -524,8 +521,8 @@ fun BoxScope.EditableField(
                     }
                     if (doodleState.selected.size == 1) {
                         val selectedDoodle = doodleState.selected[0]
-                        if (selectedDoodle is NbtDoodle && Tag.canHaveChildren(selectedDoodle.type)) {
-                            val isType: (TagType) -> Boolean = { it == selectedDoodle.type }
+                        if (selectedDoodle is NbtDoodle && Tag.canHaveChildren(selectedDoodle.tag.type)) {
+                            val isType: (TagType) -> Boolean = { it == selectedDoodle.tag.type }
                             val isListType: (TagType) -> Boolean = {
                                 if (selectedDoodle.tag !is ListTag) false
                                 else selectedDoodle.tag.elementsType == it || selectedDoodle.tag.elementsType == TagType.TAG_END

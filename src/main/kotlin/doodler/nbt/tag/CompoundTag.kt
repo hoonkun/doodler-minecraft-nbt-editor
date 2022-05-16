@@ -87,23 +87,4 @@ class CompoundTag private constructor(name: String? = null, parent: AnyTag?): Ta
         return if (complicated) result else result.replace("\n", " ")
     }
 
-    fun generateTypes(parentPath: String = ""): Map<String, Byte> {
-        val result = mutableMapOf<String, Byte>()
-        value.map { v ->
-            val k = v.name ?: ""
-            val path = if (parentPath == "") k else "$parentPath.$k"
-            result[path] = v.type.id
-            if (v.type == TAG_COMPOUND) {
-                result.putAll(v.getAs<CompoundTag>().generateTypes(path))
-            }
-            if (v.type == TAG_LIST) {
-                val listTag = v.getAs<ListTag>()
-                result["$path.*"] = listTag.elementsType.id
-                val listCompoundTypes = listTag.generateTypes(path)
-                result.putAll(listCompoundTypes)
-            }
-        }
-        return result
-    }
-
 }

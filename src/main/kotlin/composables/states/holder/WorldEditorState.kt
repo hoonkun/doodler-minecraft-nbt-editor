@@ -8,7 +8,6 @@ import doodler.anvil.ChunkLocation
 import doodler.file.WorldTree
 import nbt.tag.CompoundTag
 import nbt.AnyTag
-import nbt.Tag
 import nbt.TagType
 import nbt.tag.*
 
@@ -190,7 +189,7 @@ class NbtState (
         rootDoodle.expand()
 
         val hasOnlyChild = rootDoodle.expandedItems
-            .let { children -> children.size == 1 && children[0].let { it is NbtDoodle && it.canHaveChildren } }
+            .let { children -> children.size == 1 && children[0].let { it is NbtDoodle && it.tag.canHaveChildren } }
 
         if (initialComposition && hasOnlyChild) (rootDoodle.expandedItems[0] as NbtDoodle).expand()
     }
@@ -267,15 +266,18 @@ class NbtDoodle (
     index: Int = -1,
     parent: NbtDoodle? = null
 ): Doodle(depth, index, parent) {
-    
-    override val path: String get() = tag.path ?: "null"
 
-    val type = tag.type
-    val canHaveChildren = Tag.canHaveChildren(type)
+    override val path: String get() = parent?.let {
+        when (it.tag.type) {
+            TagType.TAG_COMPOUND -> "${it.path}.${tag.name}"
+            TagType.TAG_LIST -> "${it.path}[${index}]"
+            else -> "" // no-op
+        }
+    } ?: "root"
 
     var name by mutableStateOf(tag.name)
         private set
-    var value by mutableStateOf(if (this.canHaveChildren) valueSuffix(tag) else tag.valueToString())
+    var value by mutableStateOf(if (this.tag.canHaveChildren) valueSuffix(tag) else tag.valueToString())
         private set
 
     var expanded = false
@@ -284,10 +286,10 @@ class NbtDoodle (
     val collapsedItems: MutableList<Doodle> = mutableListOf()
 
     fun update(vararg targets: UpdateTarget) {
-        if (targets.contains(UpdateTarget.VALUE))
-            value = if (this.canHaveChildren) valueSuffix(tag) else tag.valueToString()
         if (targets.contains(UpdateTarget.NAME))
             name = tag.name
+        if (targets.contains(UpdateTarget.VALUE))
+            value = if (this.tag.canHaveChildren) valueSuffix(tag) else tag.valueToString()
         if (targets.contains(UpdateTarget.INDEX)) {
             if (expanded) {
                 expandedItems.forEach { it.index = expandedItems.indexOf(it) }
@@ -308,15 +310,15 @@ class NbtDoodle (
         return when (tag) {
             is CompoundTag -> tag.doodle(this, depth)
             is ListTag -> tag.doodle(this, depth)
-            is ByteArrayTag -> tag.doodle(this, depth, path)
-            is IntArrayTag -> tag.doodle(this, depth, path)
-            is LongArrayTag -> tag.doodle(this, depth, path)
+            is ByteArrayTag -> tag.doodle(this, depth)
+            is IntArrayTag -> tag.doodle(this, depth)
+            is LongArrayTag -> tag.doodle(this, depth)
             else -> throw Exception("this tag is not expandable!")
         }
     }
 
     fun expand() {
-        if (!canHaveChildren) return
+        if (!tag.canHaveChildren) return
         if (expanded) return
 
         parent?.let { if (!it.expanded) it.expand() }
@@ -334,13 +336,13 @@ class NbtDoodle (
     }
 
     fun collapse() {
-        if (!canHaveChildren) return
+        if (!tag.canHaveChildren) return
         if (!expanded) return
 
         expanded = false
 
         expandedItems.forEach {
-            if (it is NbtDoodle && it.canHaveChildren && it.expanded) it.collapse()
+            if (it is NbtDoodle && it.tag.canHaveChildren && it.expanded) it.collapse()
         }
 
         collapsedItems.addAll(expandedItems)
@@ -376,8 +378,8 @@ class NbtDoodle (
 
                 val list = tag.getAs<ListTag>()
 
-                if (list.elementsType != new.type)
-                    throw Exception("invalid operation: tag type mismatch. expected: ${tag.type.name}, actual was: ${new.type.name}")
+                if (list.elementsType != new.tag.type)
+                    throw Exception("invalid operation: tag type mismatch. expected: ${tag.type.name}, actual was: ${new.tag.type.name}")
                 else list.value.add(new.index, new.tag)
             }
             TagType.TAG_BYTE_ARRAY -> {
@@ -476,21 +478,21 @@ fun ListTag.doodle(parent: NbtDoodle, depth: Int): List<Doodle> {
     return this.value.mapIndexed { index, value -> NbtDoodle(value, depth, index, parent) }
 }
 
-fun ByteArrayTag.doodle(parent: NbtDoodle, depth: Int, parentKey: String): List<Doodle> {
+fun ByteArrayTag.doodle(parent: NbtDoodle, depth: Int): List<Doodle> {
     return this.value.mapIndexed { index, value ->
-        ValueDoodle("$value", "$parentKey[$index]", depth, index, parent)
+        ValueDoodle("$value", depth, index, parent)
     }
 }
 
-fun IntArrayTag.doodle(parent: NbtDoodle, depth: Int, parentKey: String): List<Doodle> {
+fun IntArrayTag.doodle(parent: NbtDoodle, depth: Int): List<Doodle> {
     return this.value.mapIndexed { index, value ->
-        ValueDoodle("$value", "$parentKey[$index]", depth, index, parent)
+        ValueDoodle("$value", depth, index, parent)
     }
 }
 
-fun LongArrayTag.doodle(parent: NbtDoodle, depth: Int, parentKey: String): List<Doodle> {
+fun LongArrayTag.doodle(parent: NbtDoodle, depth: Int): List<Doodle> {
     return this.value.mapIndexed { index, value ->
-        ValueDoodle("$value", "$parentKey[$index]", depth, index, parent)
+        ValueDoodle("$value", depth, index, parent)
     }
 }
 
@@ -514,11 +516,20 @@ fun TagType.displayName(): String {
 
 class ValueDoodle (
     val value: String,
-    override val path: String,
     depth: Int,
     index: Int,
     parent: NbtDoodle? = null
 ): Doodle(depth, index, parent) {
+
+    override val path: String
+        get() = parent?.let {
+            when (it.tag.type) {
+                TagType.TAG_BYTE_ARRAY,
+                TagType.TAG_INT_ARRAY,
+                TagType.TAG_LONG_ARRAY -> "${it.path}[${index}]"
+                else -> "" // no-op
+            }
+        } ?: "" // no-op
 
     override fun delete(): ValueDoodle? {
         val parent = parent ?: return null

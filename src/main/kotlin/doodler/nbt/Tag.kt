@@ -20,18 +20,7 @@ abstract class Tag<T: Any> protected constructor(
 
     lateinit var value: T
 
-    val path: String? get() = "${
-        parent?.path?.plus(
-            when (parent.type) {
-                TAG_COMPOUND -> if (parent.name == null) "" else "."
-                TAG_LIST -> "[${indexInList!!}]."
-                else -> ""
-            }
-        ) ?: ""
-    }${name ?: ""}".ifEmpty { null }
     abstract val sizeInBytes: Int
-
-    var indexInList: Int? = null
 
     val canHaveChildren get() = canHaveChildren(type)
 

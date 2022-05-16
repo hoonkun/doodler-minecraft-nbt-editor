@@ -32,7 +32,7 @@ class ListTag private constructor(name: String? = null, parent: AnyTag?): Tag<Mu
 
     override fun read(buffer: ByteBuffer) {
         elementsType = TagType[buffer.byte]
-        value = MutableList(buffer.int) { read(elementsType, buffer, null, this).apply { indexInList = it } }
+        value = MutableList(buffer.int) { read(elementsType, buffer, null, this) }
     }
 
     override fun write(buffer: ByteBuffer) {
@@ -44,15 +44,5 @@ class ListTag private constructor(name: String? = null, parent: AnyTag?): Tag<Mu
     override fun clone(name: String?) = ListTag(elementsType, value.map { it.clone(null) }, false, name, parent)
 
     override fun valueToString(): String = if (value.isEmpty()) "[]" else "[\n${value.joinToString(",\n") { it.toString() }.indent()}\n]"
-
-    fun generateTypes(parentPath: String = ""): Map<String, Byte> {
-        if (elementsType != TAG_COMPOUND) return mapOf()
-
-        val result = mutableMapOf<String, Byte>()
-        value.mapIndexed { index, tag ->
-            result.putAll(tag.getAs<CompoundTag>().generateTypes("$parentPath[$index]"))
-        }
-        return result
-    }
 
 }
