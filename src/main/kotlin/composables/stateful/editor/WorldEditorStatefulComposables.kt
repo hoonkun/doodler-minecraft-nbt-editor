@@ -3,7 +3,7 @@ package composables.stateful.editor
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -79,7 +79,7 @@ fun WorldEditor(
             if (data.holderType == SpeciesHolder.Type.Single) {
                 SingleSpeciesHolder(
                     data.key, data.format, data.contentType,
-                    NbtSpecies("", IOUtils.readLevel(tree.level.readBytes()), mutableStateOf(NbtState.new()))
+                    NbtSpecies("", mutableStateOf(NbtState.new(IOUtils.readLevel(tree.level.readBytes()))))
                 )
             } else {
                 MultipleSpeciesHolder(data.key, data.format, data.contentType, data.extras)
@@ -151,12 +151,12 @@ fun BoxScope.Editor(
                     if (species is SelectorSpecies && holder.selected == species) {
                         Selector(tree, holder, holder.selected == species)
                     } else if (species is NbtSpecies && holder.selected == species) {
-                        EditableField(species, species.state)
+                        EditableField(species)
                     }
                 }
             }
         } else if (holder is SingleSpeciesHolder) {
-            Editables { EditableField(holder.species, holder.species.state) }
+            Editables { EditableField(holder.species) }
         }
     }
 }
@@ -176,7 +176,7 @@ fun BoxScope.Selector(
 
         val root = AnvilWorker.loadChunk(loc, file.readBytes()) ?: return@select
 
-        holder.add(NbtSpecies(newIdent, root, mutableStateOf(NbtState.new())))
+        holder.add(NbtSpecies(newIdent, mutableStateOf(NbtState.new(root))))
     }
 
     Column {
@@ -416,24 +416,18 @@ fun ColumnScope.AnvilSelector(
 @Composable
 fun BoxScope.EditableField(
     species: NbtSpecies,
-    state: NbtState
 ) {
-    val nbt = species.root
-
     val coroutineScope = rememberCoroutineScope()
+
+    val state = species.state
 
     val doodles = state.doodles
     val doodleState = state.ui
     val lazyColumnState = state.lazyState
 
-    if (doodles.isEmpty()) doodles.addAll(nbt.doodle(null, 0))
-
-    if (state.initialComposition && nbt.value.size == 1 && nbt.value.toList()[0].canHaveChildren)
-        doodles.addAll((doodles[0] as NbtDoodle).expand())
-
-    val treeCollapse: (Doodle, Int) -> Unit = { target, collapseCount ->
+    val treeCollapse: (NbtDoodle) -> Unit = { target ->
+        target.collapse()
         val baseIndex = doodles.indexOf(target)
-        doodles.removeRange(baseIndex + 1, baseIndex + collapseCount + 1)
         if (lazyColumnState.firstVisibleItemIndex > baseIndex) {
             coroutineScope.launch { lazyColumnState.scrollToItem(baseIndex) }
         }
@@ -457,38 +451,17 @@ fun BoxScope.EditableField(
         if (target != null) doodleState.unFocusDirectly(target)
     }
 
-    val deleteTag: MouseClickScope.() -> Unit = {
-        val deleteInfo = doodleState.selected.map { it.delete() }
-        deleteInfo.forEach {
-            if (it == null) return@forEach
-
-            val (parent, doodle, deletedCount) = it
-            val start = doodles.indexOf(doodle)
-            doodles.removeRange(start, start + deletedCount + 1)
-            parent.update(NbtDoodle.UpdateTarget.VALUE)
-        }
-        doodleState.selected.clear()
-    }
-
-    val undo: MouseClickScope.() -> Unit = {
-
-    }
-
-    val redo: MouseClickScope.() -> Unit = {
-
-    }
-
     state.initialComposition = false
 
     Box {
         LazyColumn (state = lazyColumnState) {
-            itemsIndexed(doodles, key = { _, item -> item.path }) { index, item ->
+            items(doodles, key = { item -> item.path }) { item ->
                 val onExpand: () -> Unit = click@ {
                     if (item !is NbtDoodle) return@click
                     if (!item.canHaveChildren) return@click
 
-                    if (!item.expanded) doodles.addAll(index + 1, item.expand())
-                    else doodles.removeRange(index + 1, index + item.collapse() + 1)
+                    if (!item.expanded) item.expand()
+                    else item.collapse()
                 }
                 val onSelect: () -> Unit = {
                     if (!doodleState.selected.contains(item)) {
@@ -531,7 +504,7 @@ fun BoxScope.EditableField(
                             .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
                             .padding(5.dp)
                     ) {
-                        ToolBarAction(onClick = deleteTag) {
+                        ToolBarAction(onClick = { state.delete() }) {
                             IndicatorText("DEL", ThemedColor.Editor.Action.Delete)
                         }
                         ToolBarAction {
@@ -618,10 +591,10 @@ fun BoxScope.EditableField(
                             .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
                             .padding(5.dp)
                     ) {
-                        ToolBarAction(disabled = !state.history.flags.canBeUndo, onClick = undo) {
+                        ToolBarAction(disabled = !state.history.flags.canBeUndo, onClick = { state.undo() }) {
                             IndicatorText("<- ", ThemedColor.Editor.Tag.General)
                         }
-                        ToolBarAction(disabled = !state.history.flags.canBeRedo, onClick = redo) {
+                        ToolBarAction(disabled = !state.history.flags.canBeRedo, onClick = { state.redo() }) {
                             IndicatorText(" ->", ThemedColor.Editor.Tag.General)
                         }
                     }
