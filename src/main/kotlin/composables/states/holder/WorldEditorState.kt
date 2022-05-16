@@ -175,7 +175,7 @@ class NbtSpecies (
 }
 
 class NbtState (
-    val rootDoodle: NbtDoodle,
+    private val rootDoodle: NbtDoodle,
     ui: MutableState<DoodleUi>,
     val lazyState: LazyListState,
     val history: DoodleActionHistory = DoodleActionHistory(),
@@ -186,12 +186,58 @@ class NbtState (
     val doodles: List<Doodle>
         get() = rootDoodle.children(true)
 
+    init {
+        rootDoodle.expand()
+
+        val hasOnlyChild = rootDoodle.expandedItems
+            .let { children -> children.size == 1 && children[0].let { it is NbtDoodle && it.canHaveChildren } }
+
+        if (initialComposition && hasOnlyChild) (rootDoodle.expandedItems[0] as NbtDoodle).expand()
+    }
+
+    fun undo() {
+        val action = history.undo() ?: return
+        when (action) {
+            is DeleteDoodleAction -> undoDelete(action)
+        }
+    }
+
+    fun redo() {
+        val action = history.redo() ?: return
+        when (action) {
+            is DeleteDoodleAction -> redoDelete(action)
+        }
+    }
+
     fun delete() {
+        ui.selected.sortBy { doodles.indexOf(it) }
+
         val deleted = ui.selected.mapNotNull { it.delete() }
-        deleted.forEach { it.parent?.update(NbtDoodle.UpdateTarget.VALUE) }
+        deleted.forEach { it.parent?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
 
         history.newAction(DeleteDoodleAction(deleted))
 
+        ui.selected.clear()
+    }
+
+    private fun undoDelete(action: DeleteDoodleAction) {
+        action.deleted.forEach {
+            if (it.parent == null) throw Exception("Is this possible??")
+
+            if (!it.parent.expanded)
+                it.parent.expand()
+
+            it.parent.create(it)
+            it.parent.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX)
+        }
+        ui.selected.addAll(action.deleted)
+    }
+
+    private fun redoDelete(action: DeleteDoodleAction) {
+        action.deleted.forEach {
+            it.delete()
+            it.parent?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX)
+        }
         ui.selected.clear()
     }
 
@@ -206,7 +252,7 @@ class NbtState (
 
 abstract class Doodle (
     val depth: Int,
-    val index: Int,
+    var index: Int,
     val parent: NbtDoodle?
 ) {
     abstract val path: String
@@ -218,8 +264,8 @@ class NbtDoodle (
     val tag: AnyTag,
     depth: Int,
     index: Int = -1,
-    parentTag: NbtDoodle? = null
-): Doodle(depth, index, parentTag) {
+    parent: NbtDoodle? = null
+): Doodle(depth, index, parent) {
     
     override val path: String get() = tag.path ?: "null"
 
@@ -232,19 +278,39 @@ class NbtDoodle (
         private set
 
     var expanded = false
-    val children: SnapshotStateList<Doodle> = mutableStateListOf()
+
+    val expandedItems: SnapshotStateList<Doodle> = mutableStateListOf()
+    val collapsedItems: MutableList<Doodle> = mutableListOf()
 
     fun update(vararg targets: UpdateTarget) {
         if (targets.contains(UpdateTarget.VALUE))
             value = if (this.canHaveChildren) valueSuffix(tag) else tag.valueToString()
         if (targets.contains(UpdateTarget.NAME))
             name = tag.name
+        if (targets.contains(UpdateTarget.INDEX)) {
+            if (expanded) {
+                expandedItems.forEach { it.index = expandedItems.indexOf(it) }
+            } else {
+                collapsedItems.forEach { it.index = collapsedItems.indexOf(it) }
+            }
+        }
     }
 
     fun children(root: Boolean = false): List<Doodle> {
         return mutableListOf<Doodle>().apply {
             if (!root) add(this@NbtDoodle)
-            addAll(children.map { if (it is NbtDoodle) it.children() else listOf(it) }.flatten())
+            addAll(expandedItems.map { if (it is NbtDoodle) it.children() else listOf(it) }.flatten())
+        }
+    }
+
+    private fun initialDoodles(depth: Int): List<Doodle> {
+        return when (tag) {
+            is CompoundTag -> tag.doodle(this, depth)
+            is ListTag -> tag.doodle(this, depth)
+            is ByteArrayTag -> tag.doodle(this, depth, path)
+            is IntArrayTag -> tag.doodle(this, depth, path)
+            is LongArrayTag -> tag.doodle(this, depth, path)
+            else -> throw Exception("this tag is not expandable!")
         }
     }
 
@@ -252,20 +318,18 @@ class NbtDoodle (
         if (!canHaveChildren) return
         if (expanded) return
 
+        parent?.let { if (!it.expanded) it.expand() }
+
         expanded = true
 
         val newDepth = depth + 1
 
-        children.addAll(
-            when (tag) {
-                is CompoundTag -> tag.doodle(this, newDepth)
-                is ListTag -> tag.doodle(this, newDepth)
-                is ByteArrayTag -> tag.doodle(this, newDepth, path)
-                is IntArrayTag -> tag.doodle(this, newDepth, path)
-                is LongArrayTag -> tag.doodle(this, newDepth, path)
-                else -> throw Exception("this tag is not expandable!")
-            }
-        )
+        if (collapsedItems.isEmpty() && expandedItems.isEmpty()) {
+            expandedItems.addAll(initialDoodles(newDepth))
+        } else {
+            expandedItems.addAll(collapsedItems)
+            collapsedItems.clear()
+        }
     }
 
     fun collapse() {
@@ -274,11 +338,12 @@ class NbtDoodle (
 
         expanded = false
 
-        children.forEach {
+        expandedItems.forEach {
             if (it is NbtDoodle && it.canHaveChildren && it.expanded) it.collapse()
         }
 
-        children.clear()
+        collapsedItems.addAll(expandedItems)
+        expandedItems.clear()
     }
 
     override fun delete(): NbtDoodle? {
@@ -290,7 +355,70 @@ class NbtDoodle (
             else -> { /* no-op */ }
         }
 
+        parent.expandedItems.remove(this)
+        parent.collapsedItems.remove(this)
+
         return this
+    }
+
+    fun create(new: Doodle) {
+        when (tag.type) {
+            TagType.TAG_COMPOUND -> {
+                new as? NbtDoodle
+                    ?: throw Exception("invalid operation: internal error. expected: NbtDoodle, actual was: ${new.javaClass.name}")
+
+                tag.getAs<CompoundTag>().insert(new.index, new.tag)
+            }
+            TagType.TAG_LIST -> {
+                new as? NbtDoodle
+                    ?: throw Exception("invalid operation: internal error. expected: NbtDoodle, actual was: ${new.javaClass.name}")
+
+                val list = tag.getAs<ListTag>()
+
+                if (list.elementsType != new.type)
+                    throw Exception("invalid operation: tag type mismatch. expected: ${tag.type.name}, actual was: ${new.type.name}")
+                else list.value.add(new.index, new.tag)
+            }
+            TagType.TAG_BYTE_ARRAY -> {
+                new as? ValueDoodle
+                    ?: throw Exception("invalid operation: internal error. expected: ValueDoodle, actual was: ${new.javaClass.name}")
+
+                val value = new.value.toByteOrNull()
+                    ?: throw Exception("invalid operation: value type mismatch. expected: Byte, actual was: ${new.value}")
+
+                val array = tag.getAs<ByteArrayTag>()
+                array.value = array.value.toMutableList().apply { add(new.index, value) }.toByteArray()
+            }
+            TagType.TAG_INT_ARRAY -> {
+                new as? ValueDoodle
+                    ?: throw Exception("invalid operation: internal error. expected: ValueDoodle, actual was: ${new.javaClass.name}")
+
+                val value = new.value.toIntOrNull()
+                    ?: throw Exception("invalid operation: value type mismatch. expected: Byte, actual was: ${new.value}")
+
+                val array = tag.getAs<IntArrayTag>()
+                array.value = array.value.toMutableList().apply { add(new.index, value) }.toIntArray()
+            }
+            TagType.TAG_LONG_ARRAY -> {
+                new as? ValueDoodle
+                    ?: throw Exception("invalid operation: internal error. expected: ValueDoodle, actual was: ${new.javaClass.name}")
+
+                val value = new.value.toLongOrNull()
+                    ?: throw Exception("invalid operation: value type mismatch. expected: Byte, actual was: ${new.value}")
+
+                val array = tag.getAs<LongArrayTag>()
+                array.value = array.value.toMutableList().apply { add(new.index, value) }.toLongArray()
+            }
+            else -> throw Exception("invalid operation: ${tag.javaClass.name} cannot own child tags.")
+        }
+
+        if (expanded) {
+            if (new.index == -1) expandedItems.add(new)
+            else expandedItems.add(new.index, new)
+        } else {
+            if (new.index == -1) collapsedItems.add(new)
+            else collapsedItems.add(new.index, new)
+        }
     }
 
     fun yank() {
@@ -302,7 +430,7 @@ class NbtDoodle (
     }
 
     enum class UpdateTarget {
-        NAME, VALUE
+        NAME, VALUE, INDEX
     }
     
     companion object {
@@ -388,8 +516,8 @@ class ValueDoodle (
     override val path: String,
     depth: Int,
     index: Int,
-    parentTag: NbtDoodle? = null
-): Doodle(depth, index, parentTag) {
+    parent: NbtDoodle? = null
+): Doodle(depth, index, parent) {
 
     override fun delete(): ValueDoodle? {
         val parent = parent ?: return null
@@ -409,6 +537,9 @@ class ValueDoodle (
             }
             else -> { /* no-op */ }
         }
+
+        parent.expandedItems.remove(this)
+        parent.collapsedItems.remove(this)
 
         return this
     }
@@ -539,5 +670,5 @@ class DoodleActionHistory(
 abstract class DoodleAction
 
 class DeleteDoodleAction(
-    deleted: List<Doodle>
+    val deleted: List<Doodle>
 ): DoodleAction()

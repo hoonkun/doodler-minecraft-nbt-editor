@@ -425,11 +425,6 @@ fun BoxScope.EditableField(
     val doodleState = state.ui
     val lazyColumnState = state.lazyState
 
-    state.rootDoodle.expand()
-
-    if (state.initialComposition && state.rootDoodle.children.size == 1 && state.rootDoodle.children[0].let { it is NbtDoodle && it.canHaveChildren })
-        (state.rootDoodle.children[0] as NbtDoodle).expand()
-
     val treeCollapse: (NbtDoodle) -> Unit = { target ->
         target.collapse()
         val baseIndex = doodles.indexOf(target)
@@ -454,14 +449,6 @@ fun BoxScope.EditableField(
     val onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit = {
         val target = doodleState.focusedDirectly
         if (target != null) doodleState.unFocusDirectly(target)
-    }
-
-    val undo: MouseClickScope.() -> Unit = {
-
-    }
-
-    val redo: MouseClickScope.() -> Unit = {
-
     }
 
     state.initialComposition = false
@@ -604,10 +591,10 @@ fun BoxScope.EditableField(
                             .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
                             .padding(5.dp)
                     ) {
-                        ToolBarAction(disabled = !state.history.flags.canBeUndo, onClick = undo) {
+                        ToolBarAction(disabled = !state.history.flags.canBeUndo, onClick = { state.undo() }) {
                             IndicatorText("<- ", ThemedColor.Editor.Tag.General)
                         }
-                        ToolBarAction(disabled = !state.history.flags.canBeRedo, onClick = redo) {
+                        ToolBarAction(disabled = !state.history.flags.canBeRedo, onClick = { state.redo() }) {
                             IndicatorText(" ->", ThemedColor.Editor.Tag.General)
                         }
                     }
