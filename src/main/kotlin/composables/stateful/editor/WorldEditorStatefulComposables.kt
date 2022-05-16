@@ -453,7 +453,7 @@ fun BoxScope.EditableField(
 
     state.initialComposition = false
 
-    Box {
+    Box (modifier = Modifier.fillMaxSize()) {
         LazyColumn (state = lazyColumnState) {
             items(doodles, key = { item -> item.path }) { item ->
                 val onExpand: () -> Unit = click@ {
