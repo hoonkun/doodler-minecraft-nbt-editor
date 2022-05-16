@@ -230,6 +230,7 @@ class NbtState (
             it.parent.create(it)
             it.parent.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX)
         }
+        ui.selected.clear()
         ui.selected.addAll(action.deleted)
     }
 
