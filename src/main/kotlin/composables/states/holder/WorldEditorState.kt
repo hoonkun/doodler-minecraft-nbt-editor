@@ -156,7 +156,6 @@ class SelectorState (
 
 class NbtSpecies (
     ident: String,
-    val root: CompoundTag,
     state: MutableState<NbtState>
 ): Species(ident) {
     var state by state
@@ -176,7 +175,7 @@ class NbtSpecies (
 }
 
 class NbtState (
-    val doodles: SnapshotStateList<Doodle>,
+    val rootDoodle: NbtDoodle,
     ui: MutableState<DoodleUi>,
     val lazyState: LazyListState,
     val history: DoodleActionHistory = DoodleActionHistory(),
@@ -184,50 +183,35 @@ class NbtState (
 ) {
     var ui by ui
 
+    val doodles: List<Doodle>
+        get() = rootDoodle.children(true)
+
     fun delete() {
-        val deletedDoodles = ui.selected
-            .mapNotNull { it.delete() }
-            .map { (parent, doodle, deletedCount) ->
-                val start = doodles.indexOf(doodle)
+        val deleted = ui.selected.mapNotNull { it.delete() }
+        deleted.forEach { it.parent?.update(NbtDoodle.UpdateTarget.VALUE) }
 
-                doodles.removeRange(start, start + deletedCount + 1)
-                parent.update(NbtDoodle.UpdateTarget.VALUE)
-
-                doodle
-            }
+        history.newAction(DeleteDoodleAction(deleted))
 
         ui.selected.clear()
-
-        history.newAction(DeleteDoodleAction(deletedDoodles))
     }
 
     companion object {
         fun new(
-            doodles: SnapshotStateList<Doodle> = mutableStateListOf(),
+            rootTag: CompoundTag,
             ui: MutableState<DoodleUi> = mutableStateOf(DoodleUi.new()),
             lazyState: LazyListState = LazyListState()
-        ) = NbtState(doodles, ui, lazyState)
+        ) = NbtState(NbtDoodle(rootTag, -1, -1), ui, lazyState)
     }
 }
 
 abstract class Doodle (
     val depth: Int,
     val index: Int,
-    val parentTag: NbtDoodle?
+    val parent: NbtDoodle?
 ) {
     abstract val path: String
 
-    abstract fun delete(): Triple<NbtDoodle, Doodle, Int>?
-
-    fun hasAnyDeletedAncestors(): Boolean {
-        val parent = parentTag ?: return true
-        val ancestors = mutableListOf(parent)
-
-        do { ancestors.add(ancestors.last().parentTag ?: break) }
-        while (true)
-
-        return ancestors.any { it.deleted }
-    }
+    abstract fun delete(): Doodle?
 }
 
 class NbtDoodle (
@@ -248,9 +232,7 @@ class NbtDoodle (
         private set
 
     var expanded = false
-    private var children: List<Doodle>? = null
-
-    var deleted: Boolean = false
+    val children: SnapshotStateList<Doodle> = mutableStateListOf()
 
     fun update(vararg targets: UpdateTarget) {
         if (targets.contains(UpdateTarget.VALUE))
@@ -259,48 +241,48 @@ class NbtDoodle (
             name = tag.name
     }
 
-    fun expand(): List<Doodle> {
-        expanded = true
-        val newDepth = depth + 1
-        val result = when (tag) {
-            is CompoundTag -> tag.doodle(this, newDepth)
-            is ListTag -> tag.doodle(this, newDepth)
-            is ByteArrayTag -> tag.doodle(this, newDepth, path)
-            is IntArrayTag -> tag.doodle(this, newDepth, path)
-            is LongArrayTag -> tag.doodle(this, newDepth, path)
-            else -> throw Exception("this tag is not expandable!")
+    fun children(root: Boolean = false): List<Doodle> {
+        return mutableListOf<Doodle>().apply {
+            if (!root) add(this@NbtDoodle)
+            addAll(children.map { if (it is NbtDoodle) it.children() else listOf(it) }.flatten())
         }
-        children = result
-        return result
     }
 
-    fun collapse(): Int {
-        if (!expanded) return 0
+    fun expand() {
+        if (!canHaveChildren) return
+        if (expanded) return
+
+        expanded = true
+
+        val newDepth = depth + 1
+
+        children.addAll(
+            when (tag) {
+                is CompoundTag -> tag.doodle(this, newDepth)
+                is ListTag -> tag.doodle(this, newDepth)
+                is ByteArrayTag -> tag.doodle(this, newDepth, path)
+                is IntArrayTag -> tag.doodle(this, newDepth, path)
+                is LongArrayTag -> tag.doodle(this, newDepth, path)
+                else -> throw Exception("this tag is not expandable!")
+            }
+        )
+    }
+
+    fun collapse() {
+        if (!canHaveChildren) return
+        if (!expanded) return
 
         expanded = false
-        val localChildren = children
-        val collapsableChildren = if (localChildren == null) 0 else {
-            var count = 0
-            localChildren.forEach {
-                if (it is NbtDoodle && it.canHaveChildren && it.expanded) count += it.collapse()
-            }
-            count
+
+        children.forEach {
+            if (it is NbtDoodle && it.canHaveChildren && it.expanded) it.collapse()
         }
-        children = null
-        return when (tag) {
-            is CompoundTag -> tag.value.size
-            is ListTag -> tag.value.size
-            is ByteArrayTag -> tag.value.size
-            is IntArrayTag -> tag.value.size
-            is LongArrayTag -> tag.value.size
-            else -> throw Exception("this tag is not collapsable!")
-        } + collapsableChildren
+
+        children.clear()
     }
 
-    override fun delete(): Triple<NbtDoodle, NbtDoodle, Int>? {
-        val parent = parentTag ?: return null
-
-        if (hasAnyDeletedAncestors()) return null
+    override fun delete(): NbtDoodle? {
+        val parent = parent ?: return null
 
         when (parent.tag.type) {
             TagType.TAG_COMPOUND -> parent.tag.getAs<CompoundTag>().remove(tag.name)
@@ -308,9 +290,7 @@ class NbtDoodle (
             else -> { /* no-op */ }
         }
 
-        deleted = true
-
-        return Triple(parent, this, collapse())
+        return this
     }
 
     fun yank() {
@@ -411,10 +391,8 @@ class ValueDoodle (
     parentTag: NbtDoodle? = null
 ): Doodle(depth, index, parentTag) {
 
-    override fun delete(): Triple<NbtDoodle, ValueDoodle, Int>? {
-        val parent = parentTag ?: return null
-
-        if (hasAnyDeletedAncestors()) return null
+    override fun delete(): ValueDoodle? {
+        val parent = parent ?: return null
 
         when (parent.tag.type) {
             TagType.TAG_BYTE_ARRAY -> {
@@ -432,7 +410,7 @@ class ValueDoodle (
             else -> { /* no-op */ }
         }
 
-        return Triple(parent, this, 0)
+        return this
     }
 
 }

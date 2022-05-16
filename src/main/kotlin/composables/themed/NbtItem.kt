@@ -208,7 +208,7 @@ private fun KeyValue(doodle: NbtDoodle, selected: Boolean) {
         Key(key)
         Spacer(modifier = Modifier.width(20.dp))
     }
-    if ((doodle.parentTag?.type ?: TagType.TAG_COMPOUND) !== TagType.TAG_COMPOUND && doodle.index >= 0) {
+    if ((doodle.parent?.type ?: TagType.TAG_COMPOUND) !== TagType.TAG_COMPOUND && doodle.index >= 0) {
         Index(doodle.index, selected)
         Spacer(modifier = Modifier.width(10.dp))
     }
@@ -273,7 +273,7 @@ fun NbtItem(
     onSelect: () -> Unit,
     onExpand: () -> Unit,
     state: DoodleUi,
-    treeCollapse: (Doodle, Int) -> Unit
+    treeCollapse: (NbtDoodle) -> Unit
 ) {
     val hierarchy = getHierarchy(doodle)
 
@@ -296,7 +296,7 @@ fun NbtItem(
                     .wrapContentWidth()
                     .onPointerEvent(PointerEventType.Enter) { state.focusTree(current) }
                     .onPointerEvent(PointerEventType.Exit) { state.unFocusTree(current) }
-                    .onPointerEvent(PointerEventType.Release) { treeCollapse(current, current.collapse()) }
+                    .onPointerEvent(PointerEventType.Release) { treeCollapse(current) }
                 ) {
                     Spacer(modifier = Modifier.width(40.dp))
                     Box (
@@ -353,10 +353,10 @@ fun DoodleContent(doodle: Doodle, selected: Boolean) {
 
 fun getHierarchy(doodle: Doodle): List<NbtDoodle> {
     val result = mutableListOf<NbtDoodle>()
-    var parent = doodle.parentTag
-    while (parent != null) {
+    var parent = doodle.parent
+    while (parent != null && parent.depth >= 0) {
         result.add(parent)
-        parent = parent.parentTag
+        parent = parent.parent
     }
     result.reverse()
     return result

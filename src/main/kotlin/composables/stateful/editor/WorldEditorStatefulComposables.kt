@@ -3,7 +3,7 @@ package composables.stateful.editor
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
@@ -79,7 +79,7 @@ fun WorldEditor(
             if (data.holderType == SpeciesHolder.Type.Single) {
                 SingleSpeciesHolder(
                     data.key, data.format, data.contentType,
-                    NbtSpecies("", IOUtils.readLevel(tree.level.readBytes()), mutableStateOf(NbtState.new()))
+                    NbtSpecies("", mutableStateOf(NbtState.new(IOUtils.readLevel(tree.level.readBytes()))))
                 )
             } else {
                 MultipleSpeciesHolder(data.key, data.format, data.contentType, data.extras)
@@ -151,12 +151,12 @@ fun BoxScope.Editor(
                     if (species is SelectorSpecies && holder.selected == species) {
                         Selector(tree, holder, holder.selected == species)
                     } else if (species is NbtSpecies && holder.selected == species) {
-                        EditableField(species, species.state)
+                        EditableField(species)
                     }
                 }
             }
         } else if (holder is SingleSpeciesHolder) {
-            Editables { EditableField(holder.species, holder.species.state) }
+            Editables { EditableField(holder.species) }
         }
     }
 }
@@ -176,7 +176,7 @@ fun BoxScope.Selector(
 
         val root = AnvilWorker.loadChunk(loc, file.readBytes()) ?: return@select
 
-        holder.add(NbtSpecies(newIdent, root, mutableStateOf(NbtState.new())))
+        holder.add(NbtSpecies(newIdent, mutableStateOf(NbtState.new(root))))
     }
 
     Column {
@@ -416,24 +416,23 @@ fun ColumnScope.AnvilSelector(
 @Composable
 fun BoxScope.EditableField(
     species: NbtSpecies,
-    state: NbtState
 ) {
-    val nbt = species.root
-
     val coroutineScope = rememberCoroutineScope()
+
+    val state = species.state
 
     val doodles = state.doodles
     val doodleState = state.ui
     val lazyColumnState = state.lazyState
 
-    if (doodles.isEmpty()) doodles.addAll(nbt.doodle(null, 0))
+    state.rootDoodle.expand()
 
-    if (state.initialComposition && nbt.value.size == 1 && nbt.value.toList()[0].canHaveChildren)
-        doodles.addAll((doodles[0] as NbtDoodle).expand())
+    if (state.initialComposition && state.rootDoodle.children.size == 1 && state.rootDoodle.children[0].let { it is NbtDoodle && it.canHaveChildren })
+        (state.rootDoodle.children[0] as NbtDoodle).expand()
 
-    val treeCollapse: (Doodle, Int) -> Unit = { target, collapseCount ->
+    val treeCollapse: (NbtDoodle) -> Unit = { target ->
+        target.collapse()
         val baseIndex = doodles.indexOf(target)
-        doodles.removeRange(baseIndex + 1, baseIndex + collapseCount + 1)
         if (lazyColumnState.firstVisibleItemIndex > baseIndex) {
             coroutineScope.launch { lazyColumnState.scrollToItem(baseIndex) }
         }
@@ -469,13 +468,13 @@ fun BoxScope.EditableField(
 
     Box {
         LazyColumn (state = lazyColumnState) {
-            itemsIndexed(doodles, key = { _, item -> item.path }) { index, item ->
+            items(doodles, key = { item -> item.path }) { item ->
                 val onExpand: () -> Unit = click@ {
                     if (item !is NbtDoodle) return@click
                     if (!item.canHaveChildren) return@click
 
-                    if (!item.expanded) doodles.addAll(index + 1, item.expand())
-                    else doodles.removeRange(index + 1, index + item.collapse() + 1)
+                    if (!item.expanded) item.expand()
+                    else item.collapse()
                 }
                 val onSelect: () -> Unit = {
                     if (!doodleState.selected.contains(item)) {
