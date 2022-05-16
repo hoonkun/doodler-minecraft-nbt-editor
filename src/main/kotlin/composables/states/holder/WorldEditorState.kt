@@ -184,6 +184,23 @@ class NbtState (
 ) {
     var ui by ui
 
+    fun delete() {
+        val deletedDoodles = ui.selected
+            .mapNotNull { it.delete() }
+            .map { (parent, doodle, deletedCount) ->
+                val start = doodles.indexOf(doodle)
+
+                doodles.removeRange(start, start + deletedCount + 1)
+                parent.update(NbtDoodle.UpdateTarget.VALUE)
+
+                doodle
+            }
+
+        ui.selected.clear()
+
+        history.newAction(DeleteDoodleAction(deletedDoodles))
+    }
+
     companion object {
         fun new(
             doodles: SnapshotStateList<Doodle> = mutableStateListOf(),
@@ -544,7 +561,5 @@ class DoodleActionHistory(
 abstract class DoodleAction
 
 class DeleteDoodleAction(
-    deleted: List<List<Doodle>>,
-    updated: List<Doodle>,
-    unselected: List<Doodle>
+    deleted: List<Doodle>
 ): DoodleAction()

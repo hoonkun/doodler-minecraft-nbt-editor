@@ -457,19 +457,6 @@ fun BoxScope.EditableField(
         if (target != null) doodleState.unFocusDirectly(target)
     }
 
-    val deleteTag: MouseClickScope.() -> Unit = {
-        val deleteInfo = doodleState.selected.map { it.delete() }
-        deleteInfo.forEach {
-            if (it == null) return@forEach
-
-            val (parent, doodle, deletedCount) = it
-            val start = doodles.indexOf(doodle)
-            doodles.removeRange(start, start + deletedCount + 1)
-            parent.update(NbtDoodle.UpdateTarget.VALUE)
-        }
-        doodleState.selected.clear()
-    }
-
     val undo: MouseClickScope.() -> Unit = {
 
     }
@@ -531,7 +518,7 @@ fun BoxScope.EditableField(
                             .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
                             .padding(5.dp)
                     ) {
-                        ToolBarAction(onClick = deleteTag) {
+                        ToolBarAction(onClick = { state.delete() }) {
                             IndicatorText("DEL", ThemedColor.Editor.Action.Delete)
                         }
                         ToolBarAction {
