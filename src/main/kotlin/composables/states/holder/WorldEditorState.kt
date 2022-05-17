@@ -183,6 +183,42 @@ class NbtState (
 
     val doodles: DoodleManager = DoodleManager(rootDoodle)
 
+    val clipboards: MutableList<Pair<PasteTarget, List<Doodle>>> = mutableListOf()
+    val pasteTarget: PasteTarget
+        get() {
+            val selected = ui.selected
+            val attributes = mutableSetOf<TagAttribute>()
+            val tagTypes = mutableSetOf<TagType>()
+
+            attributes.addAll(
+                selected.map {
+                    if (it is ValueDoodle) TagAttribute.VALUE
+                    else if (it is NbtDoodle && it.tag.name == null) TagAttribute.UNNAMED
+                    else TagAttribute.NAMED
+                }
+            )
+
+            tagTypes.addAll(selected.mapNotNull {
+                when (it) {
+                    is NbtDoodle -> it.tag.type
+                    is ValueDoodle -> it.parent?.tag?.type
+                }
+            })
+
+            if (attributes.size != 1) return CannotBePasted
+            val attribute = attributes.toList()[0]
+
+            return if (attribute == TagAttribute.NAMED) {
+                CanBePastedIntoCompound
+            } else if (attribute == TagAttribute.UNNAMED && tagTypes.size == 1) {
+                CanBePastedIntoList(tagTypes.toList()[0])
+            } else if (attribute == TagAttribute.VALUE && tagTypes.size == 1) {
+                CanBePastedIntoArray(tagTypes.toList()[0])
+            } else {
+                CannotBePasted
+            }
+        }
+
     init {
         rootDoodle.expand()
 
@@ -206,6 +242,89 @@ class NbtState (
         }
     }
 
+    // TODO: 복사 및 붙혀넣기가 가능한 조합이 생각보다 복잡함.
+    //  - 이름이 없는 태그와 있는 태그, 혹은 값 중 둘 이상이 섞여있음: 복사 불가
+    //  - 아래의 경우에서 '값'이 하나라도 있으면 복사불가.
+    //    - 태그의 타입들이 서로 다르고 이름이 없는 태그가 한 개 이상 있음: 복사 불가
+    //    - 태그의 타입들이 서로 다르나, 이름이 있는 태그들만 있음: 복사 가능, Compound 태그에 붙혀넣을 수 있음
+    //    - 태그의 타입들이 서로 같고, 이름이 있는 태그들만 있음: 복사 가능, Compound 태그에 붙혀넣을 수 있음
+    //    - 태그의 타입들이 서로 같고, 이름이 없는 태그들만 있음: 복사 가능, 해당 타입을 가진 List 태그에 붙혀넣을 수 있음
+    //  - 값 뿐임: 복사 가능, 해당 타입을 가진 Array 태그에 붙혀넣을 수 있음
+    //  추가로, Compound 에서는 큰 의미가 없으나 List 에 붙혀넣었을 때는 순서를 변경할 수 있어야할 듯 함.
+    //  리스트 태그의 아이템이나 배열 태그의 아이템을 선택했을 경우 추가적인 액션 패널을 보여줘야할 것 같음.
+    fun yank() {
+        val target = pasteTarget
+        if (target == CannotBePasted) return
+
+        if (clipboards.size >= 5) clipboards.removeAt(0)
+        clipboards.add(
+            Pair(target, mutableListOf<Doodle>().apply { addAll(ui.selected.map { it.clone(null) }) })
+        )
+    }
+
+    fun paste() {
+        if (ui.selected.isEmpty()) throw Exception("invalid operation: no selected elements")
+        if (ui.selected.size > 1) throw Exception("invalid operation: cannot be paste in multiple elements at once.")
+
+        val selected = ui.selected[0]
+        if (selected !is NbtDoodle)
+            throw Exception("invalid operation: expected NbtDoodle, actual was ${selected.javaClass.name}")
+
+        val (target, doodles) = clipboards.last()
+        val pasteTags = {
+            val created = doodles.map { selected.create(it.clone(selected), false) }
+            val action = PasteAction(created)
+            history.newAction(action)
+
+            ui.selected.clear()
+            ui.selected.addAll(created)
+        }
+
+        when (target) {
+            CannotBePasted -> throw Exception("invalid operation: internal error. cannot be pasted.")
+            CanBePastedIntoCompound -> {
+                if (selected.tag.type != TagType.TAG_COMPOUND)
+                    throw Exception("invalid operation: these tags can only be pasted into: CompoundTag.")
+            }
+            is CanBePastedIntoList -> {
+                if (selected.tag.type != TagType.TAG_LIST)
+                    throw Exception("invalid operation: these tags can only be pasted into: ListTag.")
+
+                val listTag = selected.tag.getAs<ListTag>()
+                if (target.elementsType != listTag.elementsType)
+                    throw Exception("invalid operation: tag type mismatch. only ${listTag.elementsType} can be added, given was: ${target.elementsType}")
+            }
+            is CanBePastedIntoArray -> {
+                if (selected.tag.type != target.arrayTagType)
+                    throw Exception("invalid operation: these values can only be pasted into: ${target.arrayTagType}")
+            }
+        }
+
+        pasteTags()
+    }
+
+    fun pasteEnabled(content: Pair<PasteTarget, List<Doodle>>? = clipboards.lastOrNull()): Boolean {
+        if (content == null) return false
+
+        if (ui.selected.isEmpty()) return false
+        if (ui.selected.size > 1) return false
+
+        val selected = ui.selected[0]
+        if (selected !is NbtDoodle) return false
+
+        val (target) = content
+
+        return when (target) {
+            CannotBePasted -> false
+            CanBePastedIntoCompound -> selected.tag.type == TagType.TAG_COMPOUND
+            is CanBePastedIntoList -> {
+                // TODO: 이거, ListTag.elementsType 이 TAG_END 일 경우에는(빈 리스트일 경우) 그냥 집어넣고 elementsType 을 바꾸는건 어떨지?
+                selected.tag.type == TagType.TAG_LIST && target.elementsType == selected.tag.getAs<ListTag>().elementsType
+            }
+            is CanBePastedIntoArray -> selected.tag.type == target.arrayTagType
+        }
+    }
+
     fun delete() {
         ui.selected.sortBy { doodles.cached.indexOf(it) }
 
@@ -219,12 +338,12 @@ class NbtState (
 
     private fun undoDelete(action: DeleteDoodleAction) {
         action.deleted.forEach {
-            if (it.parent == null) throw Exception("Is this possible??")
+            val eachParent = it.parent ?: throw Exception("Is this possible??")
 
-            if (!it.parent.expanded)
-                it.parent.expand()
+            if (!eachParent.expanded)
+                eachParent.expand()
 
-            it.parent.create(it)
+            eachParent.create(it)
         }
         action.deleted.map { it.parent }.toSet()
             .forEach { it?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
@@ -248,6 +367,21 @@ class NbtState (
             lazyState: LazyListState = LazyListState()
         ) = NbtState(NbtDoodle(rootTag, -1, -1), ui, lazyState)
     }
+
+    private enum class TagAttribute {
+        NAMED, UNNAMED, VALUE
+    }
+
+    sealed class PasteTarget
+
+    object CannotBePasted: PasteTarget()
+
+    object CanBePastedIntoCompound: PasteTarget()
+
+    data class CanBePastedIntoList(val elementsType: TagType): PasteTarget()
+
+    data class CanBePastedIntoArray(val arrayTagType: TagType): PasteTarget()
+
 }
 
 class DoodleManager(private val root: NbtDoodle) {
@@ -258,14 +392,16 @@ class DoodleManager(private val root: NbtDoodle) {
 
 }
 
-abstract class Doodle (
-    val depth: Int,
+sealed class Doodle (
+    var depth: Int,
     var index: Int,
-    val parent: NbtDoodle?
+    var parent: NbtDoodle?
 ) {
     abstract val path: String
 
     abstract fun delete(): Doodle?
+
+    abstract fun clone(parent: NbtDoodle?): Doodle
 }
 
 class NbtDoodle (
@@ -372,13 +508,27 @@ class NbtDoodle (
         return this
     }
 
-    fun create(new: Doodle) {
+    override fun clone(parent: NbtDoodle?): NbtDoodle {
+        return NbtDoodle(tag.clone(tag.name), depth, index, parent)
+            .apply {
+                expanded = this@NbtDoodle.expanded
+                expandedItems.addAll(this@NbtDoodle.expandedItems.map { it.clone(this) })
+                collapsedItems.addAll(this@NbtDoodle.collapsedItems.map { it.clone(this) })
+            }
+    }
+
+    fun create(new: Doodle, useIndex: Boolean = true): Doodle {
+        new.depth = depth + 1
+
         when (tag.type) {
             TagType.TAG_COMPOUND -> {
                 new as? NbtDoodle
                     ?: throw Exception("invalid operation: internal error. expected: NbtDoodle, actual was: ${new.javaClass.name}")
 
-                tag.getAs<CompoundTag>().insert(new.index, new.tag)
+                if (useIndex) tag.getAs<CompoundTag>().insert(new.index, new.tag)
+                else tag.getAs<CompoundTag>().add(new.tag)
+
+                if (!useIndex) new.index = tag.getAs<CompoundTag>().value.size - 1
             }
             TagType.TAG_LIST -> {
                 new as? NbtDoodle
@@ -388,7 +538,12 @@ class NbtDoodle (
 
                 if (list.elementsType != new.tag.type)
                     throw Exception("invalid operation: tag type mismatch. expected: ${tag.type.name}, actual was: ${new.tag.type.name}")
-                else list.value.add(new.index, new.tag)
+                else {
+                    if (useIndex) list.value.add(new.index, new.tag)
+                    else list.value.add(new.tag)
+                }
+
+                if (!useIndex) new.index = list.value.size - 1
             }
             TagType.TAG_BYTE_ARRAY -> {
                 new as? ValueDoodle
@@ -398,7 +553,12 @@ class NbtDoodle (
                     ?: throw Exception("invalid operation: value type mismatch. expected: Byte, actual was: ${new.value}")
 
                 val array = tag.getAs<ByteArrayTag>()
-                array.value = array.value.toMutableList().apply { add(new.index, value) }.toByteArray()
+                array.value = array.value.toMutableList().apply {
+                    if (useIndex) add(new.index, value)
+                    else add(value)
+                }.toByteArray()
+
+                if (!useIndex) new.index = array.value.size - 1
             }
             TagType.TAG_INT_ARRAY -> {
                 new as? ValueDoodle
@@ -408,7 +568,12 @@ class NbtDoodle (
                     ?: throw Exception("invalid operation: value type mismatch. expected: Byte, actual was: ${new.value}")
 
                 val array = tag.getAs<IntArrayTag>()
-                array.value = array.value.toMutableList().apply { add(new.index, value) }.toIntArray()
+                array.value = array.value.toMutableList().apply {
+                    if (useIndex) add(new.index, value)
+                    else add(value)
+                }.toIntArray()
+
+                if (!useIndex) new.index = array.value.size - 1
             }
             TagType.TAG_LONG_ARRAY -> {
                 new as? ValueDoodle
@@ -418,26 +583,25 @@ class NbtDoodle (
                     ?: throw Exception("invalid operation: value type mismatch. expected: Byte, actual was: ${new.value}")
 
                 val array = tag.getAs<LongArrayTag>()
-                array.value = array.value.toMutableList().apply { add(new.index, value) }.toLongArray()
+                array.value = array.value.toMutableList().apply {
+                    if (useIndex) add(new.index, value)
+                    else add(value)
+                }.toLongArray()
+
+                if (!useIndex) new.index = array.value.size - 1
             }
             else -> throw Exception("invalid operation: ${tag.javaClass.name} cannot own child tags.")
         }
 
         if (expanded) {
-            if (new.index == -1) expandedItems.add(new)
+            if (new.index == -1 || !useIndex) expandedItems.add(new)
             else expandedItems.add(new.index, new)
         } else {
-            if (new.index == -1) collapsedItems.add(new)
+            if (new.index == -1 || !useIndex) collapsedItems.add(new)
             else collapsedItems.add(new.index, new)
         }
-    }
 
-    fun yank() {
-
-    }
-
-    fun edit() {
-
+        return new
     }
 
     enum class UpdateTarget {
@@ -526,7 +690,7 @@ class ValueDoodle (
     val value: String,
     depth: Int,
     index: Int,
-    parent: NbtDoodle? = null
+    parent: NbtDoodle?
 ): Doodle(depth, index, parent) {
 
     override val path: String
@@ -562,6 +726,10 @@ class ValueDoodle (
         parent.collapsedItems.remove(this)
 
         return this
+    }
+
+    override fun clone(parent: NbtDoodle?): ValueDoodle {
+        return ValueDoodle(value, depth, index, parent)
     }
 
 }
@@ -691,4 +859,8 @@ abstract class DoodleAction
 
 class DeleteDoodleAction(
     val deleted: List<Doodle>
+): DoodleAction()
+
+class PasteAction(
+    val created: List<Doodle>
 ): DoodleAction()

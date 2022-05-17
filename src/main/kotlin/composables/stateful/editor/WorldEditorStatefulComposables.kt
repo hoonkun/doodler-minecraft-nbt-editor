@@ -618,8 +618,15 @@ fun ColumnScope.NormalActionColumn(
         ToolBarAction(onClick = { state.delete() }) {
             IndicatorText("DEL", ThemedColor.Editor.Action.Delete)
         }
-        ToolBarAction {
-            IndicatorText("YNK", ThemedColor.Editor.Tag.General)
+        if (state.pasteTarget != NbtState.CannotBePasted) {
+            ToolBarAction(onClick = { state.yank() }) {
+                IndicatorText("CPY", ThemedColor.Editor.Tag.General)
+            }
+        }
+        if (state.clipboards.size > 0 && state.pasteEnabled()) {
+            ToolBarAction(onClick = { state.paste() }) {
+                IndicatorText("PST", ThemedColor.Editor.Tag.General)
+            }
         }
         if (state.ui.selected.size == 1) {
             val selectedDoodle = state.ui.selected[0] as? NbtDoodle ?: return@actionColumn

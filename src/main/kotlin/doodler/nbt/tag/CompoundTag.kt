@@ -31,6 +31,10 @@ class CompoundTag private constructor(name: String? = null, parent: AnyTag?): Ta
         value.add(index, nv)
     }
 
+    fun add(nv: AnyTag) {
+        value.add(nv)
+    }
+
     fun remove(name: String?) {
         if (name == null) return
 
