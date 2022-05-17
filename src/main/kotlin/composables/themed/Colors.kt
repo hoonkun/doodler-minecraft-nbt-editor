@@ -64,6 +64,7 @@ class ThemedColor {
             private val Focused = from(Color.Black, alpha = 40)
 
             private val Selected = Color(91, 115, 65)
+            val ScrollIndicatorSelected = Color(91, 115, 65)
 
             private val Indicator = Color(60, 60, 60)
             private val SelectedIndicator = offset(Indicator, 10)

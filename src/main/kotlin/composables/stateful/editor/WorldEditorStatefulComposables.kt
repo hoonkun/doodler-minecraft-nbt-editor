@@ -510,6 +510,10 @@ fun BoxScope.EditableField(
             }
         }
     }
+
+    SelectedInWholeFileIndicator(doodles, uiState.selected) {
+        coroutineScope.launch { lazyColumnState.scrollToItem(doodles.indexOf(it)) }
+    }
 }
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
@@ -625,5 +629,94 @@ fun ColumnScope.NormalActionColumn(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun BoxScope.SelectedInWholeFileIndicator(doodles: List<Doodle>, selected: List<Doodle>, scrollTo: (Doodle) -> Unit) {
+    val fraction = 1f / (doodles.size - 1)
+
+    Box (
+        modifier = Modifier.align(Alignment.TopEnd).fillMaxHeight().wrapContentWidth()
+    ) {
+        for (item in selected) {
+            val top = doodles.indexOf(item) * fraction
+            SelectedEach(item, top, fraction, scrollTo)
+        }
+    }
+
+    Box (
+        modifier = Modifier.align(Alignment.TopEnd).fillMaxHeight().wrapContentWidth().alpha(0.5f)
+    ) {
+        for (item in selected) {
+            val top = doodles.indexOf(item) * fraction
+            Column (modifier = Modifier.zIndex(1000f).width(20.dp).align(Alignment.TopEnd)) {
+                if (top > 0) Spacer(modifier = Modifier.weight(top))
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight(fraction)
+                        .defaultMinSize(3.dp).fillMaxWidth()
+                        .background(ThemedColor.Editor.ScrollIndicatorSelected)
+                ) {}
+                if (top < 1) Spacer(modifier = Modifier.weight(1 - top))
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@Composable
+private fun BoxScope.SelectedEach(
+    item: Doodle,
+    top: Float,
+    fraction: Float,
+    scrollTo: (Doodle) -> Unit
+) {
+    var focused by remember { mutableStateOf(false) }
+    var previewFocused by remember { mutableStateOf(false) }
+    var previewPressed by remember { mutableStateOf(false) }
+
+    Column (modifier = Modifier.zIndex(1000f).width(20.dp).align(Alignment.TopEnd).alpha(0.5f)) {
+        if (top > 0) Spacer(modifier = Modifier.weight(top))
+        Box(
+            modifier = Modifier
+                .fillMaxHeight(fraction)
+                .defaultMinSize(3.dp).fillMaxWidth()
+                .onPointerEvent(PointerEventType.Enter) { focused = true }
+                .onPointerEvent(PointerEventType.Exit) { focused = false }
+                .mouseClickable(onClick = { scrollTo(item) })
+        ) {}
+        if (top < 1) Spacer(modifier = Modifier.weight(1 - top))
+    }
+
+    if (!(focused || previewFocused)) return
+
+    Column(modifier = Modifier.zIndex(999f).wrapContentSize().align(Alignment.TopEnd).padding(end = 20.dp)) {
+        if (top > 0) Spacer(modifier = Modifier.weight(top))
+        Box (modifier = Modifier
+            .background(ThemedColor.EditorArea)
+            .wrapContentSize()
+            .zIndex(999f)
+        ) {
+            Box(modifier = Modifier
+                .border(2.dp, ThemedColor.Editor.TreeBorder)
+                .onPointerEvent(PointerEventType.Enter) { previewFocused = true }
+                .onPointerEvent(PointerEventType.Exit) { previewFocused = false }
+                .onPointerEvent(PointerEventType.Press) { previewPressed = true }
+                .onPointerEvent(PointerEventType.Release) { previewPressed = false }
+                .mouseClickable(onClick = { scrollTo(item); previewFocused = false })
+                .background(ThemedColor.Editor.normalItem(previewPressed, previewFocused))
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .padding(start = 20.dp, end = 20.dp)
+                        .height(50.dp)
+                ) {
+                    DoodleContent(item, false)
+                }
+            }
+        }
+        if (top < 1) Spacer(modifier = Modifier.weight(1 - top))
     }
 }
