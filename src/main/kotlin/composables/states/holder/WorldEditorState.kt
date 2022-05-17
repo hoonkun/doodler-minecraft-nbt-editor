@@ -174,7 +174,7 @@ class NbtSpecies (
 }
 
 class NbtState (
-    private val rootDoodle: NbtDoodle,
+    rootDoodle: NbtDoodle,
     ui: MutableState<DoodleUi>,
     val lazyState: LazyListState,
     val history: DoodleActionHistory = DoodleActionHistory(),
@@ -182,8 +182,7 @@ class NbtState (
 ) {
     var ui by ui
 
-    val doodles: List<Doodle>
-        get() = rootDoodle.children(true)
+    val doodles: DoodleManager = DoodleManager(rootDoodle)
 
     init {
         rootDoodle.expand()
@@ -209,7 +208,7 @@ class NbtState (
     }
 
     fun delete() {
-        ui.selected.sortBy { doodles.indexOf(it) }
+        ui.selected.sortBy { doodles.cached.indexOf(it) }
 
         val deleted = ui.selected.mapNotNull { it.delete() }
         deleted.forEach { it.parent?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
@@ -248,6 +247,14 @@ class NbtState (
             lazyState: LazyListState = LazyListState()
         ) = NbtState(NbtDoodle(rootTag, -1, -1), ui, lazyState)
     }
+}
+
+class DoodleManager(private val root: NbtDoodle) {
+
+    var cached: List<Doodle> = listOf()
+
+    fun create(): List<Doodle> = root.children(true).also { cached = it }
+
 }
 
 abstract class Doodle (

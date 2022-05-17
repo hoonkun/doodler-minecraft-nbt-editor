@@ -421,7 +421,7 @@ fun BoxScope.EditableField(
 
     val state = species.state
 
-    val doodles = state.doodles
+    val doodles = state.doodles.create()
     val doodleState = state.ui
     val lazyColumnState = state.lazyState
 
