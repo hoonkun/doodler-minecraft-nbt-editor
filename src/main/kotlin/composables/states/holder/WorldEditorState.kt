@@ -226,8 +226,9 @@ class NbtState (
                 it.parent.expand()
 
             it.parent.create(it)
-            it.parent.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX)
         }
+        action.deleted.map { it.parent }.toSet()
+            .forEach { it?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
         ui.selected.clear()
         ui.selected.addAll(action.deleted)
     }
@@ -235,8 +236,9 @@ class NbtState (
     private fun redoDelete(action: DeleteDoodleAction) {
         action.deleted.forEach {
             it.delete()
-            it.parent?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX)
         }
+        action.deleted.map { it.parent }.toSet()
+            .forEach { it?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
         ui.selected.clear()
     }
 
