@@ -270,9 +270,9 @@ fun NbtItemTreeView(
 @Composable
 fun NbtItem(
     doodle: Doodle,
-    onSelect: () -> Unit,
-    onExpand: () -> Unit,
     state: DoodleUi,
+    toggle: (Doodle) -> Unit,
+    select: (Doodle) -> Unit,
     treeCollapse: (NbtDoodle) -> Unit
 ) {
     val hierarchy = getHierarchy(doodle)
@@ -319,8 +319,8 @@ fun NbtItem(
                     .onPointerEvent(PointerEventType.Press) { state.press(doodle) }
                     .onPointerEvent(PointerEventType.Release) { state.unPress(doodle) }
                     .mouseClickable(onClick = {
-                        if (buttons.isPrimaryPressed) onExpand()
-                        else if (buttons.isSecondaryPressed) onSelect()
+                        if (buttons.isPrimaryPressed) toggle(doodle)
+                        else if (buttons.isSecondaryPressed) select(doodle)
                     })
             ) {
                 Row(

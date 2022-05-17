@@ -422,8 +422,39 @@ fun BoxScope.EditableField(
     val state = species.state
 
     val doodles = state.doodles.create()
-    val doodleState = state.ui
+    val uiState = state.ui
     val lazyColumnState = state.lazyState
+
+    val onToggle: (Doodle) -> Unit = click@ { doodle ->
+        if (doodle !is NbtDoodle) return@click
+        if (!doodle.tag.canHaveChildren) return@click
+
+        if (!doodle.expanded) doodle.expand()
+        else doodle.collapse()
+    }
+
+    val onSelect: (Doodle) -> Unit = { doodle ->
+        if (!uiState.selected.contains(doodle)) {
+            if (keys.contains(androidx.compose.ui.input.key.Key.CtrlLeft)) uiState.addToSelected(doodle)
+            else if (keys.contains(androidx.compose.ui.input.key.Key.ShiftLeft)) {
+                val lastSelected = uiState.getLastSelected()
+                if (lastSelected == null) uiState.addToSelected(doodle)
+                else {
+                    val from = doodles.indexOf(lastSelected)
+                    val to = doodles.indexOf(doodle)
+                    uiState.addRangeToSelected(doodles.slice(
+                        if (from < to) from + 1 until to + 1
+                        else to until from
+                    ))
+                }
+            } else uiState.setSelected(doodle)
+        } else {
+            if (keys.contains(androidx.compose.ui.input.key.Key.CtrlLeft) || uiState.selected.size == 1)
+                uiState.removeFromSelected(doodle)
+            else if (uiState.selected.size > 1)
+                uiState.setSelected(doodle)
+        }
+    }
 
     val treeCollapse: (NbtDoodle) -> Unit = { target ->
         target.collapse()
@@ -433,169 +464,165 @@ fun BoxScope.EditableField(
         }
     }
 
-    val treeViewTarget = if (doodleState.focusedTree == null) doodleState.focusedTreeView else doodleState.focusedTree
+    val treeViewTarget = if (uiState.focusedTree == null) uiState.focusedTreeView else uiState.focusedTree
     if (treeViewTarget != null && lazyColumnState.firstVisibleItemIndex > doodles.indexOf(treeViewTarget)) {
-        NbtItemTreeView(treeViewTarget, doodleState) {
+        NbtItemTreeView(treeViewTarget, uiState) {
             val index = doodles.indexOf(treeViewTarget)
             coroutineScope.launch {
                 lazyColumnState.scrollToItem(index)
             }
-            doodleState.unFocusTreeView(treeViewTarget)
-            doodleState.unFocusTree(treeViewTarget)
-            doodleState.focusDirectly(treeViewTarget)
+            uiState.unFocusTreeView(treeViewTarget)
+            uiState.unFocusTree(treeViewTarget)
+            uiState.focusDirectly(treeViewTarget)
         }
     }
 
     val onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit = {
-        val target = doodleState.focusedDirectly
-        if (target != null) doodleState.unFocusDirectly(target)
+        val target = uiState.focusedDirectly
+        if (target != null) uiState.unFocusDirectly(target)
     }
 
     state.initialComposition = false
 
     LazyColumn (state = lazyColumnState) {
         items(doodles, key = { item -> item.path }) { item ->
-            val onExpand: () -> Unit = click@ {
-                if (item !is NbtDoodle) return@click
-                if (!item.tag.canHaveChildren) return@click
-
-                if (!item.expanded) item.expand()
-                else item.collapse()
-            }
-            val onSelect: () -> Unit = {
-                if (!doodleState.selected.contains(item)) {
-                    if (keys.contains(androidx.compose.ui.input.key.Key.CtrlLeft)) doodleState.addToSelected(item)
-                    else if (keys.contains(androidx.compose.ui.input.key.Key.ShiftLeft)) {
-                        val lastSelected = doodleState.getLastSelected()
-                        if (lastSelected == null) doodleState.addToSelected(item)
-                        else {
-                            val from = doodles.indexOf(lastSelected)
-                            val to = doodles.indexOf(item)
-                            doodleState.addRangeToSelected(doodles.slice(
-                                if (from < to) from + 1 until to + 1
-                                else to until from
-                            ))
-                        }
-                    } else doodleState.setSelected(item)
-                } else {
-                    if (keys.contains(androidx.compose.ui.input.key.Key.CtrlLeft) || doodleState.selected.size == 1)
-                        doodleState.removeFromSelected(item)
-                    else if (doodleState.selected.size > 1)
-                        doodleState.setSelected(item)
-                }
-            }
-            NbtItem(item, onSelect, onExpand, doodleState, treeCollapse)
+            NbtItem(item, uiState, onToggle, onSelect, treeCollapse)
         }
     }
 
-    if (doodleState.selected.isNotEmpty() || (state.history.flags.canBeUndo || state.history.flags.canBeRedo)) {
+    if (uiState.selected.isNotEmpty() || (state.history.flags.canBeUndo || state.history.flags.canBeRedo)) {
         Column(
             modifier = Modifier
                 .wrapContentSize()
                 .align(Alignment.TopEnd)
                 .padding(40.dp)
         ) {
-            if (doodleState.selected.isNotEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
-                        .wrapContentSize()
-                        .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
-                        .padding(5.dp)
-                ) actionColumn@ {
-                    ToolBarAction(onClick = { state.delete() }) {
-                        IndicatorText("DEL", ThemedColor.Editor.Action.Delete)
-                    }
-                    ToolBarAction {
-                        IndicatorText("YNK", ThemedColor.Editor.Tag.General)
-                    }
-                    if (doodleState.selected.size == 1) {
-                        val selectedDoodle = doodleState.selected[0] as? NbtDoodle ?: return@actionColumn
-                        if ((selectedDoodle.tag.name != null || !Tag.canHaveChildren(selectedDoodle.tag.type))) {
-                            ToolBarAction {
-                                IndicatorText("EDT", ThemedColor.Editor.Tag.General)
-                            }
-                        }
-                    }
-                }
-                if (doodleState.selected.size == 1) {
-                    val selectedDoodle = doodleState.selected[0]
-                    if (selectedDoodle is NbtDoodle && Tag.canHaveChildren(selectedDoodle.tag.type)) {
-                        val isType: (TagType) -> Boolean = { it == selectedDoodle.tag.type }
-                        val isListType: (TagType) -> Boolean = {
-                            if (selectedDoodle.tag !is ListTag) false
-                            else selectedDoodle.tag.elementsType == it || selectedDoodle.tag.elementsType == TagType.TAG_END
-                        }
-                        val isCompoundOrListType: (TagType) -> Boolean = {
-                            isType(TagType.TAG_COMPOUND) || isListType(it)
-                        }
-                        Spacer(modifier = Modifier.height(20.dp))
-                        Column(
-                            modifier = Modifier
-                                .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
-                                .wrapContentSize()
-                                .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
-                                .padding(5.dp)
-                        ) {
-                            if (isType(TagType.TAG_BYTE_ARRAY) || isCompoundOrListType(TagType.TAG_BYTE))
-                                ToolBarIndicator(TagType.TAG_BYTE)
+            if (uiState.selected.isNotEmpty()) {
+                NormalActionColumn(state, onToolBarMove)
 
-                            if (isCompoundOrListType(TagType.TAG_SHORT))
-                                ToolBarIndicator(TagType.TAG_SHORT)
-
-                            if (isType(TagType.TAG_INT_ARRAY) || isCompoundOrListType(TagType.TAG_INT))
-                                ToolBarIndicator(TagType.TAG_INT)
-
-                            if (isType(TagType.TAG_LONG_ARRAY) || isCompoundOrListType(TagType.TAG_LONG))
-                                ToolBarIndicator(TagType.TAG_LONG)
-
-                            if (isCompoundOrListType(TagType.TAG_FLOAT))
-                                ToolBarIndicator(TagType.TAG_FLOAT)
-
-                            if (isCompoundOrListType(TagType.TAG_DOUBLE))
-                                ToolBarIndicator(TagType.TAG_DOUBLE)
-
-                            if (isCompoundOrListType(TagType.TAG_BYTE_ARRAY))
-                                ToolBarIndicator(TagType.TAG_BYTE_ARRAY)
-
-                            if (isCompoundOrListType(TagType.TAG_INT_ARRAY))
-                                ToolBarIndicator(TagType.TAG_INT_ARRAY)
-
-                            if (isCompoundOrListType(TagType.TAG_LONG_ARRAY))
-                                ToolBarIndicator(TagType.TAG_LONG_ARRAY)
-
-                            if (isCompoundOrListType(TagType.TAG_STRING))
-                                ToolBarIndicator(TagType.TAG_STRING)
-
-                            if (isCompoundOrListType(TagType.TAG_LIST))
-                                ToolBarIndicator(TagType.TAG_LIST)
-
-                            if (isCompoundOrListType(TagType.TAG_COMPOUND))
-                                ToolBarIndicator(TagType.TAG_COMPOUND)
-                        }
-                    }
+                if (uiState.selected.let { sel -> sel.size == 1 && sel[0].let{ it is NbtDoodle && it.tag.canHaveChildren } }) {
+                    CreateActionColumn(uiState.selected[0] as NbtDoodle, onToolBarMove)
                 }
             }
 
             if (state.history.flags.canBeUndo || state.history.flags.canBeRedo) {
-                Spacer(modifier = Modifier.weight(1f))
+                UndoRedoActionColumn(state, onToolBarMove)
+            }
+        }
+    }
+}
 
-                Column(
-                    modifier = Modifier
-                        .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
-                        .wrapContentSize()
-                        .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
-                        .padding(5.dp)
-                ) {
-                    ToolBarAction(disabled = !state.history.flags.canBeUndo, onClick = { state.undo() }) {
-                        IndicatorText("<- ", ThemedColor.Editor.Tag.General)
-                    }
-                    ToolBarAction(disabled = !state.history.flags.canBeRedo, onClick = { state.redo() }) {
-                        IndicatorText(" ->", ThemedColor.Editor.Tag.General)
-                    }
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@Composable
+fun ColumnScope.UndoRedoActionColumn(
+    state: NbtState,
+    onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
+) {
+    Spacer(modifier = Modifier.Companion.weight(1f))
+
+    Column(
+        modifier = Modifier
+            .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
+            .wrapContentSize()
+            .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
+            .padding(5.dp)
+    ) {
+        ToolBarAction(disabled = !state.history.flags.canBeUndo, onClick = { state.undo() }) {
+            IndicatorText("<- ", ThemedColor.Editor.Tag.General)
+        }
+        ToolBarAction(disabled = !state.history.flags.canBeRedo, onClick = { state.redo() }) {
+            IndicatorText(" ->", ThemedColor.Editor.Tag.General)
+        }
+    }
+    if (state.ui.selected.isNotEmpty())
+        Spacer(modifier = Modifier.width(20.dp))
+}
+
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@Composable
+fun ColumnScope.CreateActionColumn(
+    selected: NbtDoodle,
+    onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
+) {
+    val isType: (TagType) -> Boolean = { it == selected.tag.type }
+    val isListType: (TagType) -> Boolean = {
+        if (selected.tag !is ListTag) false
+        else selected.tag.elementsType == it || selected.tag.elementsType == TagType.TAG_END
+    }
+    val isCompoundOrListType: (TagType) -> Boolean = {
+        isType(TagType.TAG_COMPOUND) || isListType(it)
+    }
+    Spacer(modifier = Modifier.height(20.dp))
+    Column(
+        modifier = Modifier
+            .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
+            .wrapContentSize()
+            .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
+            .padding(5.dp)
+    ) {
+        if (isType(TagType.TAG_BYTE_ARRAY) || isCompoundOrListType(TagType.TAG_BYTE))
+            ToolBarIndicator(TagType.TAG_BYTE)
+
+        if (isCompoundOrListType(TagType.TAG_SHORT))
+            ToolBarIndicator(TagType.TAG_SHORT)
+
+        if (isType(TagType.TAG_INT_ARRAY) || isCompoundOrListType(TagType.TAG_INT))
+            ToolBarIndicator(TagType.TAG_INT)
+
+        if (isType(TagType.TAG_LONG_ARRAY) || isCompoundOrListType(TagType.TAG_LONG))
+            ToolBarIndicator(TagType.TAG_LONG)
+
+        if (isCompoundOrListType(TagType.TAG_FLOAT))
+            ToolBarIndicator(TagType.TAG_FLOAT)
+
+        if (isCompoundOrListType(TagType.TAG_DOUBLE))
+            ToolBarIndicator(TagType.TAG_DOUBLE)
+
+        if (isCompoundOrListType(TagType.TAG_BYTE_ARRAY))
+            ToolBarIndicator(TagType.TAG_BYTE_ARRAY)
+
+        if (isCompoundOrListType(TagType.TAG_INT_ARRAY))
+            ToolBarIndicator(TagType.TAG_INT_ARRAY)
+
+        if (isCompoundOrListType(TagType.TAG_LONG_ARRAY))
+            ToolBarIndicator(TagType.TAG_LONG_ARRAY)
+
+        if (isCompoundOrListType(TagType.TAG_STRING))
+            ToolBarIndicator(TagType.TAG_STRING)
+
+        if (isCompoundOrListType(TagType.TAG_LIST))
+            ToolBarIndicator(TagType.TAG_LIST)
+
+        if (isCompoundOrListType(TagType.TAG_COMPOUND))
+            ToolBarIndicator(TagType.TAG_COMPOUND)
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@Composable
+fun ColumnScope.NormalActionColumn(
+    state: NbtState,
+    onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
+            .wrapContentSize()
+            .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
+            .padding(5.dp)
+    ) actionColumn@{
+        ToolBarAction(onClick = { state.delete() }) {
+            IndicatorText("DEL", ThemedColor.Editor.Action.Delete)
+        }
+        ToolBarAction {
+            IndicatorText("YNK", ThemedColor.Editor.Tag.General)
+        }
+        if (state.ui.selected.size == 1) {
+            val selectedDoodle = state.ui.selected[0] as? NbtDoodle ?: return@actionColumn
+            if ((selectedDoodle.tag.name != null || !Tag.canHaveChildren(selectedDoodle.tag.type))) {
+                ToolBarAction {
+                    IndicatorText("EDT", ThemedColor.Editor.Tag.General)
                 }
-                if (doodleState.selected.isNotEmpty())
-                    Spacer(modifier = Modifier.width(20.dp))
             }
         }
     }
