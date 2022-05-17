@@ -1,10 +1,10 @@
 package doodler.anvil
 
 import doodler.anvil.Zlib.Companion.decompress
-import nbt.Tag
-import nbt.TagType
-import nbt.extensions.byte
-import nbt.tag.CompoundTag
+import doodler.nbt.Tag
+import doodler.nbt.TagType
+import doodler.nbt.extensions.byte
+import doodler.nbt.tag.CompoundTag
 import java.nio.ByteBuffer
 import kotlin.math.floor
 

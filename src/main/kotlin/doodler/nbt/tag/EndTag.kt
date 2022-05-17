@@ -1,7 +1,7 @@
-package nbt.tag
+package doodler.nbt.tag
 
-import nbt.Tag
-import nbt.TagType.*
+import doodler.nbt.Tag
+import doodler.nbt.TagType.*
 import java.nio.ByteBuffer
 
 class EndTag: Tag<Nothing>(TAG_END, null, null) {

@@ -1,10 +1,10 @@
 package doodler.file
 
 import doodler.anvil.GZip
-import nbt.Tag
-import nbt.TagType
-import nbt.extensions.byte
-import nbt.tag.CompoundTag
+import doodler.nbt.Tag
+import doodler.nbt.TagType
+import doodler.nbt.extensions.byte
+import doodler.nbt.tag.CompoundTag
 import java.io.File
 import java.io.FileNotFoundException
 import java.nio.ByteBuffer

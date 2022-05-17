@@ -1,8 +1,8 @@
-package nbt.tag
+package doodler.nbt.tag
 
-import nbt.AnyTag
-import nbt.Tag
-import nbt.TagType.*
+import doodler.nbt.AnyTag
+import doodler.nbt.Tag
+import doodler.nbt.TagType.*
 import java.nio.ByteBuffer
 
 class ByteArrayTag private constructor(name: String? = null, parent: AnyTag?): Tag<ByteArray>(TAG_BYTE_ARRAY, name, parent) {

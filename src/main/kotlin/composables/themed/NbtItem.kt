@@ -19,7 +19,7 @@ import composables.states.holder.Doodle
 import composables.states.holder.DoodleUi
 import composables.states.holder.NbtDoodle
 import composables.states.holder.ValueDoodle
-import nbt.TagType
+import doodler.nbt.TagType
 
 @Composable
 private fun ItemRoot(

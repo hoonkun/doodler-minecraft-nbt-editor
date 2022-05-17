@@ -1,10 +1,10 @@
-package nbt.tag
+package doodler.nbt.tag
 
-import nbt.AnyTag
-import nbt.Tag
-import nbt.TagType.TAG_STRING
-import nbt.extensions.putString
-import nbt.extensions.string
+import doodler.nbt.AnyTag
+import doodler.nbt.Tag
+import doodler.nbt.TagType.TAG_STRING
+import doodler.nbt.extensions.putString
+import doodler.nbt.extensions.string
 import java.nio.ByteBuffer
 
 class StringTag private constructor(name: String? = null, parent: AnyTag?): Tag<String>(TAG_STRING, name, parent) {

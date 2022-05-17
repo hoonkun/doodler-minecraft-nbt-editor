@@ -1,7 +1,7 @@
-package nbt
+package doodler.nbt
 
-import nbt.TagType.*
-import nbt.tag.*
+import doodler.nbt.tag.*
+import doodler.nbt.TagType.*
 
 import java.nio.ByteBuffer
 

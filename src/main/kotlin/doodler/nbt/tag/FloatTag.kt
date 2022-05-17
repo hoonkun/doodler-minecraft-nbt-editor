@@ -1,8 +1,8 @@
-package nbt.tag
+package doodler.nbt.tag
 
-import nbt.AnyTag
-import nbt.Tag
-import nbt.TagType.TAG_FLOAT
+import doodler.nbt.AnyTag
+import doodler.nbt.Tag
+import doodler.nbt.TagType.TAG_FLOAT
 import java.nio.ByteBuffer
 
 class FloatTag private constructor(name: String? = null, parent: AnyTag?): Tag<Float>(TAG_FLOAT, name, parent) {

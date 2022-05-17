@@ -6,10 +6,9 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.text.input.TextFieldValue
 import doodler.anvil.ChunkLocation
 import doodler.file.WorldTree
-import nbt.tag.CompoundTag
-import nbt.AnyTag
-import nbt.TagType
-import nbt.tag.*
+import doodler.nbt.tag.*
+import doodler.nbt.AnyTag
+import doodler.nbt.TagType
 
 class WorldEditorState (
     val phylum: Phylum,

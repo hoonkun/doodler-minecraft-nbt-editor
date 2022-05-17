@@ -37,11 +37,11 @@ import doodler.file.WorldTree
 import doodler.file.IOUtils
 import keys
 import kotlinx.coroutines.launch
-import nbt.Tag
-import nbt.TagType
-import nbt.tag.CompoundTag
-import nbt.tag.ListTag
-import nbt.tag.StringTag
+import doodler.nbt.Tag
+import doodler.nbt.TagType
+import doodler.nbt.tag.CompoundTag
+import doodler.nbt.tag.ListTag
+import doodler.nbt.tag.StringTag
 import java.io.File
 
 @Composable

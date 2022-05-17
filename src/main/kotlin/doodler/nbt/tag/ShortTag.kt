@@ -1,8 +1,8 @@
-package nbt.tag
+package doodler.nbt.tag
 
-import nbt.AnyTag
-import nbt.Tag
-import nbt.TagType.TAG_SHORT
+import doodler.nbt.AnyTag
+import doodler.nbt.Tag
+import doodler.nbt.TagType.TAG_SHORT
 import java.nio.ByteBuffer
 
 class ShortTag private constructor(name: String? = null, parent: AnyTag?): Tag<Short>(TAG_SHORT, name, parent) {

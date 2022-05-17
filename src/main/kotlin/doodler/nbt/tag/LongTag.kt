@@ -1,8 +1,8 @@
-package nbt.tag
+package doodler.nbt.tag
 
-import nbt.AnyTag
-import nbt.Tag
-import nbt.TagType.TAG_LONG
+import doodler.nbt.AnyTag
+import doodler.nbt.Tag
+import doodler.nbt.TagType.TAG_LONG
 import java.nio.ByteBuffer
 
 class LongTag private constructor(name: String? = null, parent: AnyTag?): Tag<Long>(TAG_LONG, name, parent) {
