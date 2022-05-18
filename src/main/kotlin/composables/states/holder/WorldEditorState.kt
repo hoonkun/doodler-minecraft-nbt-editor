@@ -232,6 +232,7 @@ class NbtState (
         val action = history.undo() ?: return
         when (action) {
             is DeleteDoodleAction -> undoDelete(action)
+            is PasteDoodleAction -> undoPaste(action)
         }
     }
 
@@ -239,6 +240,7 @@ class NbtState (
         val action = history.redo() ?: return
         when (action) {
             is DeleteDoodleAction -> redoDelete(action)
+            is PasteDoodleAction -> redoPaste(action)
         }
     }
 
@@ -273,7 +275,7 @@ class NbtState (
         val (target, doodles) = clipboards.last()
         val pasteTags = {
             val created = doodles.map { selected.create(it.clone(selected), false) }
-            val action = PasteAction(created)
+            val action = PasteDoodleAction(created)
             history.newAction(action)
 
             ui.selected.clear()
@@ -336,8 +338,16 @@ class NbtState (
         ui.selected.clear()
     }
 
+    private fun undoPaste(action: PasteDoodleAction) {
+        delete(action.created)
+    }
+
     private fun undoDelete(action: DeleteDoodleAction) {
-        action.deleted.forEach {
+        create(action.deleted)
+    }
+
+    private fun create(targets: List<Doodle>) {
+        targets.forEach {
             val eachParent = it.parent ?: throw Exception("Is this possible??")
 
             if (!eachParent.expanded)
@@ -345,17 +355,25 @@ class NbtState (
 
             eachParent.create(it)
         }
-        action.deleted.map { it.parent }.toSet()
+        targets.map { it.parent }.toSet()
             .forEach { it?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
         ui.selected.clear()
-        ui.selected.addAll(action.deleted)
+        ui.selected.addAll(targets)
+    }
+
+    private fun redoPaste(action: PasteDoodleAction) {
+        create(action.created)
     }
 
     private fun redoDelete(action: DeleteDoodleAction) {
-        action.deleted.forEach {
+        delete(action.deleted)
+    }
+
+    private fun delete(targets: List<Doodle>) {
+        targets.forEach {
             it.delete()
         }
-        action.deleted.map { it.parent }.toSet()
+        targets.map { it.parent }.toSet()
             .forEach { it?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
         ui.selected.clear()
     }
@@ -861,6 +879,6 @@ class DeleteDoodleAction(
     val deleted: List<Doodle>
 ): DoodleAction()
 
-class PasteAction(
+class PasteDoodleAction(
     val created: List<Doodle>
 ): DoodleAction()
