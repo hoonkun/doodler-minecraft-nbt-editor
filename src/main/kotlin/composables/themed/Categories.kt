@@ -13,9 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import composables.states.holder.Species
-import composables.states.holder.SpeciesHolder
-import composables.states.holder.display
+import composables.states.editor.world.Species
+import composables.states.editor.world.SpeciesHolder
 import doodler.file.WorldTree
 
 
@@ -127,4 +126,13 @@ class PhylumCategoryItemData (
     val extras: Map<String, String> = mapOf()
 ) {
     val key = "$parent/${contentType.displayName}"
+}
+
+fun display(dimension: String): String {
+    return when (dimension) {
+        "" -> "Overworld"
+        "DIM-1" -> "Nether"
+        "DIM1" -> "TheEnd"
+        else -> "Unknown"
+    }
 }

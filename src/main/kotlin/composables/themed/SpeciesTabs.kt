@@ -14,8 +14,8 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import composables.states.holder.NbtSpecies
-import composables.states.holder.Species
+import composables.states.editor.world.NbtSpecies
+import composables.states.editor.world.Species
 import composables.themed.ThemedColor.Companion.selectable
 
 @Composable

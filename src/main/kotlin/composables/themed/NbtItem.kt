@@ -15,10 +15,11 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import composables.states.holder.Doodle
-import composables.states.holder.DoodleUi
-import composables.states.holder.NbtDoodle
-import composables.states.holder.ValueDoodle
+import composables.states.editor.world.Doodle
+import composables.states.editor.world.DoodleUi
+import composables.states.editor.world.NbtDoodle
+import composables.states.editor.world.ValueDoodle
+
 import doodler.nbt.TagType
 
 @Composable
