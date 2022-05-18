@@ -1,7 +1,6 @@
-package composables.states.holder
+package composables.states.editor.world
 
 import androidx.compose.runtime.*
-import composables.states.editor.world.*
 
 class WorldEditorState (
     val phylum: Phylum,
