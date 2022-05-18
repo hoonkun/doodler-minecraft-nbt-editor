@@ -9,8 +9,8 @@ class WorldEditorState (
 
 @Composable
 fun rememberWorldEditorState (
-    phylum: Phylum = rememberPhylum(),
-    worldSpec: WorldSpecification = rememberWorldSpec()
+    phylum: Phylum = Phylum(),
+    worldSpec: WorldSpecification = WorldSpecification()
 ) = remember (phylum, worldSpec) {
     WorldEditorState(phylum, worldSpec)
 }
