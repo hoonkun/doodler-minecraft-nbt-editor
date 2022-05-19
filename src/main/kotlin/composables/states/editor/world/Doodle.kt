@@ -156,8 +156,8 @@ class NbtDoodle (
 
                 val list = tag.getAs<ListTag>()
 
-                if (list.elementsType != new.tag.type)
-                    throw Exception("invalid operation: tag type mismatch. expected: ${tag.type.name}, actual was: ${new.tag.type.name}")
+                if (list.elementsType != new.tag.type && list.elementsType != TagType.TAG_END)
+                    throw Exception("invalid operation: tag type mismatch. expected: ${list.elementsType}, actual was: ${new.tag.type.name}")
                 else {
                     if (useIndex) list.value.add(new.index, new.tag)
                     else list.value.add(new.tag)
