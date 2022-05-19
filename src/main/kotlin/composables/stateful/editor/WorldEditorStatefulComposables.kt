@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import composables.stateless.editor.*
 import composables.states.editor.world.*
-import composables.states.holder.*
 import composables.themed.*
 import doodler.anvil.AnvilLocation
 import doodler.anvil.AnvilWorker
@@ -413,7 +412,7 @@ fun ColumnScope.AnvilSelector(
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.EditableField(
     species: NbtSpecies,
