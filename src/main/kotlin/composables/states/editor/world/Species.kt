@@ -176,6 +176,9 @@ class NbtState (
             val action = PasteDoodleAction(created)
             history.newAction(action)
 
+            selected.update(NbtDoodle.UpdateTarget.VALUE)
+            selected.expand()
+
             ui.selected.clear()
             ui.selected.addAll(created)
         }
