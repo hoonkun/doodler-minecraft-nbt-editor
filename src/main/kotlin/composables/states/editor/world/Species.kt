@@ -194,7 +194,7 @@ class NbtState (
                     throw Exception("invalid operation: these tags can only be pasted into: ListTag.")
 
                 val listTag = selected.tag.getAs<ListTag>()
-                if (target.elementsType != listTag.elementsType)
+                if (target.elementsType != listTag.elementsType && listTag.elementsType != TagType.TAG_END)
                     throw Exception("invalid operation: tag type mismatch. only ${listTag.elementsType} can be added, given was: ${target.elementsType}")
             }
             is CanBePastedIntoArray -> {
@@ -221,8 +221,7 @@ class NbtState (
             CannotBePasted -> false
             CanBePastedIntoCompound -> selected.tag.type == TagType.TAG_COMPOUND
             is CanBePastedIntoList -> {
-                // TODO: 이거, ListTag.elementsType 이 TAG_END 일 경우에는(빈 리스트일 경우) 그냥 집어넣고 elementsType 을 바꾸는건 어떨지?
-                selected.tag.type == TagType.TAG_LIST && target.elementsType == selected.tag.getAs<ListTag>().elementsType
+                selected.tag.type == TagType.TAG_LIST && selected.tag.getAs<ListTag>().let { it.elementsType == target.elementsType || it.elementsType == TagType.TAG_END }
             }
             is CanBePastedIntoArray -> selected.tag.type == target.arrayTagType
         }

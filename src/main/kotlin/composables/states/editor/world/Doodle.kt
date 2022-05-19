@@ -161,6 +161,8 @@ class NbtDoodle (
                 else {
                     if (useIndex) list.value.add(new.index, new.tag)
                     else list.value.add(new.tag)
+
+                    if (list.elementsType == TagType.TAG_END) list.elementsType = new.tag.type
                 }
 
                 if (!useIndex) new.index = list.value.size - 1

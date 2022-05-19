@@ -13,7 +13,7 @@ class ListTag private constructor(name: String? = null, parent: AnyTag?): Tag<Mu
     override val sizeInBytes: Int
         get() = Byte.SIZE_BYTES + Int.SIZE_BYTES + value.sumOf { it.sizeInBytes }
 
-    lateinit var elementsType: TagType private set
+    lateinit var elementsType: TagType
 
     operator fun get(index: Int) = value[index]
 
