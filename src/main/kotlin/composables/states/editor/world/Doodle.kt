@@ -70,15 +70,20 @@ class NbtDoodle (
         }
     }
 
-    private fun initialDoodles(depth: Int): List<Doodle> {
-        return when (tag) {
-            is CompoundTag -> tag.doodle(this, depth)
-            is ListTag -> tag.doodle(this, depth)
-            is ByteArrayTag -> tag.doodle(this, depth)
-            is IntArrayTag -> tag.doodle(this, depth)
-            is LongArrayTag -> tag.doodle(this, depth)
-            else -> throw Exception("this tag is not expandable!")
-        }
+    private fun initializeChildren() {
+        if (collapsedItems.isNotEmpty() || expandedItems.isNotEmpty()) return
+
+        val newDepth = depth + 1
+        collapsedItems.addAll(
+            when (tag) {
+                is CompoundTag -> tag.doodle(this, newDepth)
+                is ListTag -> tag.doodle(this, newDepth)
+                is ByteArrayTag -> tag.doodle(this, newDepth)
+                is IntArrayTag -> tag.doodle(this, newDepth)
+                is LongArrayTag -> tag.doodle(this, newDepth)
+                else -> throw Exception("this tag is not expandable!")
+            }
+        )
     }
 
     fun expand() {
@@ -89,14 +94,10 @@ class NbtDoodle (
 
         expanded = true
 
-        val newDepth = depth + 1
+        initializeChildren()
 
-        if (collapsedItems.isEmpty() && expandedItems.isEmpty()) {
-            expandedItems.addAll(initialDoodles(newDepth))
-        } else {
-            expandedItems.addAll(collapsedItems)
-            collapsedItems.clear()
-        }
+        expandedItems.addAll(collapsedItems)
+        collapsedItems.clear()
     }
 
     fun collapse(selected: MutableList<Doodle>) {
@@ -139,6 +140,8 @@ class NbtDoodle (
     }
 
     fun create(new: Doodle, useIndex: Boolean = true): Doodle {
+        initializeChildren()
+
         new.depth = depth + 1
 
         when (tag.type) {
