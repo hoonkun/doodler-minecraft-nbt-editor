@@ -209,7 +209,7 @@ private fun KeyValue(doodle: NbtDoodle, selected: Boolean) {
         Key(key)
         Spacer(modifier = Modifier.width(20.dp))
     }
-    if ((doodle.parent?.tag?.type ?: TagType.TAG_COMPOUND) !== TagType.TAG_COMPOUND && doodle.index >= 0) {
+    if ((doodle.parent?.tag?.type ?: TagType.TAG_COMPOUND) != TagType.TAG_COMPOUND && doodle.index >= 0) {
         Index(doodle.index, selected)
         Spacer(modifier = Modifier.width(10.dp))
     }
