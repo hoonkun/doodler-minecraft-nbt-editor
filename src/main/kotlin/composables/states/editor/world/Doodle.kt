@@ -99,14 +99,15 @@ class NbtDoodle (
         }
     }
 
-    fun collapse() {
+    fun collapse(selected: MutableList<Doodle>) {
         if (!tag.canHaveChildren) return
         if (!expanded) return
 
         expanded = false
 
         expandedItems.forEach {
-            if (it is NbtDoodle && it.tag.canHaveChildren && it.expanded) it.collapse()
+            selected.remove(it)
+            if (it is NbtDoodle && it.tag.canHaveChildren && it.expanded) it.collapse(selected)
         }
 
         collapsedItems.addAll(expandedItems)

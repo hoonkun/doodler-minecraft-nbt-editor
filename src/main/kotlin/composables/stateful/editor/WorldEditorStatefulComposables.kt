@@ -430,7 +430,7 @@ fun BoxScope.EditableField(
         if (!doodle.tag.canHaveChildren) return@click
 
         if (!doodle.expanded) doodle.expand()
-        else doodle.collapse()
+        else doodle.collapse(state.ui.selected)
     }
 
     val onSelect: (Doodle) -> Unit = { doodle ->
@@ -457,7 +457,7 @@ fun BoxScope.EditableField(
     }
 
     val treeCollapse: (NbtDoodle) -> Unit = { target ->
-        target.collapse()
+        target.collapse(state.ui.selected)
         val baseIndex = doodles.indexOf(target)
         if (lazyColumnState.firstVisibleItemIndex > baseIndex) {
             coroutineScope.launch { lazyColumnState.scrollToItem(baseIndex) }
