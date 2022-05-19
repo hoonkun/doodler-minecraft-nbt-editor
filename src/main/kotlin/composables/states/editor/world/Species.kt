@@ -1,10 +1,8 @@
 package composables.states.editor.world
 
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.text.input.TextFieldValue
 import doodler.anvil.ChunkLocation
 import doodler.nbt.TagType
@@ -88,7 +86,7 @@ class NbtState (
 
     val doodles: DoodleManager = DoodleManager(rootDoodle)
 
-    val clipboards: MutableList<Pair<PasteTarget, List<Doodle>>> = mutableListOf()
+    val clipboards: SnapshotStateList<Pair<PasteTarget, List<Doodle>>> = mutableStateListOf()
     val pasteTarget: PasteTarget
         get() {
             val selected = ui.selected
