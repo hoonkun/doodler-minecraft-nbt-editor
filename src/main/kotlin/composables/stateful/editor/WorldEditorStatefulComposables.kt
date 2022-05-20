@@ -37,7 +37,6 @@ import doodler.file.WorldTree
 import doodler.file.IOUtils
 import keys
 import kotlinx.coroutines.launch
-import doodler.nbt.Tag
 import doodler.nbt.TagType
 import doodler.nbt.tag.CompoundTag
 import doodler.nbt.tag.ListTag
@@ -641,7 +640,7 @@ fun ColumnScope.NormalActionColumn(
         }
         if (state.ui.selected.size == 1) {
             val selectedDoodle = state.ui.selected[0] as? NbtDoodle ?: return@actionColumn
-            if ((selectedDoodle.tag.name != null || !Tag.canHaveChildren(selectedDoodle.tag.type))) {
+            if ((selectedDoodle.tag.name != null || !selectedDoodle.tag.type.canHaveChildren())) {
                 ToolBarAction {
                     IndicatorText("EDT", ThemedColor.Editor.Tag.General)
                 }
