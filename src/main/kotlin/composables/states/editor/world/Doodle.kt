@@ -1,9 +1,6 @@
 package composables.states.editor.world
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import composables.states.editor.world.extensions.displayName
 import composables.states.editor.world.extensions.doodle
@@ -12,16 +9,36 @@ import doodler.nbt.TagType
 import doodler.nbt.tag.*
 
 
-sealed class Doodle (
+sealed class Doodle {
+    abstract val path: String
+}
+
+abstract class VirtualDoodle(
+    val depth: Int,
+    val parent: NbtDoodle
+): Doodle() {
+    override val path: String = "_DOODLE_CREATOR_"
+}
+
+class NbtCreationDoodle(
+    val type: TagType,
+    depth: Int,
+    parent: NbtDoodle
+): VirtualDoodle(depth, parent)
+
+class ValueCreationDoodle(
+    depth: Int,
+    parent: NbtDoodle
+): VirtualDoodle(depth, parent)
+
+sealed class ActualDoodle(
     var depth: Int,
     var index: Int,
     var parent: NbtDoodle?
-) {
-    abstract val path: String
+): Doodle() {
+    abstract fun delete(): ActualDoodle?
 
-    abstract fun delete(): Doodle?
-
-    abstract fun clone(parent: NbtDoodle?): Doodle
+    abstract fun clone(parent: NbtDoodle?): ActualDoodle
 }
 
 class NbtDoodle (
@@ -29,7 +46,7 @@ class NbtDoodle (
     depth: Int,
     index: Int = -1,
     parent: NbtDoodle? = null
-): Doodle(depth, index, parent) {
+): ActualDoodle(depth, index, parent) {
 
     override val path: String get() = parent?.let {
         when (it.tag.type) {
@@ -46,8 +63,9 @@ class NbtDoodle (
 
     var expanded = false
 
-    val expandedItems: SnapshotStateList<Doodle> = mutableStateListOf()
-    val collapsedItems: MutableList<Doodle> = mutableListOf()
+    var creator: VirtualDoodle? by mutableStateOf(null)
+    val expandedItems: SnapshotStateList<ActualDoodle> = mutableStateListOf()
+    val collapsedItems: MutableList<ActualDoodle> = mutableListOf()
 
     fun update(vararg targets: UpdateTarget) {
         if (targets.contains(UpdateTarget.NAME))
@@ -66,6 +84,7 @@ class NbtDoodle (
     fun children(root: Boolean = false): List<Doodle> {
         return mutableListOf<Doodle>().apply {
             if (!root) add(this@NbtDoodle)
+            creator?.let { add(it) }
             addAll(expandedItems.map { if (it is NbtDoodle) it.children() else listOf(it) }.flatten())
         }
     }
@@ -100,7 +119,7 @@ class NbtDoodle (
         collapsedItems.clear()
     }
 
-    fun collapse(selected: MutableList<Doodle>) {
+    fun collapse(selected: MutableList<ActualDoodle>) {
         if (!tag.canHaveChildren) return
         if (!expanded) return
 
@@ -139,7 +158,7 @@ class NbtDoodle (
             }
     }
 
-    fun create(new: Doodle, useIndex: Boolean = true): Doodle {
+    fun create(new: ActualDoodle, useIndex: Boolean = true): ActualDoodle {
         initializeChildren()
 
         new.depth = depth + 1
@@ -264,7 +283,7 @@ class ValueDoodle (
     depth: Int,
     index: Int,
     parent: NbtDoodle?
-): Doodle(depth, index, parent) {
+): ActualDoodle(depth, index, parent) {
 
     override val path: String
         get() = parent?.let {

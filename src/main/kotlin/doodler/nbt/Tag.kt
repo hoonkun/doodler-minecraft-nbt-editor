@@ -22,7 +22,7 @@ abstract class Tag<T: Any> protected constructor(
 
     abstract val sizeInBytes: Int
 
-    val canHaveChildren get() = canHaveChildren(type)
+    val canHaveChildren get() = type.canHaveChildren()
 
     inline fun <reified T: AnyTag?> getAs() = this as? T ?: throw Exception("Tag is not a ${T::class.java.simpleName}")
 
@@ -58,13 +58,6 @@ abstract class Tag<T: Any> protected constructor(
             TAG_LONG_ARRAY -> LongArrayTag(buffer, name, parent)
         }
 
-        fun canHaveChildren(tagType: TagType) =
-            tagType == TAG_BYTE_ARRAY ||
-            tagType == TAG_INT_ARRAY ||
-            tagType == TAG_LONG_ARRAY ||
-            tagType == TAG_LIST ||
-            tagType == TAG_COMPOUND
-
     }
 
 }
@@ -83,6 +76,13 @@ enum class TagType(val id: Byte) {
     TAG_COMPOUND(10),
     TAG_INT_ARRAY(11),
     TAG_LONG_ARRAY(12);
+
+    fun isArray() = this == TAG_BYTE_ARRAY || this == TAG_INT_ARRAY || this == TAG_LONG_ARRAY
+    fun canHaveChildren() = this == TAG_BYTE_ARRAY ||
+            this == TAG_INT_ARRAY ||
+            this == TAG_LONG_ARRAY ||
+            this == TAG_LIST ||
+            this == TAG_COMPOUND
 
     companion object {
         private val reversed = values().associateBy { it.id }

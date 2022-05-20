@@ -37,7 +37,6 @@ import doodler.file.WorldTree
 import doodler.file.IOUtils
 import keys
 import kotlinx.coroutines.launch
-import doodler.nbt.Tag
 import doodler.nbt.TagType
 import doodler.nbt.tag.CompoundTag
 import doodler.nbt.tag.ListTag
@@ -422,10 +421,11 @@ fun BoxScope.EditableField(
     val state = species.state
 
     val doodles = state.doodles.create()
+    val creation = doodles.find { it is VirtualDoodle } as VirtualDoodle?
     val uiState = state.ui
     val lazyColumnState = state.lazyState
 
-    val onToggle: (Doodle) -> Unit = click@ { doodle ->
+    val onToggle: (ActualDoodle) -> Unit = click@ { doodle ->
         if (doodle !is NbtDoodle) return@click
         if (!doodle.tag.canHaveChildren) return@click
 
@@ -433,7 +433,7 @@ fun BoxScope.EditableField(
         else doodle.collapse(state.ui.selected)
     }
 
-    val onSelect: (Doodle) -> Unit = { doodle ->
+    val onSelect: (ActualDoodle) -> Unit = { doodle ->
         if (!uiState.selected.contains(doodle)) {
             if (keys.contains(androidx.compose.ui.input.key.Key.CtrlLeft)) uiState.addToSelected(doodle)
             else if (keys.contains(androidx.compose.ui.input.key.Key.ShiftLeft)) {
@@ -442,7 +442,7 @@ fun BoxScope.EditableField(
                 else {
                     val from = doodles.indexOf(lastSelected)
                     val to = doodles.indexOf(doodle)
-                    uiState.addRangeToSelected(doodles.slice(
+                    uiState.addRangeToSelected(doodles.filterIsInstance<ActualDoodle>().slice(
                         if (from < to) from + 1 until to + 1
                         else to until from
                     ))
@@ -486,11 +486,20 @@ fun BoxScope.EditableField(
 
     LazyColumn (state = lazyColumnState) {
         items(doodles, key = { item -> item.path }) { item ->
-            NbtItem(item, uiState, onToggle, onSelect, treeCollapse)
+            if (item is ActualDoodle)
+                NbtItem(
+                    item,
+                    uiState,
+                    onToggle, onSelect, treeCollapse,
+                    creation != null,
+                    creation != null && item != creation.parent
+                )
+            else if (item is VirtualDoodle)
+                CreatorItem(item, state)
         }
     }
 
-    if (uiState.selected.isNotEmpty() || (state.history.flags.canBeUndo || state.history.flags.canBeRedo)) {
+    if (creation == null && (uiState.selected.isNotEmpty() || (state.history.flags.canBeUndo || state.history.flags.canBeRedo))) {
         Column(
             modifier = Modifier
                 .wrapContentSize()
@@ -501,7 +510,7 @@ fun BoxScope.EditableField(
                 NormalActionColumn(state, onToolBarMove)
 
                 if (uiState.selected.let { sel -> sel.size == 1 && sel[0].let{ it is NbtDoodle && it.tag.canHaveChildren } }) {
-                    CreateActionColumn(uiState.selected[0] as NbtDoodle, onToolBarMove)
+                    CreateActionColumn(state, uiState.selected[0] as NbtDoodle, onToolBarMove)
                 }
             }
 
@@ -511,7 +520,7 @@ fun BoxScope.EditableField(
         }
     }
 
-    SelectedInWholeFileIndicator(doodles, uiState.selected) {
+    SelectedInWholeFileIndicator(doodles.filterIsInstance<ActualDoodle>(), uiState.selected) {
         coroutineScope.launch { lazyColumnState.scrollToItem(doodles.indexOf(it)) }
     }
 }
@@ -545,6 +554,7 @@ fun ColumnScope.UndoRedoActionColumn(
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun ColumnScope.CreateActionColumn(
+    state: NbtState,
     selected: NbtDoodle,
     onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
 ) {
@@ -565,40 +575,40 @@ fun ColumnScope.CreateActionColumn(
             .padding(5.dp)
     ) {
         if (isType(TagType.TAG_BYTE_ARRAY) || isCompoundOrListType(TagType.TAG_BYTE))
-            ToolBarIndicator(TagType.TAG_BYTE)
+            ToolBarIndicator(TagType.TAG_BYTE) { state.prepareCreation(TagType.TAG_BYTE) }
 
         if (isCompoundOrListType(TagType.TAG_SHORT))
-            ToolBarIndicator(TagType.TAG_SHORT)
+            ToolBarIndicator(TagType.TAG_SHORT) { state.prepareCreation(TagType.TAG_SHORT) }
 
         if (isType(TagType.TAG_INT_ARRAY) || isCompoundOrListType(TagType.TAG_INT))
-            ToolBarIndicator(TagType.TAG_INT)
+            ToolBarIndicator(TagType.TAG_INT) { state.prepareCreation(TagType.TAG_INT) }
 
         if (isType(TagType.TAG_LONG_ARRAY) || isCompoundOrListType(TagType.TAG_LONG))
-            ToolBarIndicator(TagType.TAG_LONG)
+            ToolBarIndicator(TagType.TAG_LONG) { state.prepareCreation(TagType.TAG_LONG) }
 
         if (isCompoundOrListType(TagType.TAG_FLOAT))
-            ToolBarIndicator(TagType.TAG_FLOAT)
+            ToolBarIndicator(TagType.TAG_FLOAT) { state.prepareCreation(TagType.TAG_FLOAT) }
 
         if (isCompoundOrListType(TagType.TAG_DOUBLE))
-            ToolBarIndicator(TagType.TAG_DOUBLE)
+            ToolBarIndicator(TagType.TAG_DOUBLE) { state.prepareCreation(TagType.TAG_DOUBLE) }
 
         if (isCompoundOrListType(TagType.TAG_BYTE_ARRAY))
-            ToolBarIndicator(TagType.TAG_BYTE_ARRAY)
+            ToolBarIndicator(TagType.TAG_BYTE_ARRAY) { state.prepareCreation(TagType.TAG_BYTE_ARRAY) }
 
         if (isCompoundOrListType(TagType.TAG_INT_ARRAY))
-            ToolBarIndicator(TagType.TAG_INT_ARRAY)
+            ToolBarIndicator(TagType.TAG_INT_ARRAY) { state.prepareCreation(TagType.TAG_INT_ARRAY) }
 
         if (isCompoundOrListType(TagType.TAG_LONG_ARRAY))
-            ToolBarIndicator(TagType.TAG_LONG_ARRAY)
+            ToolBarIndicator(TagType.TAG_LONG_ARRAY) { state.prepareCreation(TagType.TAG_LONG_ARRAY) }
 
         if (isCompoundOrListType(TagType.TAG_STRING))
-            ToolBarIndicator(TagType.TAG_STRING)
+            ToolBarIndicator(TagType.TAG_STRING) { state.prepareCreation(TagType.TAG_STRING) }
 
         if (isCompoundOrListType(TagType.TAG_LIST))
-            ToolBarIndicator(TagType.TAG_LIST)
+            ToolBarIndicator(TagType.TAG_LIST) { state.prepareCreation(TagType.TAG_LIST) }
 
         if (isCompoundOrListType(TagType.TAG_COMPOUND))
-            ToolBarIndicator(TagType.TAG_COMPOUND)
+            ToolBarIndicator(TagType.TAG_COMPOUND) { state.prepareCreation(TagType.TAG_COMPOUND) }
     }
 }
 
@@ -630,7 +640,7 @@ fun ColumnScope.NormalActionColumn(
         }
         if (state.ui.selected.size == 1) {
             val selectedDoodle = state.ui.selected[0] as? NbtDoodle ?: return@actionColumn
-            if ((selectedDoodle.tag.name != null || !Tag.canHaveChildren(selectedDoodle.tag.type))) {
+            if ((selectedDoodle.tag.name != null || !selectedDoodle.tag.type.canHaveChildren())) {
                 ToolBarAction {
                     IndicatorText("EDT", ThemedColor.Editor.Tag.General)
                 }
@@ -640,7 +650,7 @@ fun ColumnScope.NormalActionColumn(
 }
 
 @Composable
-private fun BoxScope.SelectedInWholeFileIndicator(doodles: List<Doodle>, selected: List<Doodle>, scrollTo: (Doodle) -> Unit) {
+private fun BoxScope.SelectedInWholeFileIndicator(doodles: List<ActualDoodle>, selected: List<ActualDoodle>, scrollTo: (ActualDoodle) -> Unit) {
     val fraction = 1f / (doodles.size - 1)
 
     Box (
@@ -674,10 +684,10 @@ private fun BoxScope.SelectedInWholeFileIndicator(doodles: List<Doodle>, selecte
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun BoxScope.SelectedEach(
-    item: Doodle,
+    item: ActualDoodle,
     top: Float,
     fraction: Float,
-    scrollTo: (Doodle) -> Unit
+    scrollTo: (ActualDoodle) -> Unit
 ) {
     var focused by remember { mutableStateOf(false) }
     var previewFocused by remember { mutableStateOf(false) }
