@@ -9,15 +9,33 @@ import doodler.nbt.TagType
 import doodler.nbt.tag.*
 
 
-sealed class Doodle
+sealed class Doodle {
+    abstract val path: String
+}
+
+abstract class VirtualDoodle(
+    val depth: Int,
+    val parent: NbtDoodle
+): Doodle() {
+    override val path: String = "_DOODLE_CREATOR_"
+}
+
+class NbtCreationDoodle(
+    val type: TagType,
+    depth: Int,
+    parent: NbtDoodle
+): VirtualDoodle(depth, parent)
+
+class ValueCreationDoodle(
+    depth: Int,
+    parent: NbtDoodle
+): VirtualDoodle(depth, parent)
 
 sealed class ActualDoodle(
     var depth: Int,
     var index: Int,
     var parent: NbtDoodle?
 ): Doodle() {
-    abstract val path: String
-
     abstract fun delete(): ActualDoodle?
 
     abstract fun clone(parent: NbtDoodle?): ActualDoodle
@@ -45,6 +63,7 @@ class NbtDoodle (
 
     var expanded = false
 
+    var creator: VirtualDoodle? by mutableStateOf(null)
     val expandedItems: SnapshotStateList<ActualDoodle> = mutableStateListOf()
     val collapsedItems: MutableList<ActualDoodle> = mutableListOf()
 
@@ -62,9 +81,10 @@ class NbtDoodle (
         }
     }
 
-    fun children(root: Boolean = false): List<ActualDoodle> {
-        return mutableListOf<ActualDoodle>().apply {
+    fun children(root: Boolean = false): List<Doodle> {
+        return mutableListOf<Doodle>().apply {
             if (!root) add(this@NbtDoodle)
+            creator?.let { add(it) }
             addAll(expandedItems.map { if (it is NbtDoodle) it.children() else listOf(it) }.flatten())
         }
     }

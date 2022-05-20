@@ -246,6 +246,47 @@ class NbtState (
         create(action.deleted)
     }
 
+    fun prepareCreation(type: TagType) {
+        if (ui.selected.isEmpty()) throw Exception("no parent is selected.")
+        if (ui.selected.size > 1) throw Exception("too many tags are selected.")
+
+        val into = ui.selected[0]
+        if (into !is NbtDoodle) throw Exception("expected: NbtDoodle, but actual was: ${into.javaClass.name}")
+
+        into.expand()
+
+        if (into.tag.type.isArray()) {
+            into.creator = ValueCreationDoodle(
+                into.depth + 1, into
+            )
+        } else {
+            into.creator = NbtCreationDoodle(
+                type, into.depth + 1, into
+            )
+        }
+    }
+
+    fun cancelCreation() {
+        if (ui.selected.isEmpty() || ui.selected.size > 1) throw Exception("what did you do?!")
+
+        val into = ui.selected[0]
+        if (into !is NbtDoodle) throw Exception("this is not possible, in normal way...")
+
+        into.creator = null
+    }
+
+    fun create(new: ActualDoodle, into: NbtDoodle) {
+        new.parent = into
+
+        if (!into.expanded) into.expand()
+
+        into.create(new)
+        into.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX)
+
+        ui.selected.clear()
+        ui.selected.add(new)
+    }
+
     private fun create(targets: List<ActualDoodle>) {
         targets.forEach {
             val eachParent = it.parent ?: throw Exception("Is this possible??")

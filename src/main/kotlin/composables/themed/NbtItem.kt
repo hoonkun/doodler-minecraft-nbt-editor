@@ -15,23 +15,17 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import composables.states.editor.world.ActualDoodle
-import composables.states.editor.world.DoodleUi
-import composables.states.editor.world.NbtDoodle
-import composables.states.editor.world.ValueDoodle
+import composables.states.editor.world.*
 
 import doodler.nbt.TagType
 
 @Composable
 private fun ItemRoot(
-    pressed: Boolean,
-    selected: Boolean,
-    focused: Boolean,
+    modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit
 ) {
     Box (
-        modifier = Modifier
-            .background(ThemedColor.Editor.item(selected, pressed, focused))
+        modifier = modifier
     ) {
         Row(
             modifier = Modifier.fillMaxWidth()
@@ -274,16 +268,24 @@ fun NbtItem(
     state: DoodleUi,
     toggle: (ActualDoodle) -> Unit,
     select: (ActualDoodle) -> Unit,
-    treeCollapse: (NbtDoodle) -> Unit
+    treeCollapse: (NbtDoodle) -> Unit,
+    onCreationMode: Boolean = false,
+    disabled: Boolean = false
 ) {
     val hierarchy = getHierarchy(doodle)
 
     val selected = state.selected.contains(doodle)
 
     ItemRoot(
-        state.pressed == doodle,
-        selected,
-        state.focusedDirectly == doodle || state.focusedTree == doodle
+        modifier = Modifier
+            .alpha(if (disabled) 0.4f else 1f)
+            .background(ThemedColor.Editor.item(
+                selected = selected,
+                pressed = state.pressed == doodle,
+                focused = state.focusedDirectly == doodle || state.focusedTree == doodle,
+                onCreationMode = onCreationMode,
+                alphaMultiplier = if (onCreationMode) 0.6f else 1.0f
+            ))
     ) {
         Row (
             verticalAlignment = Alignment.CenterVertically,
@@ -295,9 +297,13 @@ fun NbtItem(
                 Box (modifier = Modifier
                     .fillMaxHeight()
                     .wrapContentWidth()
-                    .onPointerEvent(PointerEventType.Enter) { state.focusTree(current) }
-                    .onPointerEvent(PointerEventType.Exit) { state.unFocusTree(current) }
-                    .onPointerEvent(PointerEventType.Release) { treeCollapse(current) }
+                    .let {
+                        if (!disabled) it
+                                .onPointerEvent(PointerEventType.Enter) { state.focusTree(current) }
+                                .onPointerEvent(PointerEventType.Exit) { state.unFocusTree(current) }
+                                .onPointerEvent(PointerEventType.Release) { treeCollapse(current) }
+                        else it
+                    }
                 ) {
                     Spacer(modifier = Modifier.width(40.dp))
                     Box (
@@ -315,14 +321,18 @@ fun NbtItem(
             }
             Box (
                 modifier = Modifier.weight(1f)
-                    .onPointerEvent(PointerEventType.Enter) { state.focusDirectly(doodle); state.focusedTree = null }
-                    .onPointerEvent(PointerEventType.Exit) { state.unFocusDirectly(doodle) }
-                    .onPointerEvent(PointerEventType.Press) { state.press(doodle) }
-                    .onPointerEvent(PointerEventType.Release) { state.unPress(doodle) }
-                    .mouseClickable(onClick = {
-                        if (buttons.isPrimaryPressed) toggle(doodle)
-                        else if (buttons.isSecondaryPressed) select(doodle)
-                    })
+                    .let {
+                        if (!disabled) it
+                            .onPointerEvent(PointerEventType.Enter) { state.focusDirectly(doodle); state.focusedTree = null }
+                            .onPointerEvent(PointerEventType.Exit) { state.unFocusDirectly(doodle) }
+                            .onPointerEvent(PointerEventType.Press) { state.press(doodle) }
+                            .onPointerEvent(PointerEventType.Release) { state.unPress(doodle) }
+                            .mouseClickable(onClick = {
+                                if (buttons.isPrimaryPressed) toggle(doodle)
+                                else if (buttons.isSecondaryPressed) select(doodle)
+                            })
+                        else it
+                    }
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -336,8 +346,82 @@ fun NbtItem(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun DoodleContent(doodle: ActualDoodle, selected: Boolean) {
+fun CreatorItem(virtual: VirtualDoodle, state: NbtState) {
+    val hierarchy = getHierarchy(virtual)
+
+    ItemRoot(
+        modifier = Modifier
+            .background(ThemedColor.Editor.item(
+                selected = true,
+                pressed = false,
+                focused = false,
+                onCreationMode = true
+            ))
+    ) {
+        Row (
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 20.dp).height(50.dp)
+        ) {
+            for (i in 0 until virtual.depth) {
+                val current = hierarchy[i]
+                val focused = state.ui.focusedDirectly == current || state.ui.focusedTree == current
+                Box (modifier = Modifier
+                    .fillMaxHeight()
+                    .wrapContentWidth()
+                    .onPointerEvent(PointerEventType.Enter) { state.ui.focusTree(current) }
+                    .onPointerEvent(PointerEventType.Exit) { state.ui.unFocusTree(current) }
+                ) {
+                    Spacer(modifier = Modifier.width(40.dp))
+                    Box (
+                        modifier = Modifier
+                            .width(1.dp)
+                            .fillMaxHeight()
+                            .background(
+                                ThemedColor.Editor.depthLine(selected = true, focused = focused)
+                            )
+                    ) { }
+                }
+            }
+            Box (
+                modifier = Modifier.weight(1f)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxHeight()
+                ) {
+                    DoodleCreationContent(state, virtual)
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun RowScope.DoodleCreationContent(state: NbtState, doodle: VirtualDoodle) {
+    if (doodle is NbtCreationDoodle) {
+        Indicator(doodle.type, true)
+        Spacer(modifier = Modifier.width(20.dp))
+    } else if (doodle is ValueCreationDoodle) {
+        Index(doodle.parent.expandedItems.size.coerceAtLeast(doodle.parent.collapsedItems.size), true)
+        Spacer(modifier = Modifier.width(10.dp))
+    }
+    Spacer(modifier = Modifier.weight(1f))
+    ToolBarItemIndicator(false, { state.cancelCreation() }) {
+        IndicatorText("CANCEL", ThemedColor.Editor.Action.Delete)
+    }
+    Spacer(modifier = Modifier.width(20.dp))
+    ToolBarItemIndicator(false, { }) {
+        IndicatorText("OK", ThemedColor.Editor.Action.Create)
+    }
+    Spacer(modifier = Modifier.width(50.dp))
+}
+
+@Composable
+fun RowScope.DoodleContent(doodle: ActualDoodle, selected: Boolean) {
     when (doodle) {
         is NbtDoodle -> {
             Indicator(doodle.tag.type, selected)
@@ -352,9 +436,9 @@ fun DoodleContent(doodle: ActualDoodle, selected: Boolean) {
     }
 }
 
-fun getHierarchy(doodle: ActualDoodle): List<NbtDoodle> {
+fun getHierarchy(doodle: Doodle): List<NbtDoodle> {
     val result = mutableListOf<NbtDoodle>()
-    var parent = doodle.parent
+    var parent = if (doodle is ActualDoodle) doodle.parent else if (doodle is VirtualDoodle) doodle.parent else null
     while (parent != null && parent.depth >= 0) {
         result.add(parent)
         parent = parent.parent

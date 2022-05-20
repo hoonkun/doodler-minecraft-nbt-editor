@@ -84,6 +84,8 @@ enum class TagType(val id: Byte) {
     TAG_INT_ARRAY(11),
     TAG_LONG_ARRAY(12);
 
+    fun isArray() = this == TAG_BYTE_ARRAY || this == TAG_INT_ARRAY || this == TAG_LONG_ARRAY
+
     companion object {
         private val reversed = values().associateBy { it.id }
         operator fun get(id: Byte): TagType = reversed[id] ?: throw Exception("unknown tag id: $id")

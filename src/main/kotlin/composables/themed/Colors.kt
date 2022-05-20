@@ -60,10 +60,12 @@ class ThemedColor {
             val HasChanges = Color(255, 160, 0)
             val TreeBorder = Color(100, 100, 100)
 
+            private val Creation = Color(66, 107, 173, 50)
+
             private val Pressed = from(Color.Black, alpha = 80)
             private val Focused = from(Color.Black, alpha = 40)
 
-            private val Selected = Color(91, 115, 65)
+            private val Selected = Color(91, 115, 65, 50)
             val ScrollIndicatorSelected = Color(91, 115, 65)
 
             private val Indicator = Color(60, 60, 60)
@@ -85,8 +87,14 @@ class ThemedColor {
             fun tabCloseButtonIcon(focused: Boolean) =
                 if (focused) FocusedTabButtonIcon else TabButtonIcon
 
-            fun item(selected: Boolean, pressed: Boolean, focused: Boolean) =
-                if (selected) selectedItem(pressed, focused)
+            fun item(
+                selected: Boolean,
+                pressed: Boolean,
+                focused: Boolean,
+                onCreationMode: Boolean = false,
+                alphaMultiplier: Float = 1.0f
+            ) =
+                if (selected) selectedItem(pressed, focused, onCreationMode, alphaMultiplier)
                 else normalItem(pressed, focused)
 
             fun normalItem(pressed: Boolean, focused: Boolean) =
@@ -94,10 +102,15 @@ class ThemedColor {
                 else if (focused) Focused
                 else Color.Transparent
 
-            private fun selectedItem(pressed: Boolean, focused: Boolean) =
-                if (pressed) from(Selected, alpha = 20)
-                else if (focused) from(Selected, alpha = 35)
-                else from(Selected, alpha = 50)
+            private fun selectedItem(
+                pressed: Boolean,
+                focused: Boolean,
+                onCreationMode: Boolean,
+                alphaMultiplier: Float
+            ) =
+                if (pressed) from(if (!onCreationMode) Selected else Creation, alpha = (20 * alphaMultiplier).toInt())
+                else if (focused) from(if (!onCreationMode) Selected else Creation, alpha = (35 * alphaMultiplier).toInt())
+                else from(if (!onCreationMode) Selected else Creation, alpha = (50 * alphaMultiplier).toInt())
 
             fun indicator(selected: Boolean) = if (selected) SelectedIndicator else Indicator
             fun indicatorText(selected: Boolean) = if (selected) SelectedIndicatorText else IndicatorText
@@ -112,8 +125,7 @@ class ThemedColor {
             companion object {
 
                 val Delete = Color(227, 93, 48)
-                val Yank = Color(88, 163, 126)
-                val Edit = Color(88, 132, 163)
+                val Create = Color(64, 143, 227)
 
                 val Background = Color(255, 255, 255, 25)
 
