@@ -60,7 +60,7 @@ class ThemedColor {
             val HasChanges = Color(255, 160, 0)
             val TreeBorder = Color(100, 100, 100)
 
-            private val Creation = Color(66, 107, 173, 50)
+            val Creation = Color(66, 107, 173, 50)
 
             private val Pressed = from(Color.Black, alpha = 80)
             private val Focused = from(Color.Black, alpha = 40)
@@ -137,7 +137,7 @@ class ThemedColor {
 
                 val Normal = Color(125, 125, 125)
                 val Malformed = Color(140, 140, 140)
-                val Invalid = Color(230, 81, 0)
+                val Invalid = Color(245, 124, 0)
 
                 val ButtonText = Color(255, 255, 255, 175)
 
