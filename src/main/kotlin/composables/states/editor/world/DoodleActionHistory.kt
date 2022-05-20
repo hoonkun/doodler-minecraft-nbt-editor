@@ -52,3 +52,7 @@ class DeleteDoodleAction(
 class PasteDoodleAction(
     val created: List<ActualDoodle>
 ): DoodleAction()
+
+class CreateDoodleAction(
+    val created: ActualDoodle
+): DoodleAction()

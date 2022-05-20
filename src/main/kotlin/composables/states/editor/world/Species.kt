@@ -136,6 +136,7 @@ class NbtState (
         when (action) {
             is DeleteDoodleAction -> undoDelete(action)
             is PasteDoodleAction -> undoPaste(action)
+            is CreateDoodleAction -> undoCreate(action)
         }
     }
 
@@ -144,6 +145,7 @@ class NbtState (
         when (action) {
             is DeleteDoodleAction -> redoDelete(action)
             is PasteDoodleAction -> redoPaste(action)
+            is CreateDoodleAction -> redoCreate(action)
         }
     }
 
@@ -275,7 +277,7 @@ class NbtState (
         into.creator = null
     }
 
-    fun create(new: ActualDoodle, into: NbtDoodle) {
+    fun create(new: ActualDoodle, into: NbtDoodle, createAction: Boolean = true) {
         new.parent = into
 
         if (!into.expanded) into.expand()
@@ -283,8 +285,19 @@ class NbtState (
         into.create(new)
         into.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX)
 
+        into.creator = null
+        if (createAction) history.newAction(CreateDoodleAction(new))
+
         ui.selected.clear()
         ui.selected.add(new)
+    }
+
+    private fun undoCreate(action: CreateDoodleAction) {
+        delete(listOf(action.created))
+    }
+
+    private fun redoCreate(action: CreateDoodleAction) {
+        create(action.created, action.created.parent ?: throw Exception("parent is null..."), false)
     }
 
     private fun create(targets: List<ActualDoodle>) {
