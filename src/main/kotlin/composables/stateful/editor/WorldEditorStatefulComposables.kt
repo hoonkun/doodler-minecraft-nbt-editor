@@ -425,7 +425,7 @@ fun BoxScope.EditableField(
     val uiState = state.ui
     val lazyColumnState = state.lazyState
 
-    val onToggle: (Doodle) -> Unit = click@ { doodle ->
+    val onToggle: (ActualDoodle) -> Unit = click@ { doodle ->
         if (doodle !is NbtDoodle) return@click
         if (!doodle.tag.canHaveChildren) return@click
 
@@ -433,7 +433,7 @@ fun BoxScope.EditableField(
         else doodle.collapse(state.ui.selected)
     }
 
-    val onSelect: (Doodle) -> Unit = { doodle ->
+    val onSelect: (ActualDoodle) -> Unit = { doodle ->
         if (!uiState.selected.contains(doodle)) {
             if (keys.contains(androidx.compose.ui.input.key.Key.CtrlLeft)) uiState.addToSelected(doodle)
             else if (keys.contains(androidx.compose.ui.input.key.Key.ShiftLeft)) {
@@ -640,7 +640,7 @@ fun ColumnScope.NormalActionColumn(
 }
 
 @Composable
-private fun BoxScope.SelectedInWholeFileIndicator(doodles: List<Doodle>, selected: List<Doodle>, scrollTo: (Doodle) -> Unit) {
+private fun BoxScope.SelectedInWholeFileIndicator(doodles: List<ActualDoodle>, selected: List<ActualDoodle>, scrollTo: (ActualDoodle) -> Unit) {
     val fraction = 1f / (doodles.size - 1)
 
     Box (
@@ -674,10 +674,10 @@ private fun BoxScope.SelectedInWholeFileIndicator(doodles: List<Doodle>, selecte
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun BoxScope.SelectedEach(
-    item: Doodle,
+    item: ActualDoodle,
     top: Float,
     fraction: Float,
-    scrollTo: (Doodle) -> Unit
+    scrollTo: (ActualDoodle) -> Unit
 ) {
     var focused by remember { mutableStateOf(false) }
     var previewFocused by remember { mutableStateOf(false) }

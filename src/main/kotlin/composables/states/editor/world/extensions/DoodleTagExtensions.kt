@@ -1,33 +1,33 @@
 package composables.states.editor.world.extensions
 
-import composables.states.editor.world.Doodle
+import composables.states.editor.world.ActualDoodle
 import composables.states.editor.world.NbtDoodle
 import composables.states.editor.world.ValueDoodle
 import doodler.nbt.TagType
 import doodler.nbt.tag.*
 
 
-fun CompoundTag.doodle(parent: NbtDoodle?, depth: Int): List<Doodle> {
+fun CompoundTag.doodle(parent: NbtDoodle?, depth: Int): List<ActualDoodle> {
     return this.value.mapIndexed { index, value -> NbtDoodle(value, depth, index, parent) }
 }
 
-fun ListTag.doodle(parent: NbtDoodle, depth: Int): List<Doodle> {
+fun ListTag.doodle(parent: NbtDoodle, depth: Int): List<ActualDoodle> {
     return this.value.mapIndexed { index, value -> NbtDoodle(value, depth, index, parent) }
 }
 
-fun ByteArrayTag.doodle(parent: NbtDoodle, depth: Int): List<Doodle> {
+fun ByteArrayTag.doodle(parent: NbtDoodle, depth: Int): List<ActualDoodle> {
     return this.value.mapIndexed { index, value ->
         ValueDoodle("$value", depth, index, parent)
     }
 }
 
-fun IntArrayTag.doodle(parent: NbtDoodle, depth: Int): List<Doodle> {
+fun IntArrayTag.doodle(parent: NbtDoodle, depth: Int): List<ActualDoodle> {
     return this.value.mapIndexed { index, value ->
         ValueDoodle("$value", depth, index, parent)
     }
 }
 
-fun LongArrayTag.doodle(parent: NbtDoodle, depth: Int): List<Doodle> {
+fun LongArrayTag.doodle(parent: NbtDoodle, depth: Int): List<ActualDoodle> {
     return this.value.mapIndexed { index, value ->
         ValueDoodle("$value", depth, index, parent)
     }

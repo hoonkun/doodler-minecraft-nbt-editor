@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import composables.states.editor.world.Doodle
+import composables.states.editor.world.ActualDoodle
 import composables.states.editor.world.DoodleUi
 import composables.states.editor.world.NbtDoodle
 import composables.states.editor.world.ValueDoodle
@@ -233,7 +233,7 @@ private fun KeyValue(doodle: NbtDoodle, selected: Boolean) {
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun NbtItemTreeView(
-    doodle: Doodle,
+    doodle: ActualDoodle,
     state: DoodleUi,
     scrollTo: () -> Unit
 ) {
@@ -270,10 +270,10 @@ fun NbtItemTreeView(
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun NbtItem(
-    doodle: Doodle,
+    doodle: ActualDoodle,
     state: DoodleUi,
-    toggle: (Doodle) -> Unit,
-    select: (Doodle) -> Unit,
+    toggle: (ActualDoodle) -> Unit,
+    select: (ActualDoodle) -> Unit,
     treeCollapse: (NbtDoodle) -> Unit
 ) {
     val hierarchy = getHierarchy(doodle)
@@ -337,7 +337,7 @@ fun NbtItem(
 }
 
 @Composable
-fun DoodleContent(doodle: Doodle, selected: Boolean) {
+fun DoodleContent(doodle: ActualDoodle, selected: Boolean) {
     when (doodle) {
         is NbtDoodle -> {
             Indicator(doodle.tag.type, selected)
@@ -352,7 +352,7 @@ fun DoodleContent(doodle: Doodle, selected: Boolean) {
     }
 }
 
-fun getHierarchy(doodle: Doodle): List<NbtDoodle> {
+fun getHierarchy(doodle: ActualDoodle): List<NbtDoodle> {
     val result = mutableListOf<NbtDoodle>()
     var parent = doodle.parent
     while (parent != null && parent.depth >= 0) {

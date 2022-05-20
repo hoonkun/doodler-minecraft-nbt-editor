@@ -46,9 +46,9 @@ class DoodleActionHistory(
 abstract class DoodleAction
 
 class DeleteDoodleAction(
-    val deleted: List<Doodle>
+    val deleted: List<ActualDoodle>
 ): DoodleAction()
 
 class PasteDoodleAction(
-    val created: List<Doodle>
+    val created: List<ActualDoodle>
 ): DoodleAction()

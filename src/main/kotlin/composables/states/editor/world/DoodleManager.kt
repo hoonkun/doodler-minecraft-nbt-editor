@@ -2,8 +2,8 @@ package composables.states.editor.world
 
 class DoodleManager(private val root: NbtDoodle) {
 
-    var cached: List<Doodle> = listOf()
+    var cached: List<ActualDoodle> = listOf()
 
-    fun create(): List<Doodle> = root.children(true).also { cached = it }
+    fun create(): List<ActualDoodle> = root.children(true).also { cached = it }
 
 }

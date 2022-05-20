@@ -86,7 +86,7 @@ class NbtState (
 
     val doodles: DoodleManager = DoodleManager(rootDoodle)
 
-    val clipboards: SnapshotStateList<Pair<PasteTarget, List<Doodle>>> = mutableStateListOf()
+    val clipboards: SnapshotStateList<Pair<PasteTarget, List<ActualDoodle>>> = mutableStateListOf()
     val pasteTarget: PasteTarget
         get() {
             val selected = ui.selected
@@ -156,10 +156,12 @@ class NbtState (
 
         if (clipboards.size >= 5) clipboards.removeAt(0)
         clipboards.add(
-            Pair(target, mutableListOf<Doodle>().apply { addAll(ui.selected.map { it.clone(null) }) })
+            Pair(target, mutableListOf<ActualDoodle>().apply { addAll(ui.selected.map { it.clone(null) }) })
         )
     }
 
+    // TODO:
+    //  Compound 태그에 붙혀넣을 때는 해당 태그의 자식 중 클립보드에 있는 자식의 이름을 가진 것이 이미 있는지 확인해야함
     fun paste() {
         if (ui.selected.isEmpty()) throw Exception("invalid operation: no selected elements")
         if (ui.selected.size > 1) throw Exception("invalid operation: cannot be paste in multiple elements at once.")
@@ -204,7 +206,7 @@ class NbtState (
         pasteTags()
     }
 
-    fun pasteEnabled(content: Pair<PasteTarget, List<Doodle>>? = clipboards.lastOrNull()): Boolean {
+    fun pasteEnabled(content: Pair<PasteTarget, List<ActualDoodle>>? = clipboards.lastOrNull()): Boolean {
         if (content == null) return false
 
         if (ui.selected.isEmpty()) return false
@@ -244,7 +246,7 @@ class NbtState (
         create(action.deleted)
     }
 
-    private fun create(targets: List<Doodle>) {
+    private fun create(targets: List<ActualDoodle>) {
         targets.forEach {
             val eachParent = it.parent ?: throw Exception("Is this possible??")
 
@@ -267,7 +269,7 @@ class NbtState (
         delete(action.deleted)
     }
 
-    private fun delete(targets: List<Doodle>) {
+    private fun delete(targets: List<ActualDoodle>) {
         targets.forEach {
             it.delete()
         }
