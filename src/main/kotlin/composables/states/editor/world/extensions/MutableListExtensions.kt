@@ -4,3 +4,26 @@ fun <T>MutableList<T>.replaceAt(index: Int, to: T) {
     removeAt(index)
     add(index, to)
 }
+
+fun List<Int>.toRanges(): List<IntRange> {
+    val sorted = sorted()
+    val result = mutableListOf<IntRange>()
+
+    if (isEmpty()) return result
+
+    var start = sorted[0]
+    var current = sorted[0]
+    sorted.slice(1 until size).forEach {
+        if (it == current + 1) {
+            current = it
+            return@forEach
+        }
+        result.add(start..current)
+        start = it
+        current = it
+    }
+
+    result.add(start..current)
+
+    return result
+}
