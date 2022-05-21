@@ -400,13 +400,13 @@ fun RowScope.DoodleCreationContent(actions: NbtState.Actions, doodle: VirtualDoo
         if (!doodle.parent.tag.type.isList()) {
             CreationField(nameState, nameValidState) {
                 if (doodle.type.isNumber() || doodle.type.isString())
-                    ValueField(valueState, valueValidState, doodle.type, false)
+                    ValueField(valueState, valueValidState, doodle.type, true)
                 else
                     ExpandableValue(if (doodle.mode.isEdit()) value else doodle.type.creationHint(), true)
             }
         } else {
             if (doodle.type.isNumber() || doodle.type.isString())
-                ValueField(valueState, valueValidState, doodle.type, false)
+                ValueField(valueState, valueValidState, doodle.type, true)
             else
                 ExpandableValue(if (doodle.mode.isEdit()) value else doodle.type.creationHint(), true)
         }
@@ -459,7 +459,7 @@ fun RowScope.TagField(
         modifier = Modifier
             .drawBehind(border(bottom = Pair(2f, ThemedColor.from(ThemedColor.Editor.Creation, alpha = 150))))
             .padding(5.dp)
-            .widthIn(max = if (!wide) 250.dp else 350.dp)
+            .widthIn(max = if (!wide) 250.dp else 450.dp)
     ) {
         BasicTextField(
             text,
