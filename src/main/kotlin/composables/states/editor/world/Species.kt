@@ -273,6 +273,8 @@ class NbtState (
 
         // TODO: FATAL
         //  Compound 태그에 붙혀넣을 때는 해당 태그의 자식 중 클립보드에 있는 자식의 이름을 가진 것이 이미 있는지 확인해야함
+        // TODO: FATAL
+        //  펼쳐져있는 태그를 복사하여 그대로 다시 붙혀넣을 경우 그 자식 doodle 들의 depth 가 반영되지 않음
         fun paste() {
             if (ui.selected.isEmpty()) throw Exception("invalid operation: no selected elements")
             if (ui.selected.size > 1) throw Exception("invalid operation: cannot be paste in multiple elements at once.")
