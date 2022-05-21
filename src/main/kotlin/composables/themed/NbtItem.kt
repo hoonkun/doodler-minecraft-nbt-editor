@@ -446,11 +446,27 @@ fun RowScope.DoodleCreationContent(state: NbtState, doodle: VirtualDoodle) {
                 TagType.TAG_FLOAT -> FloatTag(value.toFloat(), name, parentTag)
                 TagType.TAG_DOUBLE -> DoubleTag(value.toDouble(), name, parentTag)
                 TagType.TAG_STRING -> StringTag(value, name, parentTag)
-                TagType.TAG_BYTE_ARRAY -> ByteArrayTag(ByteArray(0), name, parentTag)
-                TagType.TAG_INT_ARRAY -> IntArrayTag(IntArray(0), name, parentTag)
-                TagType.TAG_LONG_ARRAY -> LongArrayTag(LongArray(0), name, parentTag)
-                TagType.TAG_LIST -> ListTag(TagType.TAG_END, listOf(), true, name, parentTag)
-                TagType.TAG_COMPOUND -> CompoundTag(mutableListOf(), name, parentTag)
+                TagType.TAG_BYTE_ARRAY -> ByteArrayTag(
+                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<ByteArrayTag>().value else ByteArray(0),
+                    name, parentTag
+                )
+                TagType.TAG_INT_ARRAY -> IntArrayTag(
+                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<IntArrayTag>().value else IntArray(0),
+                    name, parentTag
+                )
+                TagType.TAG_LONG_ARRAY -> LongArrayTag(
+                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<LongArrayTag>().value else LongArray(0),
+                    name, parentTag
+                )
+                TagType.TAG_LIST -> ListTag(
+                    TagType.TAG_END,
+                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<ListTag>().value else listOf(),
+                    true, name, parentTag
+                )
+                TagType.TAG_COMPOUND -> CompoundTag(
+                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<CompoundTag>().value else mutableListOf(),
+                    name, parentTag
+                )
                 TagType.TAG_END -> throw Exception("cannot create END tag!")
             }
             NbtDoodle(tag, doodle.depth, intoIndex, doodle.parent)

@@ -43,7 +43,7 @@ class NbtCreationDoodle(
 ): VirtualDoodle(depth, index, parent, mode) {
     constructor(from: NbtDoodle, mode: VirtualMode):
             this(from.tag.type, from.depth, from.index, from.parent!!, mode) {
-                this.from = from
+                this.from = from.clone(from.parent)
             }
 }
 
@@ -55,7 +55,7 @@ class ValueCreationDoodle(
 ): VirtualDoodle(depth, index, parent, mode) {
     constructor(from: ValueDoodle, mode: VirtualMode):
             this(from.depth, from.index, from.parent!!, mode) {
-                this.from = from
+                this.from = from.clone(from.parent)
             }
 }
 
