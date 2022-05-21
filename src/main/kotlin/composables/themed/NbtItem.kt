@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import composables.states.editor.world.*
+import composables.states.editor.world.extensions.color
+import composables.states.editor.world.extensions.shorten
 
 import doodler.nbt.TagType
 import doodler.nbt.tag.*
@@ -33,12 +35,8 @@ private fun ItemRoot(
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit
 ) {
-    Box (
-        modifier = modifier
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth()
-        ) {
+    Box (modifier = modifier) {
+        Row(modifier = Modifier.fillMaxWidth()) {
             content()
         }
     }
@@ -46,7 +44,7 @@ private fun ItemRoot(
 }
 
 @Composable
-private fun ItemIndicator(selected: Boolean, content: @Composable BoxScope.() -> Unit) {
+private fun TagTypeIndicatorWrapper(selected: Boolean, content: @Composable BoxScope.() -> Unit) {
     Box (
         modifier = Modifier
             .wrapContentSize()
@@ -58,7 +56,7 @@ private fun ItemIndicator(selected: Boolean, content: @Composable BoxScope.() ->
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-private fun ToolBarItemIndicator(disabled: Boolean, onClick: MouseClickScope.() -> Unit, content: @Composable BoxScope.() -> Unit) {
+private fun NbtActionButtonWrapper(disabled: Boolean, onClick: MouseClickScope.() -> Unit, content: @Composable BoxScope.() -> Unit) {
     var hover by remember { mutableStateOf(false) }
 
     Box (
@@ -90,95 +88,51 @@ private fun ToolBarItemIndicator(disabled: Boolean, onClick: MouseClickScope.() 
 }
 
 @Composable
-fun IndicatorText(text: String, color: Color) {
-    Text(text, color = color, fontFamily = JetBrainsMono, fontSize = 18.sp)
+fun NbtText(text: String, color: Color, fontSize: TextUnit = 18.sp) {
+    Text(text, color = color, fontFamily = JetBrainsMono, fontSize = fontSize)
 }
 
 @Composable
-private fun NumberTypeIndicator(typeString: String) {
-    IndicatorText(" $typeString ", color = ThemedColor.Editor.Tag.Number)
+private fun NbtContentText(text: String, color: Color, fontSize: TextUnit = 20.sp) {
+    Text(text, color = color, fontFamily = JetBrainsMono, fontSize = fontSize)
 }
 
 @Composable
-private fun StringTypeIndicator() {
-    IndicatorText("...", color = ThemedColor.Editor.Tag.String)
+private fun TagTypeIndicatorText(type: TagType) {
+    NbtText(type.shorten(), color = type.color())
 }
 
 @Composable
-private fun CompoundTypeIndicator() {
-    IndicatorText("{ }", color = ThemedColor.Editor.Tag.Compound)
-}
-
-@Composable
-private fun ListTypeIndicator() {
-    IndicatorText("[ ]", color = ThemedColor.Editor.Tag.List)
-}
-
-@Composable
-private fun ArrayTypeIndicator(typeString: String) {
-    IndicatorText("[$typeString]", color = ThemedColor.Editor.Tag.NumberArray)
-}
-
-@Composable
-private fun Indicator(type: TagType, selected: Boolean) {
-    ItemIndicator (selected) {
-        IndicatorText(type)
+private fun TagTypeIndicator(type: TagType, selected: Boolean) {
+    TagTypeIndicatorWrapper (selected) {
+        TagTypeIndicatorText(type)
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ToolBarIndicator(type: TagType, onClick: MouseClickScope.() -> Unit = { }) {
-    ToolBarItemIndicator (false, onClick) {
-        IndicatorText(type)
+fun TagCreationButton(type: TagType, onClick: MouseClickScope.() -> Unit = { }) {
+    NbtActionButtonWrapper (false, onClick) {
+        TagTypeIndicatorText(type)
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ToolBarAction(disabled: Boolean = false, onClick: MouseClickScope.() -> Unit = { }, content: @Composable () -> Unit) {
-    ToolBarItemIndicator (disabled, onClick) {
+fun NbtActionButton(disabled: Boolean = false, onClick: MouseClickScope.() -> Unit = { }, content: @Composable () -> Unit) {
+    NbtActionButtonWrapper (disabled, onClick) {
         content()
     }
 }
 
 @Composable
-fun IndicatorText(type: TagType) {
-    when (type) {
-        TagType.TAG_BYTE -> NumberTypeIndicator("B")
-        TagType.TAG_INT -> NumberTypeIndicator("I")
-        TagType.TAG_SHORT -> NumberTypeIndicator("S")
-        TagType.TAG_FLOAT -> NumberTypeIndicator("F")
-        TagType.TAG_DOUBLE -> NumberTypeIndicator("D")
-        TagType.TAG_LONG -> NumberTypeIndicator("L")
-        TagType.TAG_BYTE_ARRAY -> ArrayTypeIndicator("B")
-        TagType.TAG_INT_ARRAY -> ArrayTypeIndicator("I")
-        TagType.TAG_LONG_ARRAY -> ArrayTypeIndicator("L")
-        TagType.TAG_STRING -> StringTypeIndicator()
-        TagType.TAG_COMPOUND -> CompoundTypeIndicator()
-        TagType.TAG_LIST -> ListTypeIndicator()
-        TagType.TAG_END -> { /* impossible */ }
-    }
-}
-
-@Composable
-private fun ItemText(text: String, color: Color, fontSize: TextUnit = 20.sp) {
-    Text(text, color = color, fontFamily = JetBrainsMono, fontSize = fontSize)
-}
-
-@Composable
-private fun Key(key: String) {
-    ItemText(key, ThemedColor.Editor.Tag.General)
-}
-
-@Composable
 private fun NumberValue(value: String) {
-    ItemText(value, ThemedColor.Editor.Tag.Number)
+    NbtContentText(value, ThemedColor.Editor.Tag.Number)
 }
 
 @Composable
 private fun StringValue(value: String) {
-    ItemText(value, ThemedColor.Editor.Tag.String)
+    NbtContentText(value, ThemedColor.Editor.Tag.String)
 }
 
 @Composable
@@ -189,7 +143,7 @@ private fun ExpandableValue(value: String, selected: Boolean) {
             .background(ThemedColor.Editor.indicator(selected), RoundedCornerShape(5.dp))
             .padding(top = 2.dp, bottom = 2.dp, start = 10.dp, end = 10.dp)
     ) {
-        ItemText(value, ThemedColor.Editor.indicatorText(selected), 18.sp)
+        NbtContentText(value, ThemedColor.Editor.indicatorText(selected), 18.sp)
     }
 }
 
@@ -201,7 +155,7 @@ private fun Index(index: Int, selected: Boolean) {
             .background(ThemedColor.Editor.indicator(selected), shape = RoundedCornerShape(5.dp))
             .padding(top = 2.dp, bottom = 2.dp, start = 5.dp, end = 5.dp)
     ) {
-        ItemText("$index:", ThemedColor.Editor.indicatorText(selected), 18.sp)
+        NbtContentText("$index:", ThemedColor.Editor.indicatorText(selected), 18.sp)
     }
 }
 
@@ -209,33 +163,24 @@ private fun Index(index: Int, selected: Boolean) {
 private fun KeyValue(doodle: NbtDoodle, selected: Boolean) {
     val key = doodle.name
     if (key != null) {
-        Key(key)
+        NbtContentText(key, ThemedColor.Editor.Tag.General)
         Spacer(modifier = Modifier.width(20.dp))
     }
     if ((doodle.parent?.tag?.type ?: TagType.TAG_COMPOUND) != TagType.TAG_COMPOUND && doodle.index >= 0) {
         Index(doodle.index, selected)
         Spacer(modifier = Modifier.width(10.dp))
     }
-    when (doodle.tag.type) {
-        TagType.TAG_BYTE,
-            TagType.TAG_DOUBLE,
-            TagType.TAG_FLOAT,
-            TagType.TAG_INT,
-            TagType.TAG_LONG,
-            TagType.TAG_SHORT -> NumberValue(doodle.value)
-        TagType.TAG_STRING -> StringValue(doodle.value)
-        TagType.TAG_COMPOUND,
-            TagType.TAG_BYTE_ARRAY,
-            TagType.TAG_INT_ARRAY,
-            TagType.TAG_LONG_ARRAY,
-            TagType.TAG_LIST -> ExpandableValue(doodle.value, selected)
-        TagType.TAG_END -> { /* impossible */ }
-    }
+    if (doodle.tag.type.isNumber())
+        NumberValue(doodle.value)
+    else if (doodle.tag.type.isString())
+        StringValue(doodle.value)
+    else if (doodle.tag.type.canHaveChildren())
+        ExpandableValue(doodle.value, selected)
 }
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun NbtItemTreeView(
+fun DepthPreviewNbtItem(
     doodle: ActualDoodle,
     state: DoodleUi,
     scrollTo: () -> Unit
@@ -264,7 +209,7 @@ fun NbtItemTreeView(
                     .fillMaxWidth()
                     .height(50.dp)
             ) {
-                DoodleContent(doodle, false)
+                ActualNbtItemContent(doodle, false)
             }
         }
     }
@@ -272,7 +217,7 @@ fun NbtItemTreeView(
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun NbtItem(
+fun ActualNbtItem(
     doodle: ActualDoodle,
     state: DoodleUi,
     toggle: (ActualDoodle) -> Unit,
@@ -348,7 +293,7 @@ fun NbtItem(
                     modifier = Modifier
                         .fillMaxHeight()
                 ) {
-                    DoodleContent(doodle, selected)
+                    ActualNbtItemContent(doodle, selected)
                 }
             }
         }
@@ -357,7 +302,7 @@ fun NbtItem(
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun CreatorItem(virtual: VirtualDoodle, state: NbtState) {
+fun VirtualNbtItem(virtual: VirtualDoodle, state: NbtState) {
     val hierarchy = getHierarchy(virtual)
 
     ItemRoot(
@@ -491,7 +436,7 @@ fun RowScope.DoodleCreationContent(state: NbtState, doodle: VirtualDoodle) {
     }
 
     if (doodle is NbtCreationDoodle) {
-        Indicator(doodle.type, true)
+        TagTypeIndicator(doodle.type, true)
         Spacer(modifier = Modifier.width(20.dp))
         CreationField(nameState, nameValidState) {
             when (doodle.type) {
@@ -521,12 +466,12 @@ fun RowScope.DoodleCreationContent(state: NbtState, doodle: VirtualDoodle) {
         }
     }
     Spacer(modifier = Modifier.weight(1f))
-    ToolBarItemIndicator(false, cancel) {
-        IndicatorText("CANCEL", ThemedColor.Editor.Action.Delete)
+    NbtActionButtonWrapper(false, cancel) {
+        NbtText("CANCEL", ThemedColor.Editor.Action.Delete)
     }
     Spacer(modifier = Modifier.width(20.dp))
-    ToolBarItemIndicator(!(nameValid && valueValid), ok) {
-        IndicatorText("OK", ThemedColor.Editor.Action.Create)
+    NbtActionButtonWrapper(!(nameValid && valueValid), ok) {
+        NbtText("OK", ThemedColor.Editor.Action.Create)
     }
     Spacer(modifier = Modifier.width(50.dp))
 }
@@ -710,10 +655,10 @@ fun RowScope.CreationField(
 }
 
 @Composable
-fun RowScope.DoodleContent(doodle: ActualDoodle, selected: Boolean) {
+fun RowScope.ActualNbtItemContent(doodle: ActualDoodle, selected: Boolean) {
     when (doodle) {
         is NbtDoodle -> {
-            Indicator(doodle.tag.type, selected)
+            TagTypeIndicator(doodle.tag.type, selected)
             Spacer(modifier = Modifier.width(20.dp))
             KeyValue(doodle, selected)
         }
