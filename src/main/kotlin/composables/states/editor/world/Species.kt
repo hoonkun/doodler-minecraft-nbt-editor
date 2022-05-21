@@ -276,32 +276,35 @@ class NbtState (
         // TODO: FATAL
         //  펼쳐져있는 태그를 복사하여 그대로 다시 붙혀넣을 경우 그 자식 doodle 들의 depth 가 반영되지 않음
         fun paste() {
-            if (ui.selected.isEmpty()) throw Exception("invalid operation: no selected elements")
-            if (ui.selected.size > 1) throw Exception("invalid operation: cannot be paste in multiple elements at once.")
+            if (ui.selected.isEmpty()) throw NoSelectedItemsException("paste")
+            if (ui.selected.size > 1) throw TooManyItemsSelectedException("paste")
 
             val selected = ui.selected[0]
             if (selected !is NbtDoodle)
-                throw Exception("invalid operation: expected NbtDoodle, actual was ${selected.javaClass.name}")
+                throw InternalAssertionException(NbtDoodle::class.java.simpleName, selected.javaClass.name)
 
             val (target, doodles) = stack.last()
 
             when (target) {
-                CannotBePasted -> throw Exception("invalid operation: internal error. cannot be pasted.")
+                CannotBePasted -> throw InternalAssertionException(
+                    listOf(CanBePastedIntoCompound::class.java.simpleName, CanBePastedIntoArray::class.java.simpleName, CanBePastedIntoList::class.java.simpleName),
+                    CannotBePasted::class.java.simpleName
+                )
                 CanBePastedIntoCompound -> {
                     if (selected.tag.type != TagType.TAG_COMPOUND)
-                        throw Exception("invalid operation: these tags can only be pasted into: CompoundTag.")
+                        throw InvalidPasteTargetException(selected.tag.type)
                 }
                 is CanBePastedIntoList -> {
                     if (selected.tag.type != TagType.TAG_LIST)
-                        throw Exception("invalid operation: these tags can only be pasted into: ListTag.")
+                        throw InvalidPasteTargetException(selected.tag.type)
 
                     val listTag = selected.tag.getAs<ListTag>()
                     if (target.elementsType != listTag.elementsType && listTag.elementsType != TagType.TAG_END)
-                        throw Exception("invalid operation: tag type mismatch. only ${listTag.elementsType} can be added, given was: ${target.elementsType}")
+                        throw PasteTargetTypeMismatchException(listTag.elementsType, target.elementsType)
                 }
                 is CanBePastedIntoArray -> {
                     if (selected.tag.type != target.arrayTagType)
-                        throw Exception("invalid operation: these values can only be pasted into: ${target.arrayTagType}")
+                        throw InvalidValuePasteTargetException(target.arrayTagType)
                 }
             }
 
@@ -323,11 +326,11 @@ class NbtState (
         val internal = Internal()
 
         fun prepare(type: TagType) {
-            if (ui.selected.isEmpty()) throw Exception("no parent is selected.")
-            if (ui.selected.size > 1) throw Exception("too many tags are selected.")
+            if (ui.selected.isEmpty()) throw NoSelectedItemsException("create")
+            if (ui.selected.size > 1) throw TooManyItemsSelectedException("create")
 
             val into = ui.selected[0]
-            if (into !is NbtDoodle) throw Exception("expected: NbtDoodle, but actual was: ${into.javaClass.name}")
+            if (into !is NbtDoodle) throw InternalAssertionException(NbtDoodle::class.java.simpleName, into.javaClass.name)
 
             into.expand()
 
@@ -343,10 +346,10 @@ class NbtState (
         }
 
         fun cancel() {
-            if (ui.selected.isEmpty() || ui.selected.size > 1) throw Exception("what did you do?!")
+            if (ui.selected.isEmpty() || ui.selected.size > 1) throw VirtualActionCancelException("creation")
 
             val into = ui.selected[0]
-            if (into !is NbtDoodle) throw Exception("this is not possible, in normal way...")
+            if (into !is NbtDoodle) throw InternalAssertionException(NbtDoodle::class.java.simpleName, into.javaClass.name)
 
             into.creator = null
         }
@@ -377,7 +380,7 @@ class NbtState (
 
             fun create(targets: List<ActualDoodle>) {
                 targets.forEach {
-                    val eachParent = it.parent ?: throw Exception("Is this possible??")
+                    val eachParent = it.parent ?: throw ParentNotFoundException()
 
                     if (!eachParent.expanded)
                         eachParent.expand()
@@ -399,8 +402,8 @@ class NbtState (
         val internal = Internal()
 
         fun prepare() {
-            if (ui.selected.isEmpty()) throw Exception("no target is selected.")
-            if (ui.selected.size > 1) throw Exception("too many tags are selected.")
+            if (ui.selected.isEmpty()) throw NoSelectedItemsException("edit")
+            if (ui.selected.size > 1) throw AttemptToEditMultipleTagsException()
 
             when (val target = ui.selected[0]) {
                 is NbtDoodle -> target.parent?.creator = NbtCreationDoodle(target, VirtualDoodle.VirtualMode.EDIT)
@@ -410,9 +413,9 @@ class NbtState (
         }
 
         fun cancel() {
-            if (ui.selected.isEmpty() || ui.selected.size > 1) throw Exception("what did you do?!")
+            if (ui.selected.isEmpty() || ui.selected.size > 1) throw VirtualActionCancelException("edition")
 
-            val targetParent = ui.selected[0].parent ?: throw Exception("cannot find parent")
+            val targetParent = ui.selected[0].parent ?: throw ParentNotFoundException()
             targetParent.creator = null
         }
 
@@ -425,7 +428,7 @@ class NbtState (
         inner class Internal {
 
             fun edit(oldActual: ActualDoodle, newActual: ActualDoodle) {
-                val into = oldActual.parent ?: throw Exception("parent cannot be null")
+                val into = oldActual.parent ?: throw ParentNotFoundException()
                 newActual.parent = into
 
                 actions.deleter.internal.delete(listOf(oldActual))

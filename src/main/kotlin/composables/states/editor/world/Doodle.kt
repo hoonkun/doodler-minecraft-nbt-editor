@@ -59,7 +59,7 @@ abstract class VirtualDoodle(
                     if (mode.isEdit()) (from as NbtDoodle).tag.getAs<CompoundTag>().value else mutableListOf(),
                     name, parentTag
                 )
-                TagType.TAG_END -> throw Exception("cannot create END tag!")
+                TagType.TAG_END -> throw EndCreationException()
             }
             NbtDoodle(tag, depth, intoIndex, parent)
         } else {
@@ -173,7 +173,7 @@ class NbtDoodle (
                 is ByteArrayTag -> tag.doodle(this, newDepth)
                 is IntArrayTag -> tag.doodle(this, newDepth)
                 is LongArrayTag -> tag.doodle(this, newDepth)
-                else -> throw Exception("this tag is not expandable!")
+                else -> throw ChildrenInitiationException(tag.type)
             }
         )
     }
@@ -238,8 +238,7 @@ class NbtDoodle (
 
         when (tag.type) {
             TagType.TAG_COMPOUND -> {
-                new as? NbtDoodle
-                    ?: throw Exception("invalid operation: internal error. expected: NbtDoodle, actual was: ${new.javaClass.name}")
+                new as? NbtDoodle ?: throw InternalAssertionException(NbtDoodle::class.java.simpleName, new.javaClass.name)
 
                 if (useIndex) tag.getAs<CompoundTag>().insert(new.index, new.tag)
                 else tag.getAs<CompoundTag>().add(new.tag)
@@ -247,13 +246,12 @@ class NbtDoodle (
                 if (!useIndex) new.index = tag.getAs<CompoundTag>().value.size - 1
             }
             TagType.TAG_LIST -> {
-                new as? NbtDoodle
-                    ?: throw Exception("invalid operation: internal error. expected: NbtDoodle, actual was: ${new.javaClass.name}")
+                new as? NbtDoodle ?: throw InternalAssertionException(NbtDoodle::class.java.simpleName, new.javaClass.name)
 
                 val list = tag.getAs<ListTag>()
 
                 if (list.elementsType != new.tag.type && list.elementsType != TagType.TAG_END)
-                    throw Exception("invalid operation: tag type mismatch. expected: ${list.elementsType}, actual was: ${new.tag.type.name}")
+                    throw ListElementsTypeMismatchException(list.elementsType, new.tag.type)
                 else {
                     if (useIndex) list.value.add(new.index, new.tag)
                     else list.value.add(new.tag)
@@ -264,11 +262,9 @@ class NbtDoodle (
                 if (!useIndex) new.index = list.value.size - 1
             }
             TagType.TAG_BYTE_ARRAY -> {
-                new as? ValueDoodle
-                    ?: throw Exception("invalid operation: internal error. expected: ValueDoodle, actual was: ${new.javaClass.name}")
+                new as? ValueDoodle ?: throw InternalAssertionException(ValueDoodle::class.java.simpleName, new.javaClass.name)
 
-                val value = new.value.toByteOrNull()
-                    ?: throw Exception("invalid operation: value type mismatch. expected: Byte, actual was: ${new.value}")
+                val value = new.value.toByteOrNull() ?: throw ValueTypeMismatchException("Byte", new.value)
 
                 val array = tag.getAs<ByteArrayTag>()
                 array.value = array.value.toMutableList().apply {
@@ -279,11 +275,9 @@ class NbtDoodle (
                 if (!useIndex) new.index = array.value.size - 1
             }
             TagType.TAG_INT_ARRAY -> {
-                new as? ValueDoodle
-                    ?: throw Exception("invalid operation: internal error. expected: ValueDoodle, actual was: ${new.javaClass.name}")
+                new as? ValueDoodle ?: throw InternalAssertionException(ValueDoodle::class.java.simpleName, new.javaClass.name)
 
-                val value = new.value.toIntOrNull()
-                    ?: throw Exception("invalid operation: value type mismatch. expected: Byte, actual was: ${new.value}")
+                val value = new.value.toIntOrNull() ?: throw ValueTypeMismatchException("Int", new.value)
 
                 val array = tag.getAs<IntArrayTag>()
                 array.value = array.value.toMutableList().apply {
@@ -294,11 +288,9 @@ class NbtDoodle (
                 if (!useIndex) new.index = array.value.size - 1
             }
             TagType.TAG_LONG_ARRAY -> {
-                new as? ValueDoodle
-                    ?: throw Exception("invalid operation: internal error. expected: ValueDoodle, actual was: ${new.javaClass.name}")
+                new as? ValueDoodle ?: throw InternalAssertionException(ValueDoodle::class.java.simpleName, new.javaClass.name)
 
-                val value = new.value.toLongOrNull()
-                    ?: throw Exception("invalid operation: value type mismatch. expected: Byte, actual was: ${new.value}")
+                val value = new.value.toLongOrNull() ?: throw ValueTypeMismatchException("Long", new.value)
 
                 val array = tag.getAs<LongArrayTag>()
                 array.value = array.value.toMutableList().apply {
@@ -308,7 +300,7 @@ class NbtDoodle (
 
                 if (!useIndex) new.index = array.value.size - 1
             }
-            else -> throw Exception("invalid operation: ${tag.javaClass.name} cannot own child tags.")
+            else -> throw InvalidCreationException(tag.type)
         }
 
         if (expanded) {
@@ -335,7 +327,7 @@ class NbtDoodle (
                 is ByteArrayTag -> "${size(tag.value.size)} ${entries(tag.value.size)}"
                 is IntArrayTag -> "${size(tag.value.size)} ${entries(tag.value.size)}"
                 is LongArrayTag -> "${size(tag.value.size)} ${entries(tag.value.size)}"
-                else -> throw Exception("this tag does not have iterable value!")
+                else -> throw ValueSuffixException(tag.type)
             }
         }
 

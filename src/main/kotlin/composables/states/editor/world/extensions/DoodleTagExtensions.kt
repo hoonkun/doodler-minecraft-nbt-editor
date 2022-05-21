@@ -6,6 +6,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import composables.states.editor.world.ActualDoodle
+import composables.states.editor.world.InternalAssertionException
 import composables.states.editor.world.NbtDoodle
 import composables.states.editor.world.ValueDoodle
 import composables.themed.ThemedColor
@@ -137,7 +138,7 @@ fun TagType.transformer(): (AnnotatedString) -> Pair<Boolean, TransformedText> {
         TagType.TAG_BYTE -> byteTransformer
         TagType.TAG_DOUBLE -> doubleTransformer
         TagType.TAG_STRING -> stringTransformer
-        else -> throw Exception("This tag does not have any transformer.")
+        else -> throw InternalAssertionException(listOf("Numeric Tag", "String Tag"), "$this")
     }
 }
 

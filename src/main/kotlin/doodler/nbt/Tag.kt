@@ -1,5 +1,6 @@
 package doodler.nbt
 
+import composables.states.editor.world.InternalAssertionException
 import doodler.nbt.tag.*
 import doodler.nbt.TagType.*
 
@@ -107,7 +108,7 @@ enum class TagType(val id: Byte) {
         TAG_BYTE_ARRAY -> TAG_BYTE
         TAG_INT_ARRAY -> TAG_INT
         TAG_LONG_ARRAY -> TAG_LONG
-        else -> throw Exception("this is not an array type!")
+        else -> throw InternalAssertionException("Array Tag", "$this")
     }
 
     companion object {
