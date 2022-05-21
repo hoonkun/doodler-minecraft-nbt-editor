@@ -11,6 +11,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.*
@@ -89,8 +90,17 @@ private fun NbtActionButtonWrapper(disabled: Boolean, onClick: MouseClickScope.(
 }
 
 @Composable
-fun NbtText(text: String, color: Color, fontSize: TextUnit = 18.sp) {
-    Text(text, color = color, fontFamily = JetBrainsMono, fontSize = fontSize)
+fun NbtText(text: String, color: Color, fontSize: TextUnit = 18.sp, rotate: Float = 0f, multiplier: Int = 0) {
+    val offset = if (rotate == 0f) 0 else (5 * multiplier)
+    Text(
+        text,
+        color = color,
+        fontFamily = JetBrainsMono,
+        fontSize = fontSize,
+        modifier = Modifier
+            .rotate(rotate)
+            .absoluteOffset(x = offset.dp, y = 0.dp)
+    )
 }
 
 @Composable
@@ -123,7 +133,11 @@ fun TagCreationButton(holderTag: AnyTag?, type: TagType, actions: NbtState.Actio
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun NbtActionButton(disabled: Boolean = false, onClick: MouseClickScope.() -> Unit = { }, content: @Composable () -> Unit) {
+fun NbtActionButton(
+    disabled: Boolean,
+    onClick: MouseClickScope.() -> Unit = { },
+    content: @Composable () -> Unit
+) {
     NbtActionButtonWrapper (disabled, onClick) {
         content()
     }

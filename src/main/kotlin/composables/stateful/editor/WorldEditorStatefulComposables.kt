@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import composables.stateless.editor.*
 import composables.states.editor.world.*
+import composables.states.editor.world.extensions.toRanges
 import composables.themed.*
 import doodler.anvil.AnvilLocation
 import doodler.anvil.AnvilWorker
@@ -39,7 +40,6 @@ import keys
 import kotlinx.coroutines.launch
 import doodler.nbt.TagType
 import doodler.nbt.tag.CompoundTag
-import doodler.nbt.tag.ListTag
 import doodler.nbt.tag.StringTag
 import java.io.File
 
@@ -511,24 +511,28 @@ fun BoxScope.EditableField(
 
     if (creation != null) return
 
-    Column(
-        modifier = Modifier
-            .wrapContentSize()
-            .align(Alignment.TopEnd)
-            .padding(40.dp)
+    Row(
+        modifier = Modifier.align(Alignment.TopEnd).padding(30.dp)
     ) {
-        if (uiState.selected.isNotEmpty()) {
-            NormalActionColumn(state, onToolBarMove)
-
-            if (uiState.selected.let { sel -> sel.size == 1 && sel[0].let{ it is NbtDoodle && it.tag.canHaveChildren } }) {
-                CreateActionColumn(state, uiState.selected[0] as NbtDoodle, onToolBarMove)
-            }
-        }
-
-        if (state.actions.history.canBeUndo || state.actions.history.canBeRedo) {
+        Column(
+            modifier = Modifier
+                .wrapContentSize()
+        ) {
             UndoRedoActionColumn(state, onToolBarMove)
+            Spacer(modifier = Modifier.height(20.dp))
+            IndexChangeActionColumn(state, onToolBarMove)
+        }
+        Column(
+            modifier = Modifier
+                .wrapContentSize()
+                .padding(start = 20.dp)
+        ) {
+            NormalActionColumn(state, onToolBarMove)
+            Spacer(modifier = Modifier.height(20.dp))
+            CreateActionColumn(state, uiState.selected.firstOrNull() as? NbtDoodle, onToolBarMove)
         }
     }
+
 }
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
@@ -538,8 +542,6 @@ fun ColumnScope.UndoRedoActionColumn(
     onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
 ) {
     val actions = state.actions
-    
-    Spacer(modifier = Modifier.Companion.weight(1f))
 
     Column(
         modifier = Modifier
@@ -549,14 +551,41 @@ fun ColumnScope.UndoRedoActionColumn(
             .padding(5.dp)
     ) {
         NbtActionButton(disabled = !actions.history.canBeUndo, onClick = { actions.withLog { history.undo() } }) {
-            NbtText("<- ", ThemedColor.Editor.Tag.General)
+            NbtText("UND", ThemedColor.Editor.Tag.General)
         }
         NbtActionButton(disabled = !actions.history.canBeRedo, onClick = { actions.withLog { history.redo() } }) {
-            NbtText(" ->", ThemedColor.Editor.Tag.General)
+            NbtText("RED", ThemedColor.Editor.Tag.General)
         }
     }
-    if (state.ui.selected.isNotEmpty())
-        Spacer(modifier = Modifier.width(20.dp))
+}
+
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@Composable
+fun ColumnScope.IndexChangeActionColumn(
+    state: NbtState,
+    onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
+) {
+    val available =
+        state.ui.selected.map { it.index }.toRanges().size == 1 &&
+        state.ui.selected.map { it.parent }.toSet().size == 1
+
+    val canMoveUp = (state.ui.selected.firstOrNull()?.index ?: 0) != 0
+    val canMoveDown = (state.ui.selected.lastOrNull()?.let { it.index == it.parent?.expandedItems?.size?.minus(1) }) != true
+
+    Column(
+        modifier = Modifier
+            .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
+            .wrapContentSize()
+            .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
+            .padding(5.dp)
+    ) {
+        NbtActionButton(disabled = !(available && canMoveUp), onClick = {  }) {
+            NbtText("<- ", ThemedColor.Editor.Tag.General, rotate = 90f, multiplier = 1)
+        }
+        NbtActionButton(disabled = !(available && canMoveDown), onClick = {  }) {
+            NbtText(" ->", ThemedColor.Editor.Tag.General, rotate = 90f, multiplier = -1)
+        }
+    }
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -599,6 +628,8 @@ fun ColumnScope.NormalActionColumn(
 ) {
     val actions = state.actions
 
+    val available = state.ui.selected.isNotEmpty()
+
     Column(
         modifier = Modifier
             .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
@@ -606,26 +637,29 @@ fun ColumnScope.NormalActionColumn(
             .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
             .padding(5.dp)
     ) actionColumn@{
-        NbtActionButton(onClick = { state.actions.withLog { deleter.delete() } }) {
+        NbtActionButton(
+            disabled = !available,
+            onClick = { state.actions.withLog { deleter.delete() } }
+        ) {
             NbtText("DEL", ThemedColor.Editor.Action.Delete)
         }
-        if (actions.clipboard.pasteTarget != CannotBePasted) {
-            NbtActionButton(onClick = { actions.withLog { clipboard.yank() } }) {
-                NbtText("CPY", ThemedColor.Editor.Tag.General)
-            }
+        NbtActionButton(
+            disabled = !available || actions.clipboard.pasteTarget == CannotBePasted,
+            onClick = { actions.withLog { clipboard.yank() } }
+        ) {
+            NbtText("CPY", ThemedColor.Editor.Tag.General)
         }
-        if (actions.clipboard.stack.size > 0 && actions.clipboard.pasteEnabled()) {
-            NbtActionButton(onClick = { actions.withLog { clipboard.paste() } }) {
-                NbtText("PST", ThemedColor.Editor.Tag.General)
-            }
+        NbtActionButton(
+            disabled = !available || (actions.clipboard.stack.size == 0 || !actions.clipboard.pasteEnabled()),
+            onClick = { actions.withLog { clipboard.paste() } }
+        ) {
+            NbtText("PST", ThemedColor.Editor.Tag.General)
         }
-        if (state.ui.selected.size == 1) {
-            val selectedDoodle = state.ui.selected[0] as? NbtDoodle ?: return@actionColumn
-            if ((selectedDoodle.tag.name != null || !selectedDoodle.tag.type.canHaveChildren())) {
-                NbtActionButton(onClick = { actions.withLog { editor.prepare() } }) {
-                    NbtText("EDT", ThemedColor.Editor.Tag.General)
-                }
-            }
+        NbtActionButton(
+            disabled = !available || (state.ui.selected.firstOrNull() as? NbtDoodle?)?.let { it.tag.name != null || it.tag.canHaveChildren } != true,
+            onClick = { actions.withLog { editor.prepare() } }
+        ) {
+            NbtText("EDT", ThemedColor.Editor.Tag.General)
         }
     }
 }
