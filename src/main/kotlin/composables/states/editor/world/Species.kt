@@ -381,6 +381,9 @@ class NbtState (
         //  지금은 루트 태그에는 다른 태그를 추가할 수 없게 되어있음.
         //  루트 태그를 UI에 보여지도록 추가하던지... 아니면 아무것도 선택하지 않았을 때 태그를 추가할 수 있도록 하던지 하자.
         fun create(new: ActualDoodle, into: NbtDoodle) {
+            val (conflict, index) = new.checkNameConflict()
+            if (conflict) throw NameConflictException("create", (new as NbtDoodle).name!!, index)
+
             new.parent = into
 
             if (!into.expanded) into.expand()
@@ -449,6 +452,10 @@ class NbtState (
 
             fun edit(oldActual: ActualDoodle, newActual: ActualDoodle) {
                 val into = oldActual.parent ?: throw ParentNotFoundException()
+
+                val (conflict, index) = newActual.checkNameConflict()
+                if (conflict) throw NameConflictException("edit", (newActual as NbtDoodle).name!!, index)
+
                 newActual.parent = into
 
                 actions.deleter.internal.delete(listOf(oldActual))

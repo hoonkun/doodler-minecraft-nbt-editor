@@ -108,6 +108,19 @@ sealed class ActualDoodle(
     abstract fun delete(): ActualDoodle?
 
     abstract fun clone(parent: NbtDoodle?): ActualDoodle
+
+    fun checkNameConflict(): Pair<Boolean, Int> {
+        if (this !is NbtDoodle) return Pair(false, -1)
+
+        val into = this.parent ?: return Pair(false, -1)
+        if (into.tag.type.isCompound()) {
+            val tag = into.tag.getAs<CompoundTag>()
+            val conflictTag = tag.value.find { it.name == this.name }
+            if (conflictTag != null)
+                return Pair(true, tag.value.indexOf(conflictTag))
+        }
+        return Pair(false, -1)
+    }
 }
 
 class NbtDoodle (

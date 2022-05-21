@@ -49,6 +49,12 @@ class PasteTargetTypeMismatchException(
     actual: TagType
 ): InvalidOperationException("Cannot paste: Tag type mismatch", "Only $expected could be added, but given was $actual")
 
+class NameConflictException(
+    action: String,
+    conflictName: String,
+    index: Int
+): InvalidOperationException("Cannot $action", "Tag which name is $conflictName already exists in index $index.")
+
 open class InternalError(
     summary: String?,
     description: String?
