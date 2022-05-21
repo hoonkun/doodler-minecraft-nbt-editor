@@ -236,6 +236,10 @@ class NbtDoodle (
         initializeChildren()
 
         new.depth = depth + 1
+        if (new is NbtDoodle) {
+            new.expandedItems.forEach { it.depth = new.depth + 1 }
+            new.collapsedItems.forEach { it.depth = new.depth + 1 }
+        }
 
         when (tag.type) {
             TagType.TAG_COMPOUND -> {
