@@ -56,3 +56,8 @@ class PasteDoodleAction(
 class CreateDoodleAction(
     val created: ActualDoodle
 ): DoodleAction()
+
+class EditDoodleAction(
+    val old: ActualDoodle,
+    val new: ActualDoodle
+): DoodleAction()

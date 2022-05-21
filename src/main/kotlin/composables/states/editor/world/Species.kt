@@ -137,6 +137,7 @@ class NbtState (
             is DeleteDoodleAction -> undoDelete(action)
             is PasteDoodleAction -> undoPaste(action)
             is CreateDoodleAction -> undoCreate(action)
+            is EditDoodleAction -> undoEdit(action)
         }
     }
 
@@ -146,6 +147,7 @@ class NbtState (
             is DeleteDoodleAction -> redoDelete(action)
             is PasteDoodleAction -> redoPaste(action)
             is CreateDoodleAction -> redoCreate(action)
+            is EditDoodleAction -> redoEdit(action)
         }
     }
 
@@ -343,9 +345,18 @@ class NbtState (
         create(newActual, into, false)
 
         into.creator = null
+        if (createAction) history.newAction(EditDoodleAction(oldActual, newActual))
 
         ui.selected.clear()
         ui.selected.add(newActual)
+    }
+
+    fun undoEdit(action: EditDoodleAction) {
+        edit(action.new, action.old, false)
+    }
+
+    fun redoEdit(action: EditDoodleAction) {
+        edit(action.old, action.new, false)
     }
 
     private fun redoPaste(action: PasteDoodleAction) {
