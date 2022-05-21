@@ -563,20 +563,12 @@ fun ColumnScope.UndoRedoActionColumn(
 @Composable
 fun ColumnScope.CreateActionColumn(
     state: NbtState,
-    selected: NbtDoodle,
+    selected: NbtDoodle?,
     onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
 ) {
     val actions = state.actions
-    
-    val isType: (TagType) -> Boolean = { it == selected.tag.type }
-    val isListType: (TagType) -> Boolean = {
-        if (selected.tag !is ListTag) false
-        else selected.tag.elementsType == it || selected.tag.elementsType == TagType.TAG_END
-    }
-    val isCompoundOrListType: (TagType) -> Boolean = {
-        isType(TagType.TAG_COMPOUND) || isListType(it)
-    }
-    Spacer(modifier = Modifier.height(20.dp))
+    val tag = selected?.tag
+
     Column(
         modifier = Modifier
             .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
@@ -584,41 +576,18 @@ fun ColumnScope.CreateActionColumn(
             .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
             .padding(5.dp)
     ) {
-        if (isType(TagType.TAG_BYTE_ARRAY) || isCompoundOrListType(TagType.TAG_BYTE))
-            TagCreationButton(TagType.TAG_BYTE, actions)
-
-        if (isCompoundOrListType(TagType.TAG_SHORT))
-            TagCreationButton(TagType.TAG_SHORT, actions)
-
-        if (isType(TagType.TAG_INT_ARRAY) || isCompoundOrListType(TagType.TAG_INT))
-            TagCreationButton(TagType.TAG_INT, actions)
-
-        if (isType(TagType.TAG_LONG_ARRAY) || isCompoundOrListType(TagType.TAG_LONG))
-            TagCreationButton(TagType.TAG_LONG, actions)
-
-        if (isCompoundOrListType(TagType.TAG_FLOAT))
-            TagCreationButton(TagType.TAG_FLOAT, actions)
-
-        if (isCompoundOrListType(TagType.TAG_DOUBLE))
-            TagCreationButton(TagType.TAG_DOUBLE, actions)
-
-        if (isCompoundOrListType(TagType.TAG_BYTE_ARRAY))
-            TagCreationButton(TagType.TAG_BYTE_ARRAY, actions)
-
-        if (isCompoundOrListType(TagType.TAG_INT_ARRAY))
-            TagCreationButton(TagType.TAG_INT_ARRAY, actions)
-
-        if (isCompoundOrListType(TagType.TAG_LONG_ARRAY))
-            TagCreationButton(TagType.TAG_LONG_ARRAY, actions)
-
-        if (isCompoundOrListType(TagType.TAG_STRING))
-            TagCreationButton(TagType.TAG_STRING, actions)
-
-        if (isCompoundOrListType(TagType.TAG_LIST))
-            TagCreationButton(TagType.TAG_LIST, actions)
-
-        if (isCompoundOrListType(TagType.TAG_COMPOUND))
-            TagCreationButton(TagType.TAG_COMPOUND, actions)
+        TagCreationButton(tag, TagType.TAG_BYTE, actions)
+        TagCreationButton(tag, TagType.TAG_SHORT, actions)
+        TagCreationButton(tag, TagType.TAG_INT, actions)
+        TagCreationButton(tag, TagType.TAG_LONG, actions)
+        TagCreationButton(tag, TagType.TAG_FLOAT, actions)
+        TagCreationButton(tag, TagType.TAG_DOUBLE, actions)
+        TagCreationButton(tag, TagType.TAG_BYTE_ARRAY, actions)
+        TagCreationButton(tag, TagType.TAG_INT_ARRAY, actions)
+        TagCreationButton(tag, TagType.TAG_LONG_ARRAY, actions)
+        TagCreationButton(tag, TagType.TAG_STRING, actions)
+        TagCreationButton(tag, TagType.TAG_LIST, actions)
+        TagCreationButton(tag, TagType.TAG_COMPOUND, actions)
     }
 }
 

@@ -41,6 +41,14 @@ abstract class Tag<T: Any> protected constructor(
 
     override fun toString(): String = prefix() + valueToString()
 
+    fun canHold(other: TagType) =
+        this.type == TAG_COMPOUND ||
+        (this.type == TAG_LIST && this.getAs<ListTag>().elementsType == other) ||
+        (this.type == TAG_BYTE_ARRAY && other == TAG_BYTE) ||
+        (this.type == TAG_INT_ARRAY && other == TAG_INT) ||
+        (this.type == TAG_LONG_ARRAY && other == TAG_LONG)
+
+
     companion object {
 
         fun read(tagType: TagType, buffer: ByteBuffer, name: String? = null, parent: AnyTag?) = when(tagType) {

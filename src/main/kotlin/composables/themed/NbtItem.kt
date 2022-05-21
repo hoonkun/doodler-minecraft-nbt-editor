@@ -28,7 +28,7 @@ import composables.states.editor.world.extensions.color
 import composables.states.editor.world.extensions.creationHint
 import composables.states.editor.world.extensions.shorten
 import composables.states.editor.world.extensions.transformer
-
+import doodler.nbt.AnyTag
 import doodler.nbt.TagType
 
 @Composable
@@ -112,8 +112,11 @@ private fun TagTypeIndicator(type: TagType, selected: Boolean) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TagCreationButton(type: TagType, actions: NbtState.Actions) {
-    NbtActionButtonWrapper (false, { actions.withLog { creator.prepare(type) } }) {
+fun TagCreationButton(holderTag: AnyTag?, type: TagType, actions: NbtState.Actions) {
+    NbtActionButtonWrapper (
+        disabled = holderTag?.canHold(type) != true,
+        onClick = { actions.withLog { creator.prepare(type) } }
+    ) {
         TagTypeIndicatorText(type)
     }
 }
