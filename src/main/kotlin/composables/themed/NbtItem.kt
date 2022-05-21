@@ -411,10 +411,20 @@ fun CreatorItem(virtual: VirtualDoodle, state: NbtState) {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RowScope.DoodleCreationContent(state: NbtState, doodle: VirtualDoodle) {
-    val intoIndex = doodle.parent.expandedItems.size.coerceAtLeast(doodle.parent.collapsedItems.size)
+    val intoIndex =
+        if (!doodle.mode.isEdit()) doodle.parent.expandedItems.size.coerceAtLeast(doodle.parent.collapsedItems.size)
+        else doodle.index
 
-    val nameState = remember { mutableStateOf("") }
-    val valueState = remember { mutableStateOf("") }
+    val nameState = remember { mutableStateOf(
+        if (doodle.mode.isEdit()) doodle.from.let { if (it is NbtDoodle) it.tag.name else null } ?: ""
+        else ""
+    ) }
+    val valueState = remember { mutableStateOf(
+        if (doodle.mode.isEdit()) doodle.from.let {
+            if (it is NbtDoodle) it.value else if (it is ValueDoodle) it.value else null
+        } ?: ""
+        else ""
+    ) }
 
     val nameValidState = remember { mutableStateOf(false) }
     val valueValidState = remember { mutableStateOf(doodle !is NbtCreationDoodle || doodle.type.canHaveChildren()) }
@@ -449,6 +459,21 @@ fun RowScope.DoodleCreationContent(state: NbtState, doodle: VirtualDoodle) {
         }
     }
 
+    val cancel: MouseClickScope.() -> Unit = {
+        if (doodle.mode == VirtualDoodle.VirtualMode.CREATE) state.cancelCreation()
+        else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT) state.cancelEdit()
+    }
+
+    val ok: MouseClickScope.() -> Unit = {
+        if (doodle.mode == VirtualDoodle.VirtualMode.CREATE) state.create(generateActual(), doodle.parent)
+        else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT) state.edit(doodle.from, generateActual(), doodle.parent)
+    }
+
+    val expandableValue: (String) -> String = {
+        if (doodle.mode.isEdit()) value
+        else it
+    }
+
     if (doodle is NbtCreationDoodle) {
         Indicator(doodle.type, true)
         Spacer(modifier = Modifier.width(20.dp))
@@ -461,11 +486,11 @@ fun RowScope.DoodleCreationContent(state: NbtState, doodle: VirtualDoodle) {
                 TagType.TAG_FLOAT -> FloatField(valueState, valueValidState)
                 TagType.TAG_DOUBLE -> DoubleField(valueState, valueValidState)
                 TagType.TAG_STRING -> StringField(valueState, valueValidState)
-                TagType.TAG_BYTE_ARRAY -> { ExpandableValue("creates empty ByteArray tag", true) }
-                TagType.TAG_INT_ARRAY -> { ExpandableValue("creates empty IntArray tag", true) }
-                TagType.TAG_LONG_ARRAY -> { ExpandableValue("creates empty LongArray array", true) }
-                TagType.TAG_LIST -> { ExpandableValue("creates empty List tag", true) }
-                TagType.TAG_COMPOUND -> { ExpandableValue("creates empty Compound tag", true) }
+                TagType.TAG_BYTE_ARRAY -> { ExpandableValue(expandableValue("creates empty ByteArray tag"), true) }
+                TagType.TAG_INT_ARRAY -> { ExpandableValue(expandableValue("creates empty IntArray tag"), true) }
+                TagType.TAG_LONG_ARRAY -> { ExpandableValue(expandableValue("creates empty LongArray array"), true) }
+                TagType.TAG_LIST -> { ExpandableValue(expandableValue("creates empty List tag"), true) }
+                TagType.TAG_COMPOUND -> { ExpandableValue(expandableValue("creates empty Compound tag"), true) }
                 TagType.TAG_END -> throw Exception("Is this possible?")
             }
         }
@@ -480,11 +505,11 @@ fun RowScope.DoodleCreationContent(state: NbtState, doodle: VirtualDoodle) {
         }
     }
     Spacer(modifier = Modifier.weight(1f))
-    ToolBarItemIndicator(false, { state.cancelCreation() }) {
+    ToolBarItemIndicator(false, cancel) {
         IndicatorText("CANCEL", ThemedColor.Editor.Action.Delete)
     }
     Spacer(modifier = Modifier.width(20.dp))
-    ToolBarItemIndicator(!(nameValid && valueValid), { state.create(generateActual(), doodle.parent) }) {
+    ToolBarItemIndicator(!(nameValid && valueValid), ok) {
         IndicatorText("OK", ThemedColor.Editor.Action.Create)
     }
     Spacer(modifier = Modifier.width(50.dp))
@@ -536,6 +561,7 @@ fun RowScope.TagField(
     validState: MutableState<Boolean>,
     color: Color,
     hint: String,
+    wide: Boolean = true,
     transformation: (AnnotatedString) -> Pair<Boolean, TransformedText>
 ) {
     val (text, setText) = textState
@@ -545,7 +571,7 @@ fun RowScope.TagField(
         modifier = Modifier
             .drawBehind(border(bottom = Pair(2f, ThemedColor.from(ThemedColor.Editor.Creation, alpha = 150))))
             .padding(5.dp)
-            .widthIn(max = 250.dp)
+            .widthIn(max = if (!wide) 250.dp else 350.dp)
     ) {
         BasicTextField(
             text,
@@ -577,7 +603,7 @@ fun RowScope.TagNameField(
     nameState: MutableState<String>,
     validState: MutableState<Boolean>
 ) {
-    TagField(nameState, validState, ThemedColor.Editor.Tag.General, "TAG NAME", transformName)
+    TagField(nameState, validState, ThemedColor.Editor.Tag.General, "TAG NAME", false, transformName)
 }
 
 @Composable

@@ -259,11 +259,11 @@ class NbtState (
 
         if (into.tag.type.isArray()) {
             into.creator = ValueCreationDoodle(
-                into.depth + 1, into
+                into.depth + 1, 0, into, VirtualDoodle.VirtualMode.CREATE
             )
         } else {
             into.creator = NbtCreationDoodle(
-                type, into.depth + 1, into
+                type, into.depth + 1, 0, into, VirtualDoodle.VirtualMode.CREATE
             )
         }
     }
@@ -316,6 +316,34 @@ class NbtState (
             .forEach { it?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
         ui.selected.clear()
         ui.selected.addAll(targets)
+    }
+
+    fun prepareEdit(type: TagType) {
+        if (ui.selected.isEmpty()) throw Exception("no target is selected.")
+        if (ui.selected.size > 1) throw Exception("too many tags are selected.")
+
+        when (val target = ui.selected[0]) {
+            is NbtDoodle -> target.parent?.creator = NbtCreationDoodle(target, VirtualDoodle.VirtualMode.EDIT)
+            is ValueDoodle ->
+                target.parent?.creator = ValueCreationDoodle(target, VirtualDoodle.VirtualMode.EDIT)
+        }
+    }
+
+    fun cancelEdit() {
+        if (ui.selected.isEmpty() || ui.selected.size > 1) throw Exception("what did you do?!")
+
+        val targetParent = ui.selected[0].parent ?: throw Exception("cannot find parent")
+        targetParent.creator = null
+    }
+
+    fun edit(oldActual: ActualDoodle, newActual: ActualDoodle, into: NbtDoodle, createAction: Boolean = true) {
+        delete(listOf(oldActual))
+        create(newActual, into, false)
+
+        into.creator = null
+
+        ui.selected.clear()
+        ui.selected.add(newActual)
     }
 
     private fun redoPaste(action: PasteDoodleAction) {

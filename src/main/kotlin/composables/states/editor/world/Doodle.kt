@@ -4,38 +4,66 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import composables.states.editor.world.extensions.displayName
 import composables.states.editor.world.extensions.doodle
+import composables.states.editor.world.extensions.replaceAt
 import doodler.nbt.AnyTag
 import doodler.nbt.TagType
 import doodler.nbt.tag.*
 
 
-sealed class Doodle {
+sealed class Doodle(
+    var depth: Int,
+    var index: Int,
+) {
     abstract val path: String
 }
 
 abstract class VirtualDoodle(
-    val depth: Int,
-    val parent: NbtDoodle
-): Doodle() {
+    depth: Int,
+    index: Int,
+    val parent: NbtDoodle,
+    val mode: VirtualMode
+): Doodle(depth, index) {
     override val path: String = "_DOODLE_CREATOR_"
+
+    lateinit var from: ActualDoodle
+
+    enum class VirtualMode {
+        CREATE, EDIT;
+
+        fun isEdit() = this == EDIT
+    }
 }
 
 class NbtCreationDoodle(
     val type: TagType,
     depth: Int,
-    parent: NbtDoodle
-): VirtualDoodle(depth, parent)
+    index: Int,
+    parent: NbtDoodle,
+    mode: VirtualMode
+): VirtualDoodle(depth, index, parent, mode) {
+    constructor(from: NbtDoodle, mode: VirtualMode):
+            this(from.tag.type, from.depth, from.index, from.parent!!, mode) {
+                this.from = from
+            }
+}
 
 class ValueCreationDoodle(
     depth: Int,
-    parent: NbtDoodle
-): VirtualDoodle(depth, parent)
+    index: Int,
+    parent: NbtDoodle,
+    mode: VirtualMode
+): VirtualDoodle(depth, index, parent, mode) {
+    constructor(from: ValueDoodle, mode: VirtualMode):
+            this(from.depth, from.index, from.parent!!, mode) {
+                this.from = from
+            }
+}
 
 sealed class ActualDoodle(
-    var depth: Int,
-    var index: Int,
+    depth: Int,
+    index: Int,
     var parent: NbtDoodle?
-): Doodle() {
+): Doodle(depth, index) {
     abstract fun delete(): ActualDoodle?
 
     abstract fun clone(parent: NbtDoodle?): ActualDoodle
@@ -84,8 +112,13 @@ class NbtDoodle (
     fun children(root: Boolean = false): List<Doodle> {
         return mutableListOf<Doodle>().apply {
             if (!root) add(this@NbtDoodle)
-            creator?.let { add(it) }
             addAll(expandedItems.map { if (it is NbtDoodle) it.children() else listOf(it) }.flatten())
+            creator?.let {
+                when (it.mode) {
+                    VirtualDoodle.VirtualMode.CREATE -> add(it.index + 1, it)
+                    VirtualDoodle.VirtualMode.EDIT -> replaceAt(it.index + 1, it)
+                }
+            }
         }
     }
 
