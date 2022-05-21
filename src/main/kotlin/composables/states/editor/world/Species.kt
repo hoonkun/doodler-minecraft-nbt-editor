@@ -137,6 +137,7 @@ class NbtState (
             is DeleteDoodleAction -> undoDelete(action)
             is PasteDoodleAction -> undoPaste(action)
             is CreateDoodleAction -> undoCreate(action)
+            is EditDoodleAction -> undoEdit(action)
         }
     }
 
@@ -146,6 +147,7 @@ class NbtState (
             is DeleteDoodleAction -> redoDelete(action)
             is PasteDoodleAction -> redoPaste(action)
             is CreateDoodleAction -> redoCreate(action)
+            is EditDoodleAction -> redoEdit(action)
         }
     }
 
@@ -259,11 +261,11 @@ class NbtState (
 
         if (into.tag.type.isArray()) {
             into.creator = ValueCreationDoodle(
-                into.depth + 1, into
+                into.depth + 1, 0, into, VirtualDoodle.VirtualMode.CREATE
             )
         } else {
             into.creator = NbtCreationDoodle(
-                type, into.depth + 1, into
+                type, into.depth + 1, 0, into, VirtualDoodle.VirtualMode.CREATE
             )
         }
     }
@@ -316,6 +318,45 @@ class NbtState (
             .forEach { it?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
         ui.selected.clear()
         ui.selected.addAll(targets)
+    }
+
+    fun prepareEdit() {
+        if (ui.selected.isEmpty()) throw Exception("no target is selected.")
+        if (ui.selected.size > 1) throw Exception("too many tags are selected.")
+
+        when (val target = ui.selected[0]) {
+            is NbtDoodle -> target.parent?.creator = NbtCreationDoodle(target, VirtualDoodle.VirtualMode.EDIT)
+            is ValueDoodle ->
+                target.parent?.creator = ValueCreationDoodle(target, VirtualDoodle.VirtualMode.EDIT)
+        }
+    }
+
+    fun cancelEdit() {
+        if (ui.selected.isEmpty() || ui.selected.size > 1) throw Exception("what did you do?!")
+
+        val targetParent = ui.selected[0].parent ?: throw Exception("cannot find parent")
+        targetParent.creator = null
+    }
+
+    fun edit(oldActual: ActualDoodle, newActual: ActualDoodle, createAction: Boolean = true) {
+        val into = oldActual.parent ?: throw Exception("parent cannot be null")
+
+        delete(listOf(oldActual))
+        create(newActual, into, false)
+
+        into.creator = null
+        if (createAction) history.newAction(EditDoodleAction(oldActual, newActual))
+
+        ui.selected.clear()
+        ui.selected.add(newActual)
+    }
+
+    fun undoEdit(action: EditDoodleAction) {
+        edit(action.new, action.old, false)
+    }
+
+    fun redoEdit(action: EditDoodleAction) {
+        edit(action.old, action.new, false)
     }
 
     private fun redoPaste(action: PasteDoodleAction) {
