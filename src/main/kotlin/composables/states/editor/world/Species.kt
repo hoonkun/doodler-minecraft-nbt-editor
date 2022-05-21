@@ -6,8 +6,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.text.input.TextFieldValue
 import doodler.anvil.ChunkLocation
 import doodler.nbt.TagType
-import doodler.nbt.tag.CompoundTag
-import doodler.nbt.tag.ListTag
+import doodler.nbt.tag.*
 
 abstract class Species (
     val ident: String
@@ -164,7 +163,7 @@ class NbtState (
         )
     }
 
-    // TODO:
+    // TODO: FATAL
     //  Compound 태그에 붙혀넣을 때는 해당 태그의 자식 중 클립보드에 있는 자식의 이름을 가진 것이 이미 있는지 확인해야함
     fun paste() {
         if (ui.selected.isEmpty()) throw Exception("invalid operation: no selected elements")
@@ -282,6 +281,9 @@ class NbtState (
     // TODO:
     //  지금은 루트 태그에는 다른 태그를 추가할 수 없게 되어있음.
     //  루트 태그를 UI에 보여지도록 추가하던지... 아니면 아무것도 선택하지 않았을 때 태그를 추가할 수 있도록 하던지 하자.
+    // TODO: FATAL
+    //  리스트 태그의 자식을 만들 때 이름이 입력 가능하게 되어있음.
+    //  리스트 태그의 자식은 이름을 가질 수 없으므로, 관련 유효성검사와 UI를 수정해야함.
     fun create(new: ActualDoodle, into: NbtDoodle, createAction: Boolean = true) {
         new.parent = into
 
@@ -320,6 +322,46 @@ class NbtState (
         ui.selected.addAll(targets)
     }
 
+    fun actualize(doodle: VirtualDoodle, name: String, value: String, intoIndex: Int): ActualDoodle {
+        val parentTag = doodle.parent.tag
+        return if (doodle is NbtCreationDoodle) {
+            val tag = when (doodle.type) {
+                TagType.TAG_BYTE -> ByteTag(value.toByte(), name, parentTag)
+                TagType.TAG_SHORT -> ShortTag(value.toShort(), name, parentTag)
+                TagType.TAG_INT -> IntTag(value.toInt(), name, parentTag)
+                TagType.TAG_LONG -> LongTag(value.toLong(), name, parentTag)
+                TagType.TAG_FLOAT -> FloatTag(value.toFloat(), name, parentTag)
+                TagType.TAG_DOUBLE -> DoubleTag(value.toDouble(), name, parentTag)
+                TagType.TAG_STRING -> StringTag(value, name, parentTag)
+                TagType.TAG_BYTE_ARRAY -> ByteArrayTag(
+                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<ByteArrayTag>().value else ByteArray(0),
+                    name, parentTag
+                )
+                TagType.TAG_INT_ARRAY -> IntArrayTag(
+                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<IntArrayTag>().value else IntArray(0),
+                    name, parentTag
+                )
+                TagType.TAG_LONG_ARRAY -> LongArrayTag(
+                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<LongArrayTag>().value else LongArray(0),
+                    name, parentTag
+                )
+                TagType.TAG_LIST -> ListTag(
+                    TagType.TAG_END,
+                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<ListTag>().value else listOf(),
+                    true, name, parentTag
+                )
+                TagType.TAG_COMPOUND -> CompoundTag(
+                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<CompoundTag>().value else mutableListOf(),
+                    name, parentTag
+                )
+                TagType.TAG_END -> throw Exception("cannot create END tag!")
+            }
+            NbtDoodle(tag, doodle.depth, intoIndex, doodle.parent)
+        } else {
+            ValueDoodle(value, doodle.depth, intoIndex, doodle.parent)
+        }
+    }
+
     fun prepareEdit() {
         if (ui.selected.isEmpty()) throw Exception("no target is selected.")
         if (ui.selected.size > 1) throw Exception("too many tags are selected.")
@@ -351,11 +393,11 @@ class NbtState (
         ui.selected.add(newActual)
     }
 
-    fun undoEdit(action: EditDoodleAction) {
+    private fun undoEdit(action: EditDoodleAction) {
         edit(action.new, action.old, false)
     }
 
-    fun redoEdit(action: EditDoodleAction) {
+    private fun redoEdit(action: EditDoodleAction) {
         edit(action.old, action.new, false)
     }
 

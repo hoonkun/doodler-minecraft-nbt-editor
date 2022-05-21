@@ -30,7 +30,6 @@ import composables.states.editor.world.extensions.shorten
 import composables.states.editor.world.extensions.transformer
 
 import doodler.nbt.TagType
-import doodler.nbt.tag.*
 
 @Composable
 private fun ItemRoot(
@@ -382,54 +381,16 @@ fun RowScope.DoodleCreationContent(state: NbtState, doodle: VirtualDoodle) {
     val nameValid by nameValidState
     val valueValid by valueValidState
 
-    val generateActual: () -> ActualDoodle = {
-        val parentTag = doodle.parent.tag
-        if (doodle is NbtCreationDoodle) {
-            val tag = when (doodle.type) {
-                TagType.TAG_BYTE -> ByteTag(value.toByte(), name, parentTag)
-                TagType.TAG_SHORT -> ShortTag(value.toShort(), name, parentTag)
-                TagType.TAG_INT -> IntTag(value.toInt(), name, parentTag)
-                TagType.TAG_LONG -> LongTag(value.toLong(), name, parentTag)
-                TagType.TAG_FLOAT -> FloatTag(value.toFloat(), name, parentTag)
-                TagType.TAG_DOUBLE -> DoubleTag(value.toDouble(), name, parentTag)
-                TagType.TAG_STRING -> StringTag(value, name, parentTag)
-                TagType.TAG_BYTE_ARRAY -> ByteArrayTag(
-                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<ByteArrayTag>().value else ByteArray(0),
-                    name, parentTag
-                )
-                TagType.TAG_INT_ARRAY -> IntArrayTag(
-                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<IntArrayTag>().value else IntArray(0),
-                    name, parentTag
-                )
-                TagType.TAG_LONG_ARRAY -> LongArrayTag(
-                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<LongArrayTag>().value else LongArray(0),
-                    name, parentTag
-                )
-                TagType.TAG_LIST -> ListTag(
-                    TagType.TAG_END,
-                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<ListTag>().value else listOf(),
-                    true, name, parentTag
-                )
-                TagType.TAG_COMPOUND -> CompoundTag(
-                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<CompoundTag>().value else mutableListOf(),
-                    name, parentTag
-                )
-                TagType.TAG_END -> throw Exception("cannot create END tag!")
-            }
-            NbtDoodle(tag, doodle.depth, intoIndex, doodle.parent)
-        } else {
-            ValueDoodle(value, doodle.depth, intoIndex, doodle.parent)
-        }
-    }
-
     val cancel: MouseClickScope.() -> Unit = {
         if (doodle.mode == VirtualDoodle.VirtualMode.CREATE) state.cancelCreation()
         else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT) state.cancelEdit()
     }
 
     val ok: MouseClickScope.() -> Unit = {
-        if (doodle.mode == VirtualDoodle.VirtualMode.CREATE) state.create(generateActual(), doodle.parent)
-        else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT) state.edit(doodle.from, generateActual())
+        if (doodle.mode == VirtualDoodle.VirtualMode.CREATE)
+            state.create(state.actualize(doodle, name, value, intoIndex), doodle.parent)
+        else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT)
+            state.edit(doodle.from, state.actualize(doodle, name, value, intoIndex))
     }
 
     if (doodle is NbtCreationDoodle) {
