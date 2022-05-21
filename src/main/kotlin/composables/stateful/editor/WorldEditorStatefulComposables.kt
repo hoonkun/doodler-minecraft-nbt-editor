@@ -466,7 +466,7 @@ fun BoxScope.EditableField(
 
     val treeViewTarget = if (uiState.focusedTree == null) uiState.focusedTreeView else uiState.focusedTree
     if (treeViewTarget != null && lazyColumnState.firstVisibleItemIndex > doodles.indexOf(treeViewTarget)) {
-        NbtItemTreeView(treeViewTarget, uiState) {
+        DepthPreviewNbtItem(treeViewTarget, uiState) {
             val index = doodles.indexOf(treeViewTarget)
             coroutineScope.launch {
                 lazyColumnState.scrollToItem(index)
@@ -482,12 +482,10 @@ fun BoxScope.EditableField(
         if (target != null) uiState.unFocusDirectly(target)
     }
 
-    state.initialComposition = false
-
     LazyColumn (state = lazyColumnState) {
         items(doodles, key = { item -> item.path }) { item ->
             if (item is ActualDoodle)
-                NbtItem(
+                ActualNbtItem(
                     item,
                     uiState,
                     onToggle, onSelect, treeCollapse,
@@ -495,33 +493,33 @@ fun BoxScope.EditableField(
                     creation != null && item != creation.parent
                 )
             else if (item is VirtualDoodle)
-                CreatorItem(item, state)
-        }
-    }
-
-    if (creation == null && (uiState.selected.isNotEmpty() || (state.history.flags.canBeUndo || state.history.flags.canBeRedo))) {
-        Column(
-            modifier = Modifier
-                .wrapContentSize()
-                .align(Alignment.TopEnd)
-                .padding(40.dp)
-        ) {
-            if (uiState.selected.isNotEmpty()) {
-                NormalActionColumn(state, onToolBarMove)
-
-                if (uiState.selected.let { sel -> sel.size == 1 && sel[0].let{ it is NbtDoodle && it.tag.canHaveChildren } }) {
-                    CreateActionColumn(state, uiState.selected[0] as NbtDoodle, onToolBarMove)
-                }
-            }
-
-            if (state.history.flags.canBeUndo || state.history.flags.canBeRedo) {
-                UndoRedoActionColumn(state, onToolBarMove)
-            }
+                VirtualNbtItem(item, state)
         }
     }
 
     SelectedInWholeFileIndicator(doodles.filterIsInstance<ActualDoodle>(), uiState.selected) {
         coroutineScope.launch { lazyColumnState.scrollToItem(doodles.indexOf(it)) }
+    }
+
+    if (creation != null) return
+
+    Column(
+        modifier = Modifier
+            .wrapContentSize()
+            .align(Alignment.TopEnd)
+            .padding(40.dp)
+    ) {
+        if (uiState.selected.isNotEmpty()) {
+            NormalActionColumn(state, onToolBarMove)
+
+            if (uiState.selected.let { sel -> sel.size == 1 && sel[0].let{ it is NbtDoodle && it.tag.canHaveChildren } }) {
+                CreateActionColumn(state, uiState.selected[0] as NbtDoodle, onToolBarMove)
+            }
+        }
+
+        if (state.actions.history.canBeUndo || state.actions.history.canBeRedo) {
+            UndoRedoActionColumn(state, onToolBarMove)
+        }
     }
 }
 
@@ -531,6 +529,8 @@ fun ColumnScope.UndoRedoActionColumn(
     state: NbtState,
     onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
 ) {
+    val history = state.actions.history
+    
     Spacer(modifier = Modifier.Companion.weight(1f))
 
     Column(
@@ -540,24 +540,26 @@ fun ColumnScope.UndoRedoActionColumn(
             .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
             .padding(5.dp)
     ) {
-        ToolBarAction(disabled = !state.history.flags.canBeUndo, onClick = { state.undo() }) {
-            IndicatorText("<- ", ThemedColor.Editor.Tag.General)
+        NbtActionButton(disabled = !history.canBeUndo, onClick = { history.undo() }) {
+            NbtText("<- ", ThemedColor.Editor.Tag.General)
         }
-        ToolBarAction(disabled = !state.history.flags.canBeRedo, onClick = { state.redo() }) {
-            IndicatorText(" ->", ThemedColor.Editor.Tag.General)
+        NbtActionButton(disabled = !history.canBeRedo, onClick = { history.redo() }) {
+            NbtText(" ->", ThemedColor.Editor.Tag.General)
         }
     }
     if (state.ui.selected.isNotEmpty())
         Spacer(modifier = Modifier.width(20.dp))
 }
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ColumnScope.CreateActionColumn(
     state: NbtState,
     selected: NbtDoodle,
     onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
 ) {
+    val creator = state.actions.creator
+    
     val isType: (TagType) -> Boolean = { it == selected.tag.type }
     val isListType: (TagType) -> Boolean = {
         if (selected.tag !is ListTag) false
@@ -575,40 +577,40 @@ fun ColumnScope.CreateActionColumn(
             .padding(5.dp)
     ) {
         if (isType(TagType.TAG_BYTE_ARRAY) || isCompoundOrListType(TagType.TAG_BYTE))
-            ToolBarIndicator(TagType.TAG_BYTE) { state.prepareCreation(TagType.TAG_BYTE) }
+            TagCreationButton(TagType.TAG_BYTE, creator)
 
         if (isCompoundOrListType(TagType.TAG_SHORT))
-            ToolBarIndicator(TagType.TAG_SHORT) { state.prepareCreation(TagType.TAG_SHORT) }
+            TagCreationButton(TagType.TAG_SHORT, creator)
 
         if (isType(TagType.TAG_INT_ARRAY) || isCompoundOrListType(TagType.TAG_INT))
-            ToolBarIndicator(TagType.TAG_INT) { state.prepareCreation(TagType.TAG_INT) }
+            TagCreationButton(TagType.TAG_INT, creator)
 
         if (isType(TagType.TAG_LONG_ARRAY) || isCompoundOrListType(TagType.TAG_LONG))
-            ToolBarIndicator(TagType.TAG_LONG) { state.prepareCreation(TagType.TAG_LONG) }
+            TagCreationButton(TagType.TAG_LONG, creator)
 
         if (isCompoundOrListType(TagType.TAG_FLOAT))
-            ToolBarIndicator(TagType.TAG_FLOAT) { state.prepareCreation(TagType.TAG_FLOAT) }
+            TagCreationButton(TagType.TAG_FLOAT, creator)
 
         if (isCompoundOrListType(TagType.TAG_DOUBLE))
-            ToolBarIndicator(TagType.TAG_DOUBLE) { state.prepareCreation(TagType.TAG_DOUBLE) }
+            TagCreationButton(TagType.TAG_DOUBLE, creator)
 
         if (isCompoundOrListType(TagType.TAG_BYTE_ARRAY))
-            ToolBarIndicator(TagType.TAG_BYTE_ARRAY) { state.prepareCreation(TagType.TAG_BYTE_ARRAY) }
+            TagCreationButton(TagType.TAG_BYTE_ARRAY, creator)
 
         if (isCompoundOrListType(TagType.TAG_INT_ARRAY))
-            ToolBarIndicator(TagType.TAG_INT_ARRAY) { state.prepareCreation(TagType.TAG_INT_ARRAY) }
+            TagCreationButton(TagType.TAG_INT_ARRAY, creator)
 
         if (isCompoundOrListType(TagType.TAG_LONG_ARRAY))
-            ToolBarIndicator(TagType.TAG_LONG_ARRAY) { state.prepareCreation(TagType.TAG_LONG_ARRAY) }
+            TagCreationButton(TagType.TAG_LONG_ARRAY, creator)
 
         if (isCompoundOrListType(TagType.TAG_STRING))
-            ToolBarIndicator(TagType.TAG_STRING) { state.prepareCreation(TagType.TAG_STRING) }
+            TagCreationButton(TagType.TAG_STRING, creator)
 
         if (isCompoundOrListType(TagType.TAG_LIST))
-            ToolBarIndicator(TagType.TAG_LIST) { state.prepareCreation(TagType.TAG_LIST) }
+            TagCreationButton(TagType.TAG_LIST, creator)
 
         if (isCompoundOrListType(TagType.TAG_COMPOUND))
-            ToolBarIndicator(TagType.TAG_COMPOUND) { state.prepareCreation(TagType.TAG_COMPOUND) }
+            TagCreationButton(TagType.TAG_COMPOUND, creator)
     }
 }
 
@@ -618,6 +620,9 @@ fun ColumnScope.NormalActionColumn(
     state: NbtState,
     onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
 ) {
+    val clipboard = state.actions.clipboard
+    val editor = state.actions.editor
+    
     Column(
         modifier = Modifier
             .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
@@ -625,24 +630,24 @@ fun ColumnScope.NormalActionColumn(
             .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
             .padding(5.dp)
     ) actionColumn@{
-        ToolBarAction(onClick = { state.delete() }) {
-            IndicatorText("DEL", ThemedColor.Editor.Action.Delete)
+        NbtActionButton(onClick = { state.actions.deleter.delete() }) {
+            NbtText("DEL", ThemedColor.Editor.Action.Delete)
         }
-        if (state.pasteTarget != NbtState.CannotBePasted) {
-            ToolBarAction(onClick = { state.yank() }) {
-                IndicatorText("CPY", ThemedColor.Editor.Tag.General)
+        if (clipboard.pasteTarget != CannotBePasted) {
+            NbtActionButton(onClick = { clipboard.yank() }) {
+                NbtText("CPY", ThemedColor.Editor.Tag.General)
             }
         }
-        if (state.clipboards.size > 0 && state.pasteEnabled()) {
-            ToolBarAction(onClick = { state.paste() }) {
-                IndicatorText("PST", ThemedColor.Editor.Tag.General)
+        if (clipboard.stack.size > 0 && clipboard.pasteEnabled()) {
+            NbtActionButton(onClick = { clipboard.paste() }) {
+                NbtText("PST", ThemedColor.Editor.Tag.General)
             }
         }
         if (state.ui.selected.size == 1) {
             val selectedDoodle = state.ui.selected[0] as? NbtDoodle ?: return@actionColumn
             if ((selectedDoodle.tag.name != null || !selectedDoodle.tag.type.canHaveChildren())) {
-                ToolBarAction(onClick = { state.prepareEdit() }) {
-                    IndicatorText("EDT", ThemedColor.Editor.Tag.General)
+                NbtActionButton(onClick = { editor.prepare() }) {
+                    NbtText("EDT", ThemedColor.Editor.Tag.General)
                 }
             }
         }
@@ -730,7 +735,7 @@ private fun BoxScope.SelectedEach(
                         .padding(start = 20.dp, end = 20.dp)
                         .height(50.dp)
                 ) {
-                    DoodleContent(item, false)
+                    ActualNbtItemContent(item, false)
                 }
             }
         }

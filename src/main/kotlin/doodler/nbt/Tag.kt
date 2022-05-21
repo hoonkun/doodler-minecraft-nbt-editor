@@ -77,12 +77,38 @@ enum class TagType(val id: Byte) {
     TAG_INT_ARRAY(11),
     TAG_LONG_ARRAY(12);
 
-    fun isArray() = this == TAG_BYTE_ARRAY || this == TAG_INT_ARRAY || this == TAG_LONG_ARRAY
-    fun canHaveChildren() = this == TAG_BYTE_ARRAY ||
-            this == TAG_INT_ARRAY ||
-            this == TAG_LONG_ARRAY ||
-            this == TAG_LIST ||
-            this == TAG_COMPOUND
+    fun isArray() =
+        this == TAG_BYTE_ARRAY ||
+        this == TAG_INT_ARRAY ||
+        this == TAG_LONG_ARRAY
+
+    fun isNumber() =
+        this == TAG_BYTE ||
+        this == TAG_INT ||
+        this == TAG_SHORT ||
+        this == TAG_LONG ||
+        this == TAG_FLOAT ||
+        this == TAG_DOUBLE
+
+    fun isString() = this == TAG_STRING
+
+    fun isList() = this == TAG_LIST
+
+    fun isCompound() = this == TAG_COMPOUND
+
+    fun canHaveChildren() =
+        this == TAG_BYTE_ARRAY ||
+        this == TAG_INT_ARRAY ||
+        this == TAG_LONG_ARRAY ||
+        this == TAG_LIST ||
+        this == TAG_COMPOUND
+
+    fun arrayElementType(): TagType = when (this) {
+        TAG_BYTE_ARRAY -> TAG_BYTE
+        TAG_INT_ARRAY -> TAG_INT
+        TAG_LONG_ARRAY -> TAG_LONG
+        else -> throw Exception("this is not an array type!")
+    }
 
     companion object {
         private val reversed = values().associateBy { it.id }

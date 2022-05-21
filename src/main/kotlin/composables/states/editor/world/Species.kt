@@ -6,8 +6,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.text.input.TextFieldValue
 import doodler.anvil.ChunkLocation
 import doodler.nbt.TagType
-import doodler.nbt.tag.CompoundTag
-import doodler.nbt.tag.ListTag
+import doodler.nbt.tag.*
 
 abstract class Species (
     val ident: String
@@ -79,16 +78,132 @@ class NbtState (
     rootDoodle: NbtDoodle,
     ui: MutableState<DoodleUi>,
     val lazyState: LazyListState,
-    val history: DoodleActionHistory = DoodleActionHistory(),
-    var initialComposition: Boolean = true
 ) {
+
+    companion object {
+        fun new(
+            rootTag: CompoundTag,
+            ui: MutableState<DoodleUi> = mutableStateOf(DoodleUi.new()),
+            lazyState: LazyListState = LazyListState()
+        ) = NbtState(NbtDoodle(rootTag, -1, -1), ui, lazyState)
+    }
+
     var ui by ui
 
     val doodles: DoodleManager = DoodleManager(rootDoodle)
 
-    val clipboards: SnapshotStateList<Pair<PasteTarget, List<ActualDoodle>>> = mutableStateListOf()
-    val pasteTarget: PasteTarget
-        get() {
+    val actions = Actions()
+
+    init {
+        rootDoodle.expand()
+
+        val hasOnlyChild = rootDoodle.expandedItems
+            .let { children -> children.size == 1 && children[0].let { it is NbtDoodle && it.tag.canHaveChildren } }
+
+        if (hasOnlyChild) (rootDoodle.expandedItems[0] as NbtDoodle).expand()
+    }
+
+    inner class Actions {
+
+        val history = HistoryAction()
+
+        val creator = CreateAction()
+
+        val editor = EditAction()
+
+        val deleter = DeleteAction()
+
+        val clipboard = ClipboardAction()
+
+    }
+
+    inner class HistoryAction {
+
+        private val undoStack: MutableList<DoodleAction> = mutableStateListOf()
+        private val redoStack: MutableList<DoodleAction> = mutableStateListOf()
+
+        var canBeUndo: Boolean by mutableStateOf(false)
+        var canBeRedo: Boolean by mutableStateOf(false)
+
+        fun newAction(action: DoodleAction) {
+            redoStack.clear()
+            undoStack.add(action)
+            updateFlags()
+        }
+
+        fun undo() {
+            if (!canBeUndo) return
+
+            redoStack.add(undoStack.removeLast())
+            updateFlags()
+
+            when (val action = redoStack.last()) {
+                is DeleteDoodleAction -> undoDelete(action)
+                is PasteDoodleAction -> undoPaste(action)
+                is CreateDoodleAction -> undoCreate(action)
+                is EditDoodleAction -> undoEdit(action)
+            }
+        }
+
+        fun redo() {
+            if (!canBeRedo) return
+
+            undoStack.add(redoStack.removeLast())
+            updateFlags()
+
+            when (val action = undoStack.last()) {
+                is DeleteDoodleAction -> redoDelete(action)
+                is PasteDoodleAction -> redoPaste(action)
+                is CreateDoodleAction -> redoCreate(action)
+                is EditDoodleAction -> redoEdit(action)
+            }
+        }
+
+        private fun updateFlags() {
+            canBeUndo = undoStack.isNotEmpty()
+            canBeRedo = redoStack.isNotEmpty()
+        }
+
+        private fun undoPaste(action: PasteDoodleAction) {
+            actions.deleter.internal.delete(action.created)
+        }
+
+        private fun undoDelete(action: DeleteDoodleAction) {
+            actions.creator.internal.create(action.deleted)
+        }
+
+        private fun undoCreate(action: CreateDoodleAction) {
+            actions.deleter.internal.delete(listOf(action.created))
+        }
+
+        private fun redoCreate(action: CreateDoodleAction) {
+            actions.creator.internal.create(listOf(action.created))
+        }
+
+        private fun undoEdit(action: EditDoodleAction) {
+            actions.editor.internal.edit(action.new, action.old)
+        }
+
+        private fun redoEdit(action: EditDoodleAction) {
+            actions.editor.internal.edit(action.old, action.new)
+        }
+
+        private fun redoPaste(action: PasteDoodleAction) {
+            actions.creator.internal.create(action.created)
+        }
+
+        private fun redoDelete(action: DeleteDoodleAction) {
+            actions.deleter.internal.delete(action.deleted)
+        }
+
+    }
+
+    inner class ClipboardAction {
+
+        val stack: SnapshotStateList<Pair<PasteTarget, List<ActualDoodle>>> = mutableStateListOf()
+        val pasteTarget: PasteTarget get() = checkPasteTarget()
+
+        private fun checkPasteTarget(): PasteTarget {
             val selected = ui.selected
             val attributes = mutableSetOf<TagAttribute>()
             val tagTypes = mutableSetOf<TagType>()
@@ -122,280 +237,271 @@ class NbtState (
             }
         }
 
-    init {
-        rootDoodle.expand()
+        fun pasteEnabled(content: Pair<PasteTarget, List<ActualDoodle>>? = stack.lastOrNull()): Boolean {
+            if (content == null) return false
 
-        val hasOnlyChild = rootDoodle.expandedItems
-            .let { children -> children.size == 1 && children[0].let { it is NbtDoodle && it.tag.canHaveChildren } }
+            if (ui.selected.isEmpty()) return false
+            if (ui.selected.size > 1) return false
 
-        if (initialComposition && hasOnlyChild) (rootDoodle.expandedItems[0] as NbtDoodle).expand()
-    }
+            val selected = ui.selected[0]
+            if (selected !is NbtDoodle) return false
 
-    fun undo() {
-        val action = history.undo() ?: return
-        when (action) {
-            is DeleteDoodleAction -> undoDelete(action)
-            is PasteDoodleAction -> undoPaste(action)
-            is CreateDoodleAction -> undoCreate(action)
-            is EditDoodleAction -> undoEdit(action)
+            val (target) = content
+
+            return when (target) {
+                CannotBePasted -> false
+                CanBePastedIntoCompound -> selected.tag.type == TagType.TAG_COMPOUND
+                is CanBePastedIntoList -> {
+                    selected.tag.type == TagType.TAG_LIST && selected.tag.getAs<ListTag>().let { it.elementsType == target.elementsType || it.elementsType == TagType.TAG_END }
+                }
+                is CanBePastedIntoArray -> selected.tag.type == target.arrayTagType
+            }
         }
-    }
 
-    fun redo() {
-        val action = history.redo() ?: return
-        when (action) {
-            is DeleteDoodleAction -> redoDelete(action)
-            is PasteDoodleAction -> redoPaste(action)
-            is CreateDoodleAction -> redoCreate(action)
-            is EditDoodleAction -> redoEdit(action)
+        // TODO:
+        //  Compound 에서는 큰 의미가 없으나 List 에 붙혀넣었을 때는 순서를 변경할 수 있어야할 듯 함.
+        //  리스트 태그의 아이템이나 배열 태그의 아이템을 선택했을 경우 추가적인 액션 패널을 보여줘야할 것 같음.
+        fun yank() {
+            val target = pasteTarget
+            if (target == CannotBePasted) return
+
+            if (stack.size >= 5) stack.removeAt(0)
+            stack.add(
+                Pair(target, mutableListOf<ActualDoodle>().apply { addAll(ui.selected.map { it.clone(null) }) })
+            )
         }
-    }
 
-    // TODO:
-    //  Compound 에서는 큰 의미가 없으나 List 에 붙혀넣었을 때는 순서를 변경할 수 있어야할 듯 함.
-    //  리스트 태그의 아이템이나 배열 태그의 아이템을 선택했을 경우 추가적인 액션 패널을 보여줘야할 것 같음.
-    fun yank() {
-        val target = pasteTarget
-        if (target == CannotBePasted) return
+        // TODO: FATAL
+        //  Compound 태그에 붙혀넣을 때는 해당 태그의 자식 중 클립보드에 있는 자식의 이름을 가진 것이 이미 있는지 확인해야함
+        fun paste() {
+            if (ui.selected.isEmpty()) throw Exception("invalid operation: no selected elements")
+            if (ui.selected.size > 1) throw Exception("invalid operation: cannot be paste in multiple elements at once.")
 
-        if (clipboards.size >= 5) clipboards.removeAt(0)
-        clipboards.add(
-            Pair(target, mutableListOf<ActualDoodle>().apply { addAll(ui.selected.map { it.clone(null) }) })
-        )
-    }
+            val selected = ui.selected[0]
+            if (selected !is NbtDoodle)
+                throw Exception("invalid operation: expected NbtDoodle, actual was ${selected.javaClass.name}")
 
-    // TODO:
-    //  Compound 태그에 붙혀넣을 때는 해당 태그의 자식 중 클립보드에 있는 자식의 이름을 가진 것이 이미 있는지 확인해야함
-    fun paste() {
-        if (ui.selected.isEmpty()) throw Exception("invalid operation: no selected elements")
-        if (ui.selected.size > 1) throw Exception("invalid operation: cannot be paste in multiple elements at once.")
+            val (target, doodles) = stack.last()
 
-        val selected = ui.selected[0]
-        if (selected !is NbtDoodle)
-            throw Exception("invalid operation: expected NbtDoodle, actual was ${selected.javaClass.name}")
+            when (target) {
+                CannotBePasted -> throw Exception("invalid operation: internal error. cannot be pasted.")
+                CanBePastedIntoCompound -> {
+                    if (selected.tag.type != TagType.TAG_COMPOUND)
+                        throw Exception("invalid operation: these tags can only be pasted into: CompoundTag.")
+                }
+                is CanBePastedIntoList -> {
+                    if (selected.tag.type != TagType.TAG_LIST)
+                        throw Exception("invalid operation: these tags can only be pasted into: ListTag.")
 
-        val (target, doodles) = clipboards.last()
-        val pasteTags = {
+                    val listTag = selected.tag.getAs<ListTag>()
+                    if (target.elementsType != listTag.elementsType && listTag.elementsType != TagType.TAG_END)
+                        throw Exception("invalid operation: tag type mismatch. only ${listTag.elementsType} can be added, given was: ${target.elementsType}")
+                }
+                is CanBePastedIntoArray -> {
+                    if (selected.tag.type != target.arrayTagType)
+                        throw Exception("invalid operation: these values can only be pasted into: ${target.arrayTagType}")
+                }
+            }
+
             val created = doodles.map { selected.create(it.clone(selected), false) }
-            val action = PasteDoodleAction(created)
-            history.newAction(action)
 
             selected.update(NbtDoodle.UpdateTarget.VALUE)
             selected.expand()
 
             ui.selected.clear()
             ui.selected.addAll(created)
+
+            actions.history.newAction(PasteDoodleAction(created))
         }
 
-        when (target) {
-            CannotBePasted -> throw Exception("invalid operation: internal error. cannot be pasted.")
-            CanBePastedIntoCompound -> {
-                if (selected.tag.type != TagType.TAG_COMPOUND)
-                    throw Exception("invalid operation: these tags can only be pasted into: CompoundTag.")
+    }
+
+    inner class CreateAction {
+
+        val internal = Internal()
+
+        fun prepare(type: TagType) {
+            if (ui.selected.isEmpty()) throw Exception("no parent is selected.")
+            if (ui.selected.size > 1) throw Exception("too many tags are selected.")
+
+            val into = ui.selected[0]
+            if (into !is NbtDoodle) throw Exception("expected: NbtDoodle, but actual was: ${into.javaClass.name}")
+
+            into.expand()
+
+            if (into.tag.type.isArray()) {
+                into.creator = ValueCreationDoodle(
+                    into.depth + 1, 0, into, VirtualDoodle.VirtualMode.CREATE
+                )
+            } else {
+                into.creator = NbtCreationDoodle(
+                    type, into.depth + 1, 0, into, VirtualDoodle.VirtualMode.CREATE
+                )
             }
-            is CanBePastedIntoList -> {
-                if (selected.tag.type != TagType.TAG_LIST)
-                    throw Exception("invalid operation: these tags can only be pasted into: ListTag.")
+        }
 
-                val listTag = selected.tag.getAs<ListTag>()
-                if (target.elementsType != listTag.elementsType && listTag.elementsType != TagType.TAG_END)
-                    throw Exception("invalid operation: tag type mismatch. only ${listTag.elementsType} can be added, given was: ${target.elementsType}")
+        fun cancel() {
+            if (ui.selected.isEmpty() || ui.selected.size > 1) throw Exception("what did you do?!")
+
+            val into = ui.selected[0]
+            if (into !is NbtDoodle) throw Exception("this is not possible, in normal way...")
+
+            into.creator = null
+        }
+
+        // TODO:
+        //  지금은 루트 태그에는 다른 태그를 추가할 수 없게 되어있음.
+        //  루트 태그를 UI에 보여지도록 추가하던지... 아니면 아무것도 선택하지 않았을 때 태그를 추가할 수 있도록 하던지 하자.
+        // TODO: FATAL
+        //  리스트 태그의 자식을 만들 때 이름이 입력 가능하게 되어있음.
+        //  리스트 태그의 자식은 이름을 가질 수 없으므로, 관련 유효성검사와 UI를 수정해야함.
+        fun create(new: ActualDoodle, into: NbtDoodle) {
+            new.parent = into
+
+            if (!into.expanded) into.expand()
+
+            into.create(new)
+            into.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX)
+
+            into.creator = null
+
+            ui.selected.clear()
+            ui.selected.add(new)
+
+            actions.history.newAction(CreateDoodleAction(new))
+        }
+
+        inner class Internal {
+
+            fun create(targets: List<ActualDoodle>) {
+                targets.forEach {
+                    val eachParent = it.parent ?: throw Exception("Is this possible??")
+
+                    if (!eachParent.expanded)
+                        eachParent.expand()
+
+                    eachParent.create(it)
+                }
+                targets.map { it.parent }.toSet()
+                    .forEach { it?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
+                ui.selected.clear()
+                ui.selected.addAll(targets)
             }
-            is CanBePastedIntoArray -> {
-                if (selected.tag.type != target.arrayTagType)
-                    throw Exception("invalid operation: these values can only be pasted into: ${target.arrayTagType}")
+
+        }
+
+    }
+
+    inner class EditAction {
+
+        val internal = Internal()
+
+        fun prepare() {
+            if (ui.selected.isEmpty()) throw Exception("no target is selected.")
+            if (ui.selected.size > 1) throw Exception("too many tags are selected.")
+
+            when (val target = ui.selected[0]) {
+                is NbtDoodle -> target.parent?.creator = NbtCreationDoodle(target, VirtualDoodle.VirtualMode.EDIT)
+                is ValueDoodle ->
+                    target.parent?.creator = ValueCreationDoodle(target, VirtualDoodle.VirtualMode.EDIT)
             }
         }
 
-        pasteTags()
-    }
+        fun cancel() {
+            if (ui.selected.isEmpty() || ui.selected.size > 1) throw Exception("what did you do?!")
 
-    fun pasteEnabled(content: Pair<PasteTarget, List<ActualDoodle>>? = clipboards.lastOrNull()): Boolean {
-        if (content == null) return false
+            val targetParent = ui.selected[0].parent ?: throw Exception("cannot find parent")
+            targetParent.creator = null
+        }
 
-        if (ui.selected.isEmpty()) return false
-        if (ui.selected.size > 1) return false
+        fun edit(oldActual: ActualDoodle, newActual: ActualDoodle) {
+            internal.edit(oldActual, newActual)
 
-        val selected = ui.selected[0]
-        if (selected !is NbtDoodle) return false
+            actions.history.newAction(EditDoodleAction(oldActual, newActual))
+        }
 
-        val (target) = content
+        inner class Internal {
 
-        return when (target) {
-            CannotBePasted -> false
-            CanBePastedIntoCompound -> selected.tag.type == TagType.TAG_COMPOUND
-            is CanBePastedIntoList -> {
-                selected.tag.type == TagType.TAG_LIST && selected.tag.getAs<ListTag>().let { it.elementsType == target.elementsType || it.elementsType == TagType.TAG_END }
+            fun edit(oldActual: ActualDoodle, newActual: ActualDoodle) {
+                val into = oldActual.parent ?: throw Exception("parent cannot be null")
+                newActual.parent = into
+
+                actions.deleter.internal.delete(listOf(oldActual))
+                actions.creator.internal.create(listOf(newActual))
+
+                into.creator = null
+
+                ui.selected.clear()
+                ui.selected.add(newActual)
             }
-            is CanBePastedIntoArray -> selected.tag.type == target.arrayTagType
+
         }
+
     }
 
-    fun delete() {
-        ui.selected.sortBy { doodles.cached.indexOf(it) }
+    inner class DeleteAction {
 
-        val deleted = ui.selected.mapNotNull { it.delete() }
-        deleted.forEach { it.parent?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
+        val internal = Internal()
 
-        history.newAction(DeleteDoodleAction(deleted))
+        fun delete() {
+            ui.selected.sortBy { doodles.cached.indexOf(it) }
 
-        ui.selected.clear()
-    }
+            val deleted = ui.selected.mapNotNull { it.delete() }
+            deleted.forEach { it.parent?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
 
-    private fun undoPaste(action: PasteDoodleAction) {
-        delete(action.created)
-    }
+            ui.selected.clear()
 
-    private fun undoDelete(action: DeleteDoodleAction) {
-        create(action.deleted)
-    }
-
-    fun prepareCreation(type: TagType) {
-        if (ui.selected.isEmpty()) throw Exception("no parent is selected.")
-        if (ui.selected.size > 1) throw Exception("too many tags are selected.")
-
-        val into = ui.selected[0]
-        if (into !is NbtDoodle) throw Exception("expected: NbtDoodle, but actual was: ${into.javaClass.name}")
-
-        into.expand()
-
-        if (into.tag.type.isArray()) {
-            into.creator = ValueCreationDoodle(
-                into.depth + 1, 0, into, VirtualDoodle.VirtualMode.CREATE
-            )
-        } else {
-            into.creator = NbtCreationDoodle(
-                type, into.depth + 1, 0, into, VirtualDoodle.VirtualMode.CREATE
-            )
+            actions.history.newAction(DeleteDoodleAction(deleted))
         }
-    }
 
-    fun cancelCreation() {
-        if (ui.selected.isEmpty() || ui.selected.size > 1) throw Exception("what did you do?!")
+        inner class Internal {
 
-        val into = ui.selected[0]
-        if (into !is NbtDoodle) throw Exception("this is not possible, in normal way...")
+            fun delete(targets: List<ActualDoodle>) {
+                targets.forEach {
+                    it.delete()
+                }
+                targets.map { it.parent }.toSet()
+                    .forEach { it?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
+                ui.selected.clear()
+            }
 
-        into.creator = null
-    }
-
-    // TODO:
-    //  지금은 루트 태그에는 다른 태그를 추가할 수 없게 되어있음.
-    //  루트 태그를 UI에 보여지도록 추가하던지... 아니면 아무것도 선택하지 않았을 때 태그를 추가할 수 있도록 하던지 하자.
-    fun create(new: ActualDoodle, into: NbtDoodle, createAction: Boolean = true) {
-        new.parent = into
-
-        if (!into.expanded) into.expand()
-
-        into.create(new)
-        into.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX)
-
-        into.creator = null
-        if (createAction) history.newAction(CreateDoodleAction(new))
-
-        ui.selected.clear()
-        ui.selected.add(new)
-    }
-
-    private fun undoCreate(action: CreateDoodleAction) {
-        delete(listOf(action.created))
-    }
-
-    private fun redoCreate(action: CreateDoodleAction) {
-        create(action.created, action.created.parent ?: throw Exception("parent is null..."), false)
-    }
-
-    private fun create(targets: List<ActualDoodle>) {
-        targets.forEach {
-            val eachParent = it.parent ?: throw Exception("Is this possible??")
-
-            if (!eachParent.expanded)
-                eachParent.expand()
-
-            eachParent.create(it)
         }
-        targets.map { it.parent }.toSet()
-            .forEach { it?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
-        ui.selected.clear()
-        ui.selected.addAll(targets)
+
     }
-
-    fun prepareEdit() {
-        if (ui.selected.isEmpty()) throw Exception("no target is selected.")
-        if (ui.selected.size > 1) throw Exception("too many tags are selected.")
-
-        when (val target = ui.selected[0]) {
-            is NbtDoodle -> target.parent?.creator = NbtCreationDoodle(target, VirtualDoodle.VirtualMode.EDIT)
-            is ValueDoodle ->
-                target.parent?.creator = ValueCreationDoodle(target, VirtualDoodle.VirtualMode.EDIT)
-        }
-    }
-
-    fun cancelEdit() {
-        if (ui.selected.isEmpty() || ui.selected.size > 1) throw Exception("what did you do?!")
-
-        val targetParent = ui.selected[0].parent ?: throw Exception("cannot find parent")
-        targetParent.creator = null
-    }
-
-    fun edit(oldActual: ActualDoodle, newActual: ActualDoodle, createAction: Boolean = true) {
-        val into = oldActual.parent ?: throw Exception("parent cannot be null")
-
-        delete(listOf(oldActual))
-        create(newActual, into, false)
-
-        into.creator = null
-        if (createAction) history.newAction(EditDoodleAction(oldActual, newActual))
-
-        ui.selected.clear()
-        ui.selected.add(newActual)
-    }
-
-    fun undoEdit(action: EditDoodleAction) {
-        edit(action.new, action.old, false)
-    }
-
-    fun redoEdit(action: EditDoodleAction) {
-        edit(action.old, action.new, false)
-    }
-
-    private fun redoPaste(action: PasteDoodleAction) {
-        create(action.created)
-    }
-
-    private fun redoDelete(action: DeleteDoodleAction) {
-        delete(action.deleted)
-    }
-
-    private fun delete(targets: List<ActualDoodle>) {
-        targets.forEach {
-            it.delete()
-        }
-        targets.map { it.parent }.toSet()
-            .forEach { it?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
-        ui.selected.clear()
-    }
-
-    companion object {
-        fun new(
-            rootTag: CompoundTag,
-            ui: MutableState<DoodleUi> = mutableStateOf(DoodleUi.new()),
-            lazyState: LazyListState = LazyListState()
-        ) = NbtState(NbtDoodle(rootTag, -1, -1), ui, lazyState)
-    }
-
-    private enum class TagAttribute {
-        NAMED, UNNAMED, VALUE
-    }
-
-    sealed class PasteTarget
-
-    object CannotBePasted: PasteTarget()
-
-    object CanBePastedIntoCompound: PasteTarget()
-
-    data class CanBePastedIntoList(val elementsType: TagType): PasteTarget()
-
-    data class CanBePastedIntoArray(val arrayTagType: TagType): PasteTarget()
 
 }
+
+
+private enum class TagAttribute {
+    NAMED, UNNAMED, VALUE
+}
+
+sealed class PasteTarget
+
+object CannotBePasted: PasteTarget()
+
+object CanBePastedIntoCompound: PasteTarget()
+
+data class CanBePastedIntoList(val elementsType: TagType): PasteTarget()
+
+data class CanBePastedIntoArray(val arrayTagType: TagType): PasteTarget()
+
+
+abstract class DoodleAction
+
+class DeleteDoodleAction(
+    val deleted: List<ActualDoodle>
+): DoodleAction()
+
+class PasteDoodleAction(
+    val created: List<ActualDoodle>
+): DoodleAction()
+
+class CreateDoodleAction(
+    val created: ActualDoodle
+): DoodleAction()
+
+class EditDoodleAction(
+    val old: ActualDoodle,
+    val new: ActualDoodle
+): DoodleAction()

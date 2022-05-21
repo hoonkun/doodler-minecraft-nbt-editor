@@ -24,21 +24,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import composables.states.editor.world.*
+import composables.states.editor.world.extensions.color
+import composables.states.editor.world.extensions.creationHint
+import composables.states.editor.world.extensions.shorten
+import composables.states.editor.world.extensions.transformer
 
 import doodler.nbt.TagType
-import doodler.nbt.tag.*
 
 @Composable
 private fun ItemRoot(
     modifier: Modifier = Modifier,
     content: @Composable RowScope.() -> Unit
 ) {
-    Box (
-        modifier = modifier
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth()
-        ) {
+    Box (modifier = modifier) {
+        Row(modifier = Modifier.fillMaxWidth()) {
             content()
         }
     }
@@ -46,7 +45,7 @@ private fun ItemRoot(
 }
 
 @Composable
-private fun ItemIndicator(selected: Boolean, content: @Composable BoxScope.() -> Unit) {
+private fun TagTypeIndicatorWrapper(selected: Boolean, content: @Composable BoxScope.() -> Unit) {
     Box (
         modifier = Modifier
             .wrapContentSize()
@@ -58,7 +57,7 @@ private fun ItemIndicator(selected: Boolean, content: @Composable BoxScope.() ->
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-private fun ToolBarItemIndicator(disabled: Boolean, onClick: MouseClickScope.() -> Unit, content: @Composable BoxScope.() -> Unit) {
+private fun NbtActionButtonWrapper(disabled: Boolean, onClick: MouseClickScope.() -> Unit, content: @Composable BoxScope.() -> Unit) {
     var hover by remember { mutableStateOf(false) }
 
     Box (
@@ -90,106 +89,62 @@ private fun ToolBarItemIndicator(disabled: Boolean, onClick: MouseClickScope.() 
 }
 
 @Composable
-fun IndicatorText(text: String, color: Color) {
-    Text(text, color = color, fontFamily = JetBrainsMono, fontSize = 18.sp)
+fun NbtText(text: String, color: Color, fontSize: TextUnit = 18.sp) {
+    Text(text, color = color, fontFamily = JetBrainsMono, fontSize = fontSize)
 }
 
 @Composable
-private fun NumberTypeIndicator(typeString: String) {
-    IndicatorText(" $typeString ", color = ThemedColor.Editor.Tag.Number)
+private fun NbtContentText(text: String, color: Color, fontSize: TextUnit = 20.sp) {
+    Text(text, color = color, fontFamily = JetBrainsMono, fontSize = fontSize)
 }
 
 @Composable
-private fun StringTypeIndicator() {
-    IndicatorText("...", color = ThemedColor.Editor.Tag.String)
+private fun TagTypeIndicatorText(type: TagType) {
+    NbtText(type.shorten(), color = type.color())
 }
 
 @Composable
-private fun CompoundTypeIndicator() {
-    IndicatorText("{ }", color = ThemedColor.Editor.Tag.Compound)
-}
-
-@Composable
-private fun ListTypeIndicator() {
-    IndicatorText("[ ]", color = ThemedColor.Editor.Tag.List)
-}
-
-@Composable
-private fun ArrayTypeIndicator(typeString: String) {
-    IndicatorText("[$typeString]", color = ThemedColor.Editor.Tag.NumberArray)
-}
-
-@Composable
-private fun Indicator(type: TagType, selected: Boolean) {
-    ItemIndicator (selected) {
-        IndicatorText(type)
+private fun TagTypeIndicator(type: TagType, selected: Boolean) {
+    TagTypeIndicatorWrapper (selected) {
+        TagTypeIndicatorText(type)
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ToolBarIndicator(type: TagType, onClick: MouseClickScope.() -> Unit = { }) {
-    ToolBarItemIndicator (false, onClick) {
-        IndicatorText(type)
+fun TagCreationButton(type: TagType, creator: NbtState.CreateAction) {
+    NbtActionButtonWrapper (false, { creator.prepare(type) }) {
+        TagTypeIndicatorText(type)
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ToolBarAction(disabled: Boolean = false, onClick: MouseClickScope.() -> Unit = { }, content: @Composable () -> Unit) {
-    ToolBarItemIndicator (disabled, onClick) {
+fun NbtActionButton(disabled: Boolean = false, onClick: MouseClickScope.() -> Unit = { }, content: @Composable () -> Unit) {
+    NbtActionButtonWrapper (disabled, onClick) {
         content()
     }
 }
 
 @Composable
-fun IndicatorText(type: TagType) {
-    when (type) {
-        TagType.TAG_BYTE -> NumberTypeIndicator("B")
-        TagType.TAG_INT -> NumberTypeIndicator("I")
-        TagType.TAG_SHORT -> NumberTypeIndicator("S")
-        TagType.TAG_FLOAT -> NumberTypeIndicator("F")
-        TagType.TAG_DOUBLE -> NumberTypeIndicator("D")
-        TagType.TAG_LONG -> NumberTypeIndicator("L")
-        TagType.TAG_BYTE_ARRAY -> ArrayTypeIndicator("B")
-        TagType.TAG_INT_ARRAY -> ArrayTypeIndicator("I")
-        TagType.TAG_LONG_ARRAY -> ArrayTypeIndicator("L")
-        TagType.TAG_STRING -> StringTypeIndicator()
-        TagType.TAG_COMPOUND -> CompoundTypeIndicator()
-        TagType.TAG_LIST -> ListTypeIndicator()
-        TagType.TAG_END -> { /* impossible */ }
-    }
-}
-
-@Composable
-private fun ItemText(text: String, color: Color, fontSize: TextUnit = 20.sp) {
-    Text(text, color = color, fontFamily = JetBrainsMono, fontSize = fontSize)
-}
-
-@Composable
-private fun Key(key: String) {
-    ItemText(key, ThemedColor.Editor.Tag.General)
-}
-
-@Composable
 private fun NumberValue(value: String) {
-    ItemText(value, ThemedColor.Editor.Tag.Number)
+    NbtContentText(value, ThemedColor.Editor.Tag.Number)
 }
 
 @Composable
 private fun StringValue(value: String) {
-    ItemText(value, ThemedColor.Editor.Tag.String)
+    NbtContentText(value, ThemedColor.Editor.Tag.String)
 }
 
 @Composable
-private fun ExpandableValue(value: String, selected: Boolean) {
+private fun RowScope.ExpandableValue(value: String, selected: Boolean) {
     Box (
         modifier = Modifier
             .wrapContentSize()
             .background(ThemedColor.Editor.indicator(selected), RoundedCornerShape(5.dp))
             .padding(top = 2.dp, bottom = 2.dp, start = 10.dp, end = 10.dp)
     ) {
-        ItemText(value, ThemedColor.Editor.indicatorText(selected), 18.sp)
+        NbtContentText(value, ThemedColor.Editor.indicatorText(selected), 18.sp)
     }
 }
 
@@ -201,41 +156,32 @@ private fun Index(index: Int, selected: Boolean) {
             .background(ThemedColor.Editor.indicator(selected), shape = RoundedCornerShape(5.dp))
             .padding(top = 2.dp, bottom = 2.dp, start = 5.dp, end = 5.dp)
     ) {
-        ItemText("$index:", ThemedColor.Editor.indicatorText(selected), 18.sp)
+        NbtContentText("$index:", ThemedColor.Editor.indicatorText(selected), 18.sp)
     }
 }
 
 @Composable
-private fun KeyValue(doodle: NbtDoodle, selected: Boolean) {
+private fun RowScope.KeyValue(doodle: NbtDoodle, selected: Boolean) {
     val key = doodle.name
     if (key != null) {
-        Key(key)
+        NbtContentText(key, ThemedColor.Editor.Tag.General)
         Spacer(modifier = Modifier.width(20.dp))
     }
     if ((doodle.parent?.tag?.type ?: TagType.TAG_COMPOUND) != TagType.TAG_COMPOUND && doodle.index >= 0) {
         Index(doodle.index, selected)
         Spacer(modifier = Modifier.width(10.dp))
     }
-    when (doodle.tag.type) {
-        TagType.TAG_BYTE,
-            TagType.TAG_DOUBLE,
-            TagType.TAG_FLOAT,
-            TagType.TAG_INT,
-            TagType.TAG_LONG,
-            TagType.TAG_SHORT -> NumberValue(doodle.value)
-        TagType.TAG_STRING -> StringValue(doodle.value)
-        TagType.TAG_COMPOUND,
-            TagType.TAG_BYTE_ARRAY,
-            TagType.TAG_INT_ARRAY,
-            TagType.TAG_LONG_ARRAY,
-            TagType.TAG_LIST -> ExpandableValue(doodle.value, selected)
-        TagType.TAG_END -> { /* impossible */ }
-    }
+    if (doodle.tag.type.isNumber())
+        NumberValue(doodle.value)
+    else if (doodle.tag.type.isString())
+        StringValue(doodle.value)
+    else if (doodle.tag.type.canHaveChildren())
+        ExpandableValue(doodle.value, selected)
 }
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun NbtItemTreeView(
+fun DepthPreviewNbtItem(
     doodle: ActualDoodle,
     state: DoodleUi,
     scrollTo: () -> Unit
@@ -264,7 +210,7 @@ fun NbtItemTreeView(
                     .fillMaxWidth()
                     .height(50.dp)
             ) {
-                DoodleContent(doodle, false)
+                ActualNbtItemContent(doodle, false)
             }
         }
     }
@@ -272,7 +218,7 @@ fun NbtItemTreeView(
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun NbtItem(
+fun ActualNbtItem(
     doodle: ActualDoodle,
     state: DoodleUi,
     toggle: (ActualDoodle) -> Unit,
@@ -348,7 +294,7 @@ fun NbtItem(
                     modifier = Modifier
                         .fillMaxHeight()
                 ) {
-                    DoodleContent(doodle, selected)
+                    ActualNbtItemContent(doodle, selected)
                 }
             }
         }
@@ -357,7 +303,7 @@ fun NbtItem(
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun CreatorItem(virtual: VirtualDoodle, state: NbtState) {
+fun VirtualNbtItem(virtual: VirtualDoodle, state: NbtState) {
     val hierarchy = getHierarchy(virtual)
 
     ItemRoot(
@@ -411,6 +357,9 @@ fun CreatorItem(virtual: VirtualDoodle, state: NbtState) {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RowScope.DoodleCreationContent(state: NbtState, doodle: VirtualDoodle) {
+    val creator = state.actions.creator
+    val editor = state.actions.editor
+
     val intoIndex =
         if (!doodle.mode.isEdit()) doodle.parent.expandedItems.size.coerceAtLeast(doodle.parent.collapsedItems.size)
         else doodle.index
@@ -435,139 +384,57 @@ fun RowScope.DoodleCreationContent(state: NbtState, doodle: VirtualDoodle) {
     val nameValid by nameValidState
     val valueValid by valueValidState
 
-    val generateActual: () -> ActualDoodle = {
-        val parentTag = doodle.parent.tag
-        if (doodle is NbtCreationDoodle) {
-            val tag = when (doodle.type) {
-                TagType.TAG_BYTE -> ByteTag(value.toByte(), name, parentTag)
-                TagType.TAG_SHORT -> ShortTag(value.toShort(), name, parentTag)
-                TagType.TAG_INT -> IntTag(value.toInt(), name, parentTag)
-                TagType.TAG_LONG -> LongTag(value.toLong(), name, parentTag)
-                TagType.TAG_FLOAT -> FloatTag(value.toFloat(), name, parentTag)
-                TagType.TAG_DOUBLE -> DoubleTag(value.toDouble(), name, parentTag)
-                TagType.TAG_STRING -> StringTag(value, name, parentTag)
-                TagType.TAG_BYTE_ARRAY -> ByteArrayTag(
-                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<ByteArrayTag>().value else ByteArray(0),
-                    name, parentTag
-                )
-                TagType.TAG_INT_ARRAY -> IntArrayTag(
-                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<IntArrayTag>().value else IntArray(0),
-                    name, parentTag
-                )
-                TagType.TAG_LONG_ARRAY -> LongArrayTag(
-                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<LongArrayTag>().value else LongArray(0),
-                    name, parentTag
-                )
-                TagType.TAG_LIST -> ListTag(
-                    TagType.TAG_END,
-                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<ListTag>().value else listOf(),
-                    true, name, parentTag
-                )
-                TagType.TAG_COMPOUND -> CompoundTag(
-                    if (doodle.mode.isEdit()) (doodle.from as NbtDoodle).tag.getAs<CompoundTag>().value else mutableListOf(),
-                    name, parentTag
-                )
-                TagType.TAG_END -> throw Exception("cannot create END tag!")
-            }
-            NbtDoodle(tag, doodle.depth, intoIndex, doodle.parent)
-        } else {
-            ValueDoodle(value, doodle.depth, intoIndex, doodle.parent)
-        }
-    }
-
     val cancel: MouseClickScope.() -> Unit = {
-        if (doodle.mode == VirtualDoodle.VirtualMode.CREATE) state.cancelCreation()
-        else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT) state.cancelEdit()
+        if (doodle.mode == VirtualDoodle.VirtualMode.CREATE) creator.cancel()
+        else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT) editor.cancel()
     }
 
     val ok: MouseClickScope.() -> Unit = {
-        if (doodle.mode == VirtualDoodle.VirtualMode.CREATE) state.create(generateActual(), doodle.parent)
-        else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT) state.edit(doodle.from, generateActual())
-    }
-
-    val expandableValue: (String) -> String = {
-        if (doodle.mode.isEdit()) value
-        else it
+        if (doodle.mode == VirtualDoodle.VirtualMode.CREATE)
+            creator.create(doodle.actualize(name, value, intoIndex), doodle.parent)
+        else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT)
+            editor.edit(doodle.from, doodle.actualize(name, value, intoIndex))
     }
 
     if (doodle is NbtCreationDoodle) {
-        Indicator(doodle.type, true)
+        TagTypeIndicator(doodle.type, true)
         Spacer(modifier = Modifier.width(20.dp))
         CreationField(nameState, nameValidState) {
-            when (doodle.type) {
-                TagType.TAG_BYTE -> ByteField(valueState, valueValidState)
-                TagType.TAG_SHORT -> ShortField(valueState, valueValidState)
-                TagType.TAG_INT -> IntField(valueState, valueValidState)
-                TagType.TAG_LONG -> LongField(valueState, valueValidState)
-                TagType.TAG_FLOAT -> FloatField(valueState, valueValidState)
-                TagType.TAG_DOUBLE -> DoubleField(valueState, valueValidState)
-                TagType.TAG_STRING -> StringField(valueState, valueValidState)
-                TagType.TAG_BYTE_ARRAY -> { ExpandableValue(expandableValue("creates empty ByteArray tag"), true) }
-                TagType.TAG_INT_ARRAY -> { ExpandableValue(expandableValue("creates empty IntArray tag"), true) }
-                TagType.TAG_LONG_ARRAY -> { ExpandableValue(expandableValue("creates empty LongArray array"), true) }
-                TagType.TAG_LIST -> { ExpandableValue(expandableValue("creates empty List tag"), true) }
-                TagType.TAG_COMPOUND -> { ExpandableValue(expandableValue("creates empty Compound tag"), true) }
-                TagType.TAG_END -> throw Exception("Is this possible?")
-            }
+            if (doodle.type.isNumber() || doodle.type.isString())
+                ValueField(valueState, valueValidState, doodle.type, false)
+            else
+                ExpandableValue(if (doodle.mode.isEdit()) value else doodle.type.creationHint(), true)
         }
     } else if (doodle is ValueCreationDoodle) {
         Index(intoIndex, true)
         Spacer(modifier = Modifier.width(10.dp))
-        when (doodle.parent.tag.type) {
-            TagType.TAG_BYTE_ARRAY -> { ByteField(valueState, valueValidState) }
-            TagType.TAG_INT_ARRAY -> { IntField(valueState, valueValidState) }
-            TagType.TAG_LONG_ARRAY -> { LongField(valueState, valueValidState) }
-            else -> { /* no-op */ }
-        }
+        ValueField(valueState, valueValidState, doodle.parent.tag.type.arrayElementType(), false)
     }
     Spacer(modifier = Modifier.weight(1f))
-    ToolBarItemIndicator(false, cancel) {
-        IndicatorText("CANCEL", ThemedColor.Editor.Action.Delete)
+    NbtActionButtonWrapper(false, cancel) {
+        NbtText("CANCEL", ThemedColor.Editor.Action.Delete)
     }
     Spacer(modifier = Modifier.width(20.dp))
-    ToolBarItemIndicator(!(nameValid && valueValid), ok) {
-        IndicatorText("OK", ThemedColor.Editor.Action.Create)
+    NbtActionButtonWrapper(!(nameValid && valueValid), ok) {
+        NbtText("OK", ThemedColor.Editor.Action.Create)
     }
     Spacer(modifier = Modifier.width(50.dp))
 }
 
-private val transformName: (AnnotatedString) -> Pair<Boolean, TransformedText> = { string ->
+private val nameTransformer: (AnnotatedString) -> Pair<Boolean, TransformedText> = { string ->
     val text = string.text
     val checker = Regex("[^a-zA-Z0-9_]")
     val invalids = checker.findAll(text).map {
         AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Selector.Invalid), it.range.first, it.range.last + 1)
     }.toList()
     if (invalids.isNotEmpty()) {
-        Pair(
-            false,
-            TransformedText(
-                AnnotatedString(
-                    string.text,
-                    invalids
-                ),
-                OffsetMapping.Identity
-            )
-        )
+        Pair(false, TransformedText(AnnotatedString(string.text, invalids), OffsetMapping.Identity))
     } else {
         if (text.isEmpty()) {
             Pair(false, TransformedText(AnnotatedString(string.text, listOf()), OffsetMapping.Identity))
         } else {
-            Pair(
-                true,
-                TransformedText(AnnotatedString(string.text, listOf()), OffsetMapping.Identity)
-            )
+            Pair(true, TransformedText(AnnotatedString(string.text, listOf()), OffsetMapping.Identity))
         }
-    }
-}
-
-fun transformedText(text: String, valid: Boolean): TransformedText {
-    return if (!valid) {
-        TransformedText(AnnotatedString(
-            text,
-            listOf(AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Selector.Invalid), 0, text.length))
-        ), OffsetMapping.Identity)
-    } else {
-        TransformedText(AnnotatedString(text), OffsetMapping.Identity)
     }
 }
 
@@ -577,8 +444,8 @@ fun RowScope.TagField(
     validState: MutableState<Boolean>,
     color: Color,
     hint: String,
-    wide: Boolean = true,
-    transformation: (AnnotatedString) -> Pair<Boolean, TransformedText>
+    transformation: (AnnotatedString) -> Pair<Boolean, TransformedText>,
+    wide: Boolean = true
 ) {
     val (text, setText) = textState
     val (_, setValid) = validState
@@ -615,87 +482,13 @@ fun RowScope.TagField(
 }
 
 @Composable
-fun RowScope.TagNameField(
-    nameState: MutableState<String>,
-    validState: MutableState<Boolean>
+fun RowScope.ValueField(
+    textState: MutableState<String>,
+    validState: MutableState<Boolean>,
+    type: TagType,
+    wide: Boolean = true,
 ) {
-    TagField(nameState, validState, ThemedColor.Editor.Tag.General, "TAG NAME", false, transformName)
-}
-
-@Composable
-fun RowScope.ByteField(
-    valueState: MutableState<String>,
-    validState: MutableState<Boolean>
-) {
-    TagField(valueState, validState, ThemedColor.Editor.Tag.Number, "Byte (in [-128, 127])") {
-        val valid = it.text.toByteOrNull() != null
-        Pair(valid, transformedText(it.text, valid))
-    }
-}
-
-@Composable
-fun RowScope.ShortField(
-    valueState: MutableState<String>,
-    validState: MutableState<Boolean>
-) {
-    TagField(valueState, validState, ThemedColor.Editor.Tag.Number, "Short (in [-32768, 32767])") {
-        val valid = it.text.toShortOrNull() != null
-        Pair(valid, transformedText(it.text, valid))
-    }
-}
-
-@Composable
-fun RowScope.IntField(
-    valueState: MutableState<String>,
-    validState: MutableState<Boolean>
-) {
-    TagField(valueState, validState, ThemedColor.Editor.Tag.Number, "Integer") {
-        val valid = it.text.toIntOrNull() != null
-        Pair(valid, transformedText(it.text, valid))
-    }
-}
-
-@Composable
-fun RowScope.LongField(
-    valueState: MutableState<String>,
-    validState: MutableState<Boolean>
-) {
-    TagField(valueState, validState, ThemedColor.Editor.Tag.Number, "Long") {
-        val valid = it.text.toLongOrNull() != null
-        Pair(valid, transformedText(it.text, valid))
-    }
-}
-
-@Composable
-fun RowScope.FloatField(
-    valueState: MutableState<String>,
-    validState: MutableState<Boolean>
-) {
-    TagField(valueState, validState, ThemedColor.Editor.Tag.Number, "Float") {
-        val valid = it.text.toFloatOrNull() != null
-        Pair(valid, transformedText(it.text, valid))
-    }
-}
-
-@Composable
-fun RowScope.DoubleField(
-    valueState: MutableState<String>,
-    validState: MutableState<Boolean>
-) {
-    TagField(valueState, validState, ThemedColor.Editor.Tag.Number, "Double") {
-        val valid = it.text.toFloatOrNull() != null
-        Pair(valid, transformedText(it.text, valid))
-    }
-}
-
-@Composable
-fun RowScope.StringField(
-    valueState: MutableState<String>,
-    validState: MutableState<Boolean>
-) {
-    TagField(valueState, validState, ThemedColor.Editor.Tag.Number, "String") {
-        Pair(true, transformedText(it.text, true))
-    }
+    TagField(textState, validState, type.color(), type.creationHint(), type.transformer(), wide)
 }
 
 @Composable
@@ -704,16 +497,16 @@ fun RowScope.CreationField(
     validState: MutableState<Boolean>,
     content: @Composable RowScope.() -> Unit
 ) {
-    TagNameField(nameState, validState)
+    TagField(nameState, validState, ThemedColor.Editor.Tag.General, "Tag Name", nameTransformer, false)
     Spacer(modifier = Modifier.width(20.dp))
     content()
 }
 
 @Composable
-fun RowScope.DoodleContent(doodle: ActualDoodle, selected: Boolean) {
+fun RowScope.ActualNbtItemContent(doodle: ActualDoodle, selected: Boolean) {
     when (doodle) {
         is NbtDoodle -> {
-            Indicator(doodle.tag.type, selected)
+            TagTypeIndicator(doodle.tag.type, selected)
             Spacer(modifier = Modifier.width(20.dp))
             KeyValue(doodle, selected)
         }
