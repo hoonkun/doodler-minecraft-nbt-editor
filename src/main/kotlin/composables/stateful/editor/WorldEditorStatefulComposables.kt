@@ -424,7 +424,6 @@ fun BoxScope.EditableField(
     val creation = doodles.find { it is VirtualDoodle } as VirtualDoodle?
     val uiState = state.ui
     val lazyColumnState = state.lazyState
-    val logs = state.logs
 
     val onToggle: (ActualDoodle) -> Unit = click@ { doodle ->
         if (doodle !is NbtDoodle) return@click
@@ -505,7 +504,9 @@ fun BoxScope.EditableField(
     Column(
         modifier = Modifier.align(Alignment.BottomStart)
     ) {
-        if (logs.isNotEmpty()) Log(logs.last())
+        if (state.currentLogState.value != null) {
+            Log(state.currentLogState)
+        }
     }
 
     if (creation != null) return

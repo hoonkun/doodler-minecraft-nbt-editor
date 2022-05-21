@@ -96,6 +96,9 @@ class NbtState (
 
     val actions = Actions()
 
+    val currentLogState: MutableState<DoodleLog?> = mutableStateOf(null)
+    var currentLog by currentLogState
+
     init {
         rootDoodle.expand()
 
@@ -121,7 +124,9 @@ class NbtState (
             try { action() }
             catch (exception: DoodleException) {
                 val newLog = DoodleLog(DoodleLogLevel.FATAL, exception.title, exception.summary, exception.description)
+                if (logs.size > 10) logs.removeFirst()
                 logs.add(newLog)
+                currentLog = newLog
                 exception.printStackTrace()
             }
             catch (exception: Exception) {
