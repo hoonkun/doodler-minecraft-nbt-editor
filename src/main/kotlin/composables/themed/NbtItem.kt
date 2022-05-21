@@ -373,7 +373,7 @@ fun RowScope.DoodleCreationContent(actions: NbtState.Actions, doodle: VirtualDoo
         else ""
     ) }
 
-    val nameValidState = remember { mutableStateOf(false) }
+    val nameValidState = remember { mutableStateOf(doodle.parent.tag.type.isList()) }
     val valueValidState = remember { mutableStateOf(doodle !is NbtCreationDoodle || doodle.type.canHaveChildren()) }
 
     val name by nameState
@@ -397,7 +397,14 @@ fun RowScope.DoodleCreationContent(actions: NbtState.Actions, doodle: VirtualDoo
     if (doodle is NbtCreationDoodle) {
         TagTypeIndicator(doodle.type, true)
         Spacer(modifier = Modifier.width(20.dp))
-        CreationField(nameState, nameValidState) {
+        if (!doodle.parent.tag.type.isList()) {
+            CreationField(nameState, nameValidState) {
+                if (doodle.type.isNumber() || doodle.type.isString())
+                    ValueField(valueState, valueValidState, doodle.type, false)
+                else
+                    ExpandableValue(if (doodle.mode.isEdit()) value else doodle.type.creationHint(), true)
+            }
+        } else {
             if (doodle.type.isNumber() || doodle.type.isString())
                 ValueField(valueState, valueValidState, doodle.type, false)
             else

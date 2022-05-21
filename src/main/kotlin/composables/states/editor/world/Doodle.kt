@@ -27,7 +27,8 @@ abstract class VirtualDoodle(
 
     lateinit var from: ActualDoodle
     
-    fun actualize(name: String, value: String, intoIndex: Int): ActualDoodle {
+    fun actualize(rawName: String, value: String, intoIndex: Int): ActualDoodle {
+        val name = rawName.ifEmpty { null }
         val parentTag = parent.tag
         return if (this is NbtCreationDoodle) {
             val tag = when (type) {

@@ -376,9 +376,6 @@ class NbtState (
         // TODO:
         //  지금은 루트 태그에는 다른 태그를 추가할 수 없게 되어있음.
         //  루트 태그를 UI에 보여지도록 추가하던지... 아니면 아무것도 선택하지 않았을 때 태그를 추가할 수 있도록 하던지 하자.
-        // TODO: FATAL
-        //  리스트 태그의 자식을 만들 때 이름이 입력 가능하게 되어있음.
-        //  리스트 태그의 자식은 이름을 가질 수 없으므로, 관련 유효성검사와 UI를 수정해야함.
         fun create(new: ActualDoodle, into: NbtDoodle) {
             new.parent = into
 
