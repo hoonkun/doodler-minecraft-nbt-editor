@@ -318,7 +318,7 @@ class NbtState (
         ui.selected.addAll(targets)
     }
 
-    fun prepareEdit(type: TagType) {
+    fun prepareEdit() {
         if (ui.selected.isEmpty()) throw Exception("no target is selected.")
         if (ui.selected.size > 1) throw Exception("too many tags are selected.")
 
@@ -336,7 +336,9 @@ class NbtState (
         targetParent.creator = null
     }
 
-    fun edit(oldActual: ActualDoodle, newActual: ActualDoodle, into: NbtDoodle, createAction: Boolean = true) {
+    fun edit(oldActual: ActualDoodle, newActual: ActualDoodle, createAction: Boolean = true) {
+        val into = oldActual.parent ?: throw Exception("parent cannot be null")
+
         delete(listOf(oldActual))
         create(newActual, into, false)
 

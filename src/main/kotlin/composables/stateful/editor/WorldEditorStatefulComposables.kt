@@ -641,7 +641,7 @@ fun ColumnScope.NormalActionColumn(
         if (state.ui.selected.size == 1) {
             val selectedDoodle = state.ui.selected[0] as? NbtDoodle ?: return@actionColumn
             if ((selectedDoodle.tag.name != null || !selectedDoodle.tag.type.canHaveChildren())) {
-                ToolBarAction(onClick = { state.prepareEdit(selectedDoodle.tag.type) }) {
+                ToolBarAction(onClick = { state.prepareEdit() }) {
                     IndicatorText("EDT", ThemedColor.Editor.Tag.General)
                 }
             }

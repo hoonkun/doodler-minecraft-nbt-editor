@@ -482,7 +482,7 @@ fun RowScope.DoodleCreationContent(state: NbtState, doodle: VirtualDoodle) {
 
     val ok: MouseClickScope.() -> Unit = {
         if (doodle.mode == VirtualDoodle.VirtualMode.CREATE) state.create(generateActual(), doodle.parent)
-        else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT) state.edit(doodle.from, generateActual(), doodle.parent)
+        else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT) state.edit(doodle.from, generateActual())
     }
 
     val expandableValue: (String) -> String = {
