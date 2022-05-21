@@ -501,6 +501,14 @@ fun BoxScope.EditableField(
         coroutineScope.launch { lazyColumnState.scrollToItem(doodles.indexOf(it)) }
     }
 
+    Column(
+        modifier = Modifier.align(Alignment.BottomStart)
+    ) {
+        if (state.currentLogState.value != null) {
+            Log(state.currentLogState)
+        }
+    }
+
     if (creation != null) return
 
     Column(
@@ -529,7 +537,7 @@ fun ColumnScope.UndoRedoActionColumn(
     state: NbtState,
     onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
 ) {
-    val history = state.actions.history
+    val actions = state.actions
     
     Spacer(modifier = Modifier.Companion.weight(1f))
 
@@ -540,10 +548,10 @@ fun ColumnScope.UndoRedoActionColumn(
             .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
             .padding(5.dp)
     ) {
-        NbtActionButton(disabled = !history.canBeUndo, onClick = { history.undo() }) {
+        NbtActionButton(disabled = !actions.history.canBeUndo, onClick = { actions.withLog { history.undo() } }) {
             NbtText("<- ", ThemedColor.Editor.Tag.General)
         }
-        NbtActionButton(disabled = !history.canBeRedo, onClick = { history.redo() }) {
+        NbtActionButton(disabled = !actions.history.canBeRedo, onClick = { actions.withLog { history.redo() } }) {
             NbtText(" ->", ThemedColor.Editor.Tag.General)
         }
     }
@@ -558,7 +566,7 @@ fun ColumnScope.CreateActionColumn(
     selected: NbtDoodle,
     onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
 ) {
-    val creator = state.actions.creator
+    val actions = state.actions
     
     val isType: (TagType) -> Boolean = { it == selected.tag.type }
     val isListType: (TagType) -> Boolean = {
@@ -577,40 +585,40 @@ fun ColumnScope.CreateActionColumn(
             .padding(5.dp)
     ) {
         if (isType(TagType.TAG_BYTE_ARRAY) || isCompoundOrListType(TagType.TAG_BYTE))
-            TagCreationButton(TagType.TAG_BYTE, creator)
+            TagCreationButton(TagType.TAG_BYTE, actions)
 
         if (isCompoundOrListType(TagType.TAG_SHORT))
-            TagCreationButton(TagType.TAG_SHORT, creator)
+            TagCreationButton(TagType.TAG_SHORT, actions)
 
         if (isType(TagType.TAG_INT_ARRAY) || isCompoundOrListType(TagType.TAG_INT))
-            TagCreationButton(TagType.TAG_INT, creator)
+            TagCreationButton(TagType.TAG_INT, actions)
 
         if (isType(TagType.TAG_LONG_ARRAY) || isCompoundOrListType(TagType.TAG_LONG))
-            TagCreationButton(TagType.TAG_LONG, creator)
+            TagCreationButton(TagType.TAG_LONG, actions)
 
         if (isCompoundOrListType(TagType.TAG_FLOAT))
-            TagCreationButton(TagType.TAG_FLOAT, creator)
+            TagCreationButton(TagType.TAG_FLOAT, actions)
 
         if (isCompoundOrListType(TagType.TAG_DOUBLE))
-            TagCreationButton(TagType.TAG_DOUBLE, creator)
+            TagCreationButton(TagType.TAG_DOUBLE, actions)
 
         if (isCompoundOrListType(TagType.TAG_BYTE_ARRAY))
-            TagCreationButton(TagType.TAG_BYTE_ARRAY, creator)
+            TagCreationButton(TagType.TAG_BYTE_ARRAY, actions)
 
         if (isCompoundOrListType(TagType.TAG_INT_ARRAY))
-            TagCreationButton(TagType.TAG_INT_ARRAY, creator)
+            TagCreationButton(TagType.TAG_INT_ARRAY, actions)
 
         if (isCompoundOrListType(TagType.TAG_LONG_ARRAY))
-            TagCreationButton(TagType.TAG_LONG_ARRAY, creator)
+            TagCreationButton(TagType.TAG_LONG_ARRAY, actions)
 
         if (isCompoundOrListType(TagType.TAG_STRING))
-            TagCreationButton(TagType.TAG_STRING, creator)
+            TagCreationButton(TagType.TAG_STRING, actions)
 
         if (isCompoundOrListType(TagType.TAG_LIST))
-            TagCreationButton(TagType.TAG_LIST, creator)
+            TagCreationButton(TagType.TAG_LIST, actions)
 
         if (isCompoundOrListType(TagType.TAG_COMPOUND))
-            TagCreationButton(TagType.TAG_COMPOUND, creator)
+            TagCreationButton(TagType.TAG_COMPOUND, actions)
     }
 }
 
@@ -620,9 +628,8 @@ fun ColumnScope.NormalActionColumn(
     state: NbtState,
     onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
 ) {
-    val clipboard = state.actions.clipboard
-    val editor = state.actions.editor
-    
+    val actions = state.actions
+
     Column(
         modifier = Modifier
             .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
@@ -630,23 +637,23 @@ fun ColumnScope.NormalActionColumn(
             .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
             .padding(5.dp)
     ) actionColumn@{
-        NbtActionButton(onClick = { state.actions.deleter.delete() }) {
+        NbtActionButton(onClick = { state.actions.withLog { deleter.delete() } }) {
             NbtText("DEL", ThemedColor.Editor.Action.Delete)
         }
-        if (clipboard.pasteTarget != CannotBePasted) {
-            NbtActionButton(onClick = { clipboard.yank() }) {
+        if (actions.clipboard.pasteTarget != CannotBePasted) {
+            NbtActionButton(onClick = { actions.withLog { clipboard.yank() } }) {
                 NbtText("CPY", ThemedColor.Editor.Tag.General)
             }
         }
-        if (clipboard.stack.size > 0 && clipboard.pasteEnabled()) {
-            NbtActionButton(onClick = { clipboard.paste() }) {
+        if (actions.clipboard.stack.size > 0 && actions.clipboard.pasteEnabled()) {
+            NbtActionButton(onClick = { actions.withLog { clipboard.paste() } }) {
                 NbtText("PST", ThemedColor.Editor.Tag.General)
             }
         }
         if (state.ui.selected.size == 1) {
             val selectedDoodle = state.ui.selected[0] as? NbtDoodle ?: return@actionColumn
             if ((selectedDoodle.tag.name != null || !selectedDoodle.tag.type.canHaveChildren())) {
-                NbtActionButton(onClick = { editor.prepare() }) {
+                NbtActionButton(onClick = { actions.withLog { editor.prepare() } }) {
                     NbtText("EDT", ThemedColor.Editor.Tag.General)
                 }
             }
