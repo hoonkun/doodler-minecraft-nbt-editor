@@ -265,11 +265,19 @@ class NbtState (
             val selected = ui.selected[0]
             if (selected !is NbtDoodle) return false
 
-            val (target) = content
+            val (target, items) = content
 
             return when (target) {
                 CannotBePasted -> false
-                CanBePastedIntoCompound -> selected.tag.type == TagType.TAG_COMPOUND
+                CanBePastedIntoCompound -> {
+                    if (!selected.tag.type.isCompound()) false
+                    else {
+                        val tag = selected.tag.getAs<CompoundTag>().value.find { tag ->
+                            items.find { it is NbtDoodle && it.name == tag.name } != null
+                        }
+                        tag == null
+                    }
+                }
                 is CanBePastedIntoList -> {
                     selected.tag.type == TagType.TAG_LIST && selected.tag.getAs<ListTag>().let { it.elementsType == target.elementsType || it.elementsType == TagType.TAG_END }
                 }
@@ -290,8 +298,6 @@ class NbtState (
             )
         }
 
-        // TODO: FATAL
-        //  Compound 태그에 붙혀넣을 때는 해당 태그의 자식 중 클립보드에 있는 자식의 이름을 가진 것이 이미 있는지 확인해야함
         fun paste() {
             if (ui.selected.isEmpty()) throw NoSelectedItemsException("paste")
             if (ui.selected.size > 1) throw TooManyItemsSelectedException("paste")
