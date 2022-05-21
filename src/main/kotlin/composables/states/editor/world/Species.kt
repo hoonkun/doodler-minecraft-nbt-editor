@@ -78,14 +78,16 @@ class NbtState (
     rootDoodle: NbtDoodle,
     ui: MutableState<DoodleUi>,
     val lazyState: LazyListState,
+    val logs: SnapshotStateList<DoodleLog>
 ) {
 
     companion object {
         fun new(
             rootTag: CompoundTag,
             ui: MutableState<DoodleUi> = mutableStateOf(DoodleUi.new()),
-            lazyState: LazyListState = LazyListState()
-        ) = NbtState(NbtDoodle(rootTag, -1, -1), ui, lazyState)
+            lazyState: LazyListState = LazyListState(),
+            logs: SnapshotStateList<DoodleLog> = mutableStateListOf()
+        ) = NbtState(NbtDoodle(rootTag, -1, -1), ui, lazyState, logs)
     }
 
     var ui by ui
@@ -114,6 +116,18 @@ class NbtState (
         val deleter = DeleteAction()
 
         val clipboard = ClipboardAction()
+
+        fun withLog(action: Actions.() -> Unit) {
+            try { action() }
+            catch (exception: DoodleException) {
+                val newLog = DoodleLog(DoodleLogLevel.FATAL, exception.title, exception.summary, exception.description)
+                logs.add(newLog)
+                exception.printStackTrace()
+            }
+            catch (exception: Exception) {
+                exception.printStackTrace()
+            }
+        }
 
     }
 

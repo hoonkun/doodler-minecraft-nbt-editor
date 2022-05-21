@@ -112,8 +112,8 @@ private fun TagTypeIndicator(type: TagType, selected: Boolean) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TagCreationButton(type: TagType, creator: NbtState.CreateAction) {
-    NbtActionButtonWrapper (false, { creator.prepare(type) }) {
+fun TagCreationButton(type: TagType, actions: NbtState.Actions) {
+    NbtActionButtonWrapper (false, { actions.withLog { creator.prepare(type) } }) {
         TagTypeIndicatorText(type)
     }
 }
@@ -347,7 +347,7 @@ fun VirtualNbtItem(virtual: VirtualDoodle, state: NbtState) {
                     modifier = Modifier
                         .fillMaxHeight()
                 ) {
-                    DoodleCreationContent(state, virtual)
+                    DoodleCreationContent(state.actions, virtual)
                 }
             }
         }
@@ -356,9 +356,7 @@ fun VirtualNbtItem(virtual: VirtualDoodle, state: NbtState) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun RowScope.DoodleCreationContent(state: NbtState, doodle: VirtualDoodle) {
-    val creator = state.actions.creator
-    val editor = state.actions.editor
+fun RowScope.DoodleCreationContent(actions: NbtState.Actions, doodle: VirtualDoodle) {
 
     val intoIndex =
         if (!doodle.mode.isEdit()) doodle.parent.expandedItems.size.coerceAtLeast(doodle.parent.collapsedItems.size)
@@ -385,15 +383,15 @@ fun RowScope.DoodleCreationContent(state: NbtState, doodle: VirtualDoodle) {
     val valueValid by valueValidState
 
     val cancel: MouseClickScope.() -> Unit = {
-        if (doodle.mode == VirtualDoodle.VirtualMode.CREATE) creator.cancel()
-        else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT) editor.cancel()
+        if (doodle.mode == VirtualDoodle.VirtualMode.CREATE) actions.withLog { creator.cancel() }
+        else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT) actions.withLog { editor.cancel() }
     }
 
     val ok: MouseClickScope.() -> Unit = {
         if (doodle.mode == VirtualDoodle.VirtualMode.CREATE)
-            creator.create(doodle.actualize(name, value, intoIndex), doodle.parent)
+            actions.withLog { creator.create(doodle.actualize(name, value, intoIndex), doodle.parent) }
         else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT)
-            editor.edit(doodle.from, doodle.actualize(name, value, intoIndex))
+            actions.withLog { editor.edit(doodle.from, doodle.actualize(name, value, intoIndex)) }
     }
 
     if (doodle is NbtCreationDoodle) {
