@@ -226,7 +226,12 @@ class NbtDoodle (
 
         when (parent.tag.type) {
             TagType.TAG_COMPOUND -> parent.tag.getAs<CompoundTag>().remove(tag.name)
-            TagType.TAG_LIST -> parent.tag.getAs<ListTag>().value.remove(tag)
+            TagType.TAG_LIST -> {
+                val parentTag = parent.tag.getAs<ListTag>()
+
+                parentTag.value.remove(tag)
+                if (parentTag.value.isEmpty()) parentTag.elementsType = TagType.TAG_END
+            }
             else -> { /* no-op */ }
         }
 
