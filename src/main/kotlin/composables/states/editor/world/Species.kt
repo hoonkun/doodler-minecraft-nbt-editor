@@ -4,6 +4,8 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.text.input.TextFieldValue
+import composables.states.editor.world.extensions.removeRange
+import composables.states.editor.world.extensions.toRanges
 import doodler.anvil.ChunkLocation
 import doodler.nbt.TagType
 import doodler.nbt.tag.*
@@ -120,6 +122,8 @@ class NbtState (
 
         val clipboard = ClipboardAction()
 
+        val elevator = MoveAction()
+
         fun withLog(action: Actions.() -> Unit) {
             try { action() }
             catch (exception: DoodleException) {
@@ -161,6 +165,7 @@ class NbtState (
                 is PasteDoodleAction -> undoPaste(action)
                 is CreateDoodleAction -> undoCreate(action)
                 is EditDoodleAction -> undoEdit(action)
+                is MoveDoodleAction -> undoMove(action)
             }
         }
 
@@ -175,6 +180,7 @@ class NbtState (
                 is PasteDoodleAction -> redoPaste(action)
                 is CreateDoodleAction -> redoCreate(action)
                 is EditDoodleAction -> redoEdit(action)
+                is MoveDoodleAction -> redoMove(action)
             }
         }
 
@@ -213,6 +219,113 @@ class NbtState (
 
         private fun redoDelete(action: DeleteDoodleAction) {
             actions.deleter.internal.delete(action.deleted)
+        }
+
+        private fun undoMove(action: MoveDoodleAction) {
+            if (action.direction == MoveDoodleAction.DoodleMoveDirection.UP) {
+                actions.elevator.internal.moveDown(action.moved)
+            } else if (action.direction == MoveDoodleAction.DoodleMoveDirection.DOWN) {
+                actions.elevator.internal.moveUp(action.moved)
+            }
+        }
+
+        private fun redoMove(action: MoveDoodleAction) {
+            if (action.direction == MoveDoodleAction.DoodleMoveDirection.UP) {
+                actions.elevator.internal.moveUp(action.moved)
+            } else if (action.direction == MoveDoodleAction.DoodleMoveDirection.DOWN) {
+                actions.elevator.internal.moveDown(action.moved)
+            }
+        }
+
+    }
+
+    inner class MoveAction {
+
+        val internal = Internal()
+
+        fun moveUp(targets: List<ActualDoodle>) {
+            internal.moveUp(targets)
+
+            actions.history.newAction(MoveDoodleAction(MoveDoodleAction.DoodleMoveDirection.UP, targets))
+        }
+
+        fun moveDown(targets: List<ActualDoodle>) {
+            internal.moveDown(targets)
+
+            actions.history.newAction(MoveDoodleAction(MoveDoodleAction.DoodleMoveDirection.DOWN, targets))
+        }
+
+        inner class Internal {
+
+            fun moveUp(targets: List<ActualDoodle>) {
+                move(targets) { it.first - 1 }
+            }
+
+            fun moveDown(targets: List<ActualDoodle>) {
+                move(targets) { it.first + 1 }
+            }
+
+            private fun move(targets: List<ActualDoodle>, into: (IntRange) -> Int) {
+                val targetsRange = targets.map { it.index }.toRanges()
+                if (targetsRange.size > 1)
+                    throw InvalidOperationException("Cannot move up", "Selection range is invalid. Only continuous range is available for this action.")
+                if (targetsRange.isEmpty())
+                    throw InvalidOperationException("Cannot move up", "No targets selected.")
+
+                val range = targetsRange[0]
+
+                val variants = targets.map { if (it is NbtDoodle) "nbt" else "value" }.toSet().toList()
+                if (variants.size > 1)
+                    throw InternalAssertionException(listOf(NbtDoodle::class.java.simpleName, ValueDoodle::class.java.simpleName), "Both")
+
+                val parent = targets.first().parent ?: throw ParentNotFoundException()
+                val parentTag = parent.tag
+
+                parent.expandedItems.addAll(into(range), parent.expandedItems.removeRange(range))
+
+                if (variants[0] == "nbt") {
+                    when (parentTag) {
+                        is CompoundTag -> {
+                            val tag = parentTag.getAs<CompoundTag>()
+                            tag.value.addAll(into(range), tag.value.removeRange(range))
+                        }
+                        is ListTag -> {
+                            val tag = parentTag.getAs<ListTag>()
+                            tag.value.addAll(into(range), tag.value.removeRange(range))
+                        }
+                        else -> {
+                            throw InternalError("Cannot move up", "NbtDoodle's parent is not Compound or List.")
+                        }
+                    }
+                } else {
+                    when (parentTag) {
+                        is ByteArrayTag -> {
+                            val tag = parentTag.getAs<ByteArrayTag>()
+                            val newList = tag.value.toMutableList()
+                            newList.addAll(into(range), tag.value.toMutableList().removeRange(range))
+                            tag.value = newList.toByteArray()
+                        }
+                        is IntArrayTag -> {
+                            val tag = parentTag.getAs<IntArrayTag>()
+                            val newList = tag.value.toMutableList()
+                            newList.addAll(into(range), tag.value.toMutableList().removeRange(range))
+                            tag.value = newList.toIntArray()
+                        }
+                        is LongArrayTag -> {
+                            val tag = parentTag.getAs<LongArrayTag>()
+                            val newList = tag.value.toMutableList()
+                            newList.addAll(into(range), tag.value.toMutableList().removeRange(range))
+                            tag.value = newList.toLongArray()
+                        }
+                        else -> {
+                            throw InternalError("Cannot move up", "ValueDoodle's parent is not Array.")
+                        }
+                    }
+                }
+
+                parent.update(NbtDoodle.UpdateTarget.INDEX)
+            }
+
         }
 
     }
@@ -285,9 +398,6 @@ class NbtState (
             }
         }
 
-        // TODO:
-        //  Compound 에서는 큰 의미가 없으나 List 에 붙혀넣었을 때는 순서를 변경할 수 있어야할 듯 함.
-        //  리스트 태그의 아이템이나 배열 태그의 아이템을 선택했을 경우 추가적인 액션 패널을 보여줘야할 것 같음.
         fun yank() {
             val target = pasteTarget
             if (target == CannotBePasted) return
@@ -537,3 +647,12 @@ class EditDoodleAction(
     val old: ActualDoodle,
     val new: ActualDoodle
 ): DoodleAction()
+
+class MoveDoodleAction(
+    val direction: DoodleMoveDirection,
+    val moved: List<ActualDoodle>
+): DoodleAction() {
+    enum class DoodleMoveDirection {
+        UP, DOWN
+    }
+}

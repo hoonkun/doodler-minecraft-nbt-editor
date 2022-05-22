@@ -579,10 +579,16 @@ fun ColumnScope.IndexChangeActionColumn(
             .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
             .padding(5.dp)
     ) {
-        NbtActionButton(disabled = !(available && canMoveUp), onClick = {  }) {
+        NbtActionButton(
+            disabled = !(available && canMoveUp),
+            onClick = { state.actions.elevator.moveUp(state.ui.selected) }
+        ) {
             NbtText("<- ", ThemedColor.Editor.Tag.General, rotate = 90f, multiplier = 1)
         }
-        NbtActionButton(disabled = !(available && canMoveDown), onClick = {  }) {
+        NbtActionButton(
+            disabled = !(available && canMoveDown),
+            onClick = { state.actions.elevator.moveDown(state.ui.selected) }
+        ) {
             NbtText(" ->", ThemedColor.Editor.Tag.General, rotate = 90f, multiplier = -1)
         }
     }
