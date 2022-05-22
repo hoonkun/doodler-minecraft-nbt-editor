@@ -16,7 +16,7 @@ class BlockColorGenerator: StringSpec() {
         val paths = Paths.get("")
         val projectRoot = File(paths.absolutePathString()).absolutePath
         val minecraftRoot = File(paths.absolutePathString()).parentFile.parentFile.parentFile.absolutePath
-        val texturesDir = File("${minecraftRoot}/minecraft/1.18.1/assets/minecraft/textures/block")
+        val texturesDir = File("${minecraftRoot}/minecraft/blocks")
 
         val mappings = mapOf(
             "log" to "log_top",
@@ -37,6 +37,12 @@ class BlockColorGenerator: StringSpec() {
         )
 
         val exceptionalNames = listOf("SLAB", "STAIRS", "LEAVES")
+        val exactMatchExceptions = listOf("WATER", "LAVA")
+
+        val fixedColors = mapOf(
+            "water" to "3D6F8D",
+            "grass_block" to "3F6530"
+        )
 
         val mapName: String.(where: Map<String, String>) -> String = map@ { where ->
             var result = this
@@ -47,7 +53,7 @@ class BlockColorGenerator: StringSpec() {
         }
 
         val isExceptional: Material.() -> Boolean = check@ {
-            exceptionalNames.find { this.name.contains(it) } != null
+            exceptionalNames.find { this.name.contains(it) } != null || exactMatchExceptions.find { this.name == it } != null
         }
 
         "generate data.json" {
@@ -59,7 +65,7 @@ class BlockColorGenerator: StringSpec() {
                 .mapNotNull {
                     palette.start(it)?.let { color ->
                         val (r, g, b) = color
-                        Pair(it.name, Color(r, g, b).value.toString(16).substring(2, 8).toUpperCase(Locale.current))
+                        Pair(it.nameWithoutExtension, Color(r, g, b).value.toString(16).substring(2, 8).toUpperCase(Locale.current))
                     }
                 }
                 .sortedBy { it.first }
@@ -75,7 +81,9 @@ class BlockColorGenerator: StringSpec() {
                 "{\n${validBlocks.joinToString(",\n") {
                     val key = it.key.let { namespaceKey -> "${namespaceKey.namespace}:${namespaceKey.key}" }
                     val name = it.name.toLowerCase(Locale.current)
-                    val value = results.find { (t, _) -> t.contains(name.mapName(mappings)) }?.second
+                    val value = fixedColors[name]
+                        ?: results.find { (t, _) -> t == name.mapName(mappings) }?.second
+                        ?: results.find { (t, _) -> t.contains(name.mapName(mappings)) }?.second
                         ?: results.find { (t, _) -> t.contains(name.mapName(mappings).mapName(conditionalMappings)) }?.second
                     "  \"${key}\": ${if (value == null) "null" else "\"#$value\""}"
                 }}\n}".toByteArray()
