@@ -77,7 +77,7 @@ class NbtSpecies (
 }
 
 class NbtState (
-    rootDoodle: NbtDoodle,
+    val rootDoodle: NbtDoodle,
     ui: MutableState<DoodleUi>,
     val lazyState: LazyListState,
     val logs: SnapshotStateList<DoodleLog>
@@ -459,10 +459,9 @@ class NbtState (
         val internal = Internal()
 
         fun prepare(type: TagType) {
-            if (ui.selected.isEmpty()) throw NoSelectedItemsException("create")
             if (ui.selected.size > 1) throw TooManyItemsSelectedException("create")
 
-            val into = ui.selected[0]
+            val into = ui.selected.firstOrNull() ?: rootDoodle
             if (into !is NbtDoodle) throw InternalAssertionException(NbtDoodle::class.java.simpleName, into.javaClass.name)
 
             into.expand()
@@ -479,17 +478,14 @@ class NbtState (
         }
 
         fun cancel() {
-            if (ui.selected.isEmpty() || ui.selected.size > 1) throw VirtualActionCancelException("creation")
+            if (ui.selected.size > 1) throw VirtualActionCancelException("creation")
 
-            val into = ui.selected[0]
+            val into = ui.selected.firstOrNull() ?: rootDoodle
             if (into !is NbtDoodle) throw InternalAssertionException(NbtDoodle::class.java.simpleName, into.javaClass.name)
 
             into.creator = null
         }
 
-        // TODO:
-        //  지금은 루트 태그에는 다른 태그를 추가할 수 없게 되어있음.
-        //  루트 태그를 UI에 보여지도록 추가하던지... 아니면 아무것도 선택하지 않았을 때 태그를 추가할 수 있도록 하던지 하자.
         fun create(new: ActualDoodle, into: NbtDoodle) {
             val (conflict, index) = new.checkNameConflict()
             if (conflict) throw NameConflictException("create", (new as NbtDoodle).name!!, index)

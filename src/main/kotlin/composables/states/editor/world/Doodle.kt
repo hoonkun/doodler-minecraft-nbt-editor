@@ -169,8 +169,8 @@ class NbtDoodle (
             addAll(expandedItems.map { if (it is NbtDoodle) it.children() else listOf(it) }.flatten())
             creator?.let {
                 when (it.mode) {
-                    VirtualDoodle.VirtualMode.CREATE -> add(it.index + 1, it)
-                    VirtualDoodle.VirtualMode.EDIT -> replaceAt(it.index + 1, it)
+                    VirtualDoodle.VirtualMode.CREATE -> add(it.index + if (!root) 1 else 0, it)
+                    VirtualDoodle.VirtualMode.EDIT -> replaceAt(it.index + if (!root) 1 else 0, it)
                 }
             }
         }

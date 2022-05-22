@@ -602,7 +602,7 @@ fun ColumnScope.CreateActionColumn(
     onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
 ) {
     val actions = state.actions
-    val tag = selected?.tag
+    val tag = selected?.tag ?: state.rootDoodle.tag
 
     Column(
         modifier = Modifier
