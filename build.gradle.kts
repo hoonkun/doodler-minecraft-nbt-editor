@@ -13,12 +13,17 @@ version = "1.0"
 repositories {
     google()
     mavenCentral()
+
+    mavenLocal()
+    maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
+
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
 }
 
 dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test:1.5.31")
     testImplementation("io.kotlintest:kotlintest-runner-junit5:3.4.2")
+    testImplementation("org.spigotmc:spigot:1.18.2-R0.1-SNAPSHOT")
     implementation(compose.desktop.currentOs)
 }
 
