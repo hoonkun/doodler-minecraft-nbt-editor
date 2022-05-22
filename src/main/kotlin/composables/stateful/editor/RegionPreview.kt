@@ -34,7 +34,7 @@ fun BoxScope.RegionPreview(tree: WorldTree, location: AnvilLocation = AnvilLocat
                 val blocks = SurfaceWorker.createSurface(loc, chunks).blocks
                 blocks.forEachIndexed { index, block ->
                     val x = baseX + (index / 16)
-                    val z = baseZ + (index % 16)
+                    val z = 511 - (baseZ + (index % 16))
 
                     pixels[(x * 512 + z) * 4 + 0] = block.color[2]
                     pixels[(x * 512 + z) * 4 + 1] = block.color[1]
