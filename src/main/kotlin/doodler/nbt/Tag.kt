@@ -43,7 +43,7 @@ abstract class Tag<T: Any> protected constructor(
 
     fun canHold(other: TagType) =
         this.type == TAG_COMPOUND ||
-        (this.type == TAG_LIST && this.getAs<ListTag>().elementsType == other) ||
+        (this.type == TAG_LIST && (this.getAs<ListTag>().let { it.elementsType == other || it.elementsType == TAG_END })) ||
         (this.type == TAG_BYTE_ARRAY && other == TAG_BYTE) ||
         (this.type == TAG_INT_ARRAY && other == TAG_INT) ||
         (this.type == TAG_LONG_ARRAY && other == TAG_LONG)
