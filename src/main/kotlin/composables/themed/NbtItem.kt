@@ -104,13 +104,39 @@ fun NbtText(text: String, color: Color, fontSize: TextUnit = 18.sp, rotate: Floa
 }
 
 @Composable
+fun NbtText(text: AnnotatedString, fontSize: TextUnit = 18.sp, rotate: Float = 0f, multiplier: Int = 0) {
+    val offset = if (rotate == 0f) 0 else (5 * multiplier)
+    Text(
+        text,
+        fontFamily = JetBrainsMono,
+        fontSize = fontSize,
+        modifier = Modifier
+            .rotate(rotate)
+            .absoluteOffset(x = offset.dp, y = 0.dp)
+    )
+}
+
+@Composable
 private fun NbtContentText(text: String, color: Color, fontSize: TextUnit = 20.sp) {
     Text(text, color = color, fontFamily = JetBrainsMono, fontSize = fontSize)
 }
 
 @Composable
 private fun TagTypeIndicatorText(type: TagType, disabled: Boolean) {
-    NbtText(type.shorten(), color = if (disabled) ThemedColor.Editor.Tag.General else type.color())
+    val text = if (type.isArray()) {
+        AnnotatedString(type.shorten(), listOf(
+            AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.NumberArray), 0, 1),
+            AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.Number), 1, 2),
+            AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.NumberArray), 2, 3),
+        ))
+    } else {
+        val string = type.shorten()
+        val color = if (disabled) ThemedColor.Editor.Tag.General else type.color()
+        AnnotatedString(string, listOf(
+            AnnotatedString.Range(SpanStyle(color = color), 0, string.length),
+        ))
+    }
+    NbtText(text)
 }
 
 @Composable

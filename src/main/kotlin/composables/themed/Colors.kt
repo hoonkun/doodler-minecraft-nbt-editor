@@ -160,7 +160,7 @@ class ThemedColor {
                 val String = Color(106, 135, 89)
                 val Compound = Color(255, 199, 109)
                 val List = Color(204, 120, 50)
-                val NumberArray = Number
+                val NumberArray = Color(0xFF467CDA)
 
                 val General = Color(169, 183, 198)
 
