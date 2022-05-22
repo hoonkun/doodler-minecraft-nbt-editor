@@ -148,7 +148,7 @@ fun BoxScope.Editor(
             Editables {
                 for (species in holder.species) {
                     if (species is SelectorSpecies && holder.selected == species) {
-                        Selector(tree, holder, holder.selected == species)
+                        Selector(tree, holder)
                     } else if (species is NbtSpecies && holder.selected == species) {
                         EditableField(species)
                     }
@@ -163,8 +163,7 @@ fun BoxScope.Editor(
 @Composable
 fun BoxScope.Selector(
     tree: WorldTree,
-    holder: MultipleSpeciesHolder,
-    selected: Boolean
+    holder: MultipleSpeciesHolder
 ) {
 
     val onSelectChunk: (ChunkLocation, File?) -> Unit = select@ { loc, file ->
@@ -178,38 +177,8 @@ fun BoxScope.Selector(
         holder.add(NbtSpecies(newIdent, mutableStateOf(NbtState.new(root))))
     }
 
-    Column {
+    Column(modifier = Modifier.fillMaxSize()) {
         if (holder.format == Species.Format.MCA) AnvilSelector(tree, holder, onSelectChunk)
-        Column (
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxSize()
-                .weight(1f)
-                .alpha(if (selected) 1f else 0f)
-                .zIndex(if (selected) 100f else -1f)
-        ) {
-            Text(
-                holder.ident,
-                color = Color.White,
-                fontSize = 38.sp,
-            )
-            Spacer(modifier = Modifier.height(25.dp))
-            Text(
-                "No files opened",
-                color = ThemedColor.WhiteSecondary,
-                fontSize = 33.sp
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            LinkText(
-                "Select File",
-                color = ThemedColor.Bright,
-                fontSize = 30.sp
-            ) {
-//                holder.add(Species("Some Name"))
-            }
-            WhatIsThis("")
-        }
     }
 }
 
@@ -408,6 +377,10 @@ fun ColumnScope.AnvilSelector(
                 fontFamily = JetBrainsMono
             )
         }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        RegionPreview(tree)
     }
 }
 
