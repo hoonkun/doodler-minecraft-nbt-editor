@@ -109,25 +109,26 @@ private fun NbtContentText(text: String, color: Color, fontSize: TextUnit = 20.s
 }
 
 @Composable
-private fun TagTypeIndicatorText(type: TagType) {
-    NbtText(type.shorten(), color = type.color())
+private fun TagTypeIndicatorText(type: TagType, disabled: Boolean) {
+    NbtText(type.shorten(), color = if (disabled) ThemedColor.Editor.Tag.General else type.color())
 }
 
 @Composable
 private fun TagTypeIndicator(type: TagType, selected: Boolean) {
     TagTypeIndicatorWrapper (selected) {
-        TagTypeIndicatorText(type)
+        TagTypeIndicatorText(type, false)
     }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TagCreationButton(holderTag: AnyTag?, type: TagType, actions: NbtState.Actions) {
+    val disabled = holderTag?.canHold(type) != true
     NbtActionButtonWrapper (
-        disabled = holderTag?.canHold(type) != true,
+        disabled = disabled,
         onClick = { actions.withLog { creator.prepare(type) } }
     ) {
-        TagTypeIndicatorText(type)
+        TagTypeIndicatorText(type, disabled)
     }
 }
 
