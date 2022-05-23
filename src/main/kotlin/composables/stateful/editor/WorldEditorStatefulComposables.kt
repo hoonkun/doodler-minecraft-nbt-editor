@@ -206,6 +206,9 @@ fun ColumnScope.AnvilSelector(
 
     val worldDimension = tree[dimension]
 
+    val selector = holder.species.find { it is SelectorSpecies } as SelectorSpecies
+    val state = selector.state
+
     val anvils = when(holder.contentType) {
         Species.ContentType.TERRAIN -> worldDimension.region
         Species.ContentType.POI -> worldDimension.poi
@@ -220,12 +223,7 @@ fun ColumnScope.AnvilSelector(
         chunks.addAll(AnvilWorker.loadChunkList(location, it.readBytes()))
     }
 
-    val selector = holder.species.find { it is SelectorSpecies } as SelectorSpecies
-    val state = selector.state
-
-    // TODO: FATAL
-    //  extra.playerpos 를 통해 입력받은 플레이어 위치의 청크 데이터가 없을 경우에도 아래 문장을 수행해야함
-    if (state.initialComposition && state.selectedChunk == null && chunks.isNotEmpty()) {
+    if (state.initialComposition && chunks.isNotEmpty() && (state.selectedChunk == null || !chunks.contains(state.selectedChunk))) {
         state.selectedChunk = chunks[0]
     }
 
@@ -314,7 +312,7 @@ fun ColumnScope.AnvilSelector(
     var openPressed by remember { mutableStateOf(false) }
     var openFocused by remember { mutableStateOf(false) }
 
-    state.initialComposition = false
+    if (state.initialComposition) state.initialComposition = false
 
     Row (
         modifier = Modifier
