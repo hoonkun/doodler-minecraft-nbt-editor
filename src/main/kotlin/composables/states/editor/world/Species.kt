@@ -46,8 +46,6 @@ class SelectorState (
     chunkZValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("")),
     blockXValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("-")),
     blockZValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("-")),
-    isChunkXValid: MutableState<Boolean> = mutableStateOf(false),
-    isChunkZValid: MutableState<Boolean> = mutableStateOf(false),
     mapAnvil: MutableState<AnvilLocation?> = mutableStateOf(null)
 ) {
     var selectedChunk by selectedChunk
@@ -55,8 +53,6 @@ class SelectorState (
     var chunkZValue by chunkZValue
     var blockXValue by blockXValue
     var blockZValue by blockZValue
-    var isChunkXValid by isChunkXValid
-    var isChunkZValid by isChunkZValid
     var mapAnvil by mapAnvil
 
     companion object {
@@ -64,6 +60,8 @@ class SelectorState (
             SelectorState(
                 blockXValue = mutableStateOf(TextFieldValue(initialPos?.x?.toString() ?: "-")),
                 blockZValue = mutableStateOf(TextFieldValue(initialPos?.z?.toString() ?: "-")),
+                chunkXValue = mutableStateOf(TextFieldValue(initialPos?.toChunkLocation()?.x?.toString() ?: "-")),
+                chunkZValue = mutableStateOf(TextFieldValue(initialPos?.toChunkLocation()?.z?.toString() ?: "-")),
                 selectedChunk = mutableStateOf(initialPos?.toChunkLocation()),
                 mapAnvil = mutableStateOf(initialPos?.toChunkLocation()?.toAnvilLocation())
             )
