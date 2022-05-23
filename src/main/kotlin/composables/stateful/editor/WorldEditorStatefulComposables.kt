@@ -299,6 +299,7 @@ fun ColumnScope.AnvilSelector(
             val newChunk = BlockLocation(state.blockXValue.text.toInt(), state.blockZValue.text.toInt()).toChunkLocation()
             "${newChunk.x}".let { if (state.chunkXValue.text != it) state.chunkXValue = TextFieldValue(it) }
             "${newChunk.z}".let { if (state.chunkZValue.text != it) state.chunkZValue = TextFieldValue(it) }
+            println("UPDATE FROM BLOCK")
             newChunk.let { if (state.selectedChunk != it) state.selectedChunk = it }
         }
     }
@@ -397,7 +398,15 @@ fun ColumnScope.AnvilSelector(
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (state.mapAnvil != null)
-        RegionPreview(tree, state.selectedChunk, state.mapAnvil!!)
+        RegionPreview(tree, state.mapAnvil!!, state.selectedChunk) {
+            state.chunkXValue = TextFieldValue(it.x.toString())
+            state.chunkZValue = TextFieldValue(it.z.toString())
+            state.blockXValue = TextFieldValue("-")
+            state.blockZValue = TextFieldValue("-")
+            state.selectedChunk = it
+            state.isChunkXValid = true
+            state.isChunkZValid = true
+        }
     }
 }
 

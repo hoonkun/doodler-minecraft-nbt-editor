@@ -25,7 +25,7 @@ import org.jetbrains.skiko.toBufferedImage
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun BoxScope.RegionPreview(tree: WorldTree, selected: ChunkLocation?, location: AnvilLocation) {
+fun BoxScope.RegionPreview(tree: WorldTree, location: AnvilLocation, selected: ChunkLocation?, onSelect: (ChunkLocation) -> Unit) {
     var map by remember { mutableStateOf<ImageBitmap?>(null) }
 
     val nSelected = selected?.normalize(location)
@@ -92,6 +92,7 @@ fun BoxScope.RegionPreview(tree: WorldTree, selected: ChunkLocation?, location: 
             .fillMaxHeight()
             .aspectRatio(1f)
             .align(Alignment.Center)
+            .onPointerEvent(PointerEventType.Exit) { focused = Pair(-1, -1) }
             .zIndex(0f)
     ) {
         Image(
@@ -112,6 +113,9 @@ fun BoxScope.RegionPreview(tree: WorldTree, selected: ChunkLocation?, location: 
                                 )
                                 .onPointerEvent(PointerEventType.Enter) {
                                     focused = Pair(x, z)
+                                }
+                                .onPointerEvent(PointerEventType.Press) {
+                                    onSelect(ChunkLocation(x + 32 * location.x, z + 32 * location.z))
                                 }
                                 .let {
                                     if (nSelected?.x == x && nSelected.z == z)
