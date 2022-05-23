@@ -6,6 +6,8 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.text.input.TextFieldValue
 import composables.states.editor.world.extensions.removeRange
 import composables.states.editor.world.extensions.toRanges
+import doodler.anvil.AnvilLocation
+import doodler.anvil.BlockLocation
 import doodler.anvil.ChunkLocation
 import doodler.nbt.TagType
 import doodler.nbt.tag.*
@@ -45,7 +47,8 @@ class SelectorState (
     blockXValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("-")),
     blockZValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("-")),
     isChunkXValid: MutableState<Boolean> = mutableStateOf(false),
-    isChunkZValid: MutableState<Boolean> = mutableStateOf(false)
+    isChunkZValid: MutableState<Boolean> = mutableStateOf(false),
+    mapAnvil: MutableState<AnvilLocation?> = mutableStateOf(null)
 ) {
     var selectedChunk by selectedChunk
     var chunkXValue by chunkXValue
@@ -54,6 +57,17 @@ class SelectorState (
     var blockZValue by blockZValue
     var isChunkXValid by isChunkXValid
     var isChunkZValid by isChunkZValid
+    var mapAnvil by mapAnvil
+
+    companion object {
+        fun new(initialPos: BlockLocation?) =
+            SelectorState(
+                blockXValue = mutableStateOf(TextFieldValue(initialPos?.x?.toString() ?: "-")),
+                blockZValue = mutableStateOf(TextFieldValue(initialPos?.z?.toString() ?: "-")),
+                selectedChunk = mutableStateOf(initialPos?.toChunkLocation()),
+                mapAnvil = mutableStateOf(initialPos?.toChunkLocation()?.toAnvilLocation())
+            )
+    }
 }
 
 class NbtSpecies (

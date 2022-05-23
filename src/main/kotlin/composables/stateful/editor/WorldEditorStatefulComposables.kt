@@ -40,6 +40,8 @@ import keys
 import kotlinx.coroutines.launch
 import doodler.nbt.TagType
 import doodler.nbt.tag.CompoundTag
+import doodler.nbt.tag.DoubleTag
+import doodler.nbt.tag.ListTag
 import doodler.nbt.tag.StringTag
 import java.io.File
 
@@ -54,8 +56,10 @@ fun WorldEditor(
     if (states.worldSpec.tree == null)
         states.worldSpec.tree = IOUtils.load(worldPath)
 
+    val levelInfo = IOUtils.readLevel(states.worldSpec.requireTree.level.readBytes())["Data"]
+
     if (states.worldSpec.name == null)
-        states.worldSpec.name = IOUtils.readLevel(states.worldSpec.requireTree.level.readBytes())["Data"]
+        states.worldSpec.name = levelInfo
             ?.getAs<CompoundTag>()!!["LevelName"]
             ?.getAs<StringTag>()
             ?.value
@@ -81,7 +85,15 @@ fun WorldEditor(
                     NbtSpecies("", mutableStateOf(NbtState.new(IOUtils.readLevel(tree.level.readBytes()))))
                 )
             } else {
-                MultipleSpeciesHolder(data.key, data.format, data.contentType, data.extras)
+                val pos = levelInfo
+                    ?.getAs<CompoundTag>()?.get("Player")
+                    ?.getAs<CompoundTag>()?.get("Pos")
+                    ?.getAs<ListTag>()
+                val x = pos?.get(0)?.getAs<DoubleTag>()?.value?.toInt()
+                val z = pos?.get(2)?.getAs<DoubleTag>()?.value?.toInt()
+                val extras = data.extras.toMutableMap()
+                if (x != null && z != null) extras["playerpos"] = "$x, $z"
+                MultipleSpeciesHolder(data.key, data.format, data.contentType, extra = extras)
             }
 
         states.phylum.list.add(newHolder)
@@ -148,7 +160,7 @@ fun BoxScope.Editor(
             Editables {
                 for (species in holder.species) {
                     if (species is SelectorSpecies && holder.selected == species) {
-                        Selector(tree, holder, holder.selected == species)
+                        Selector(tree, holder)
                     } else if (species is NbtSpecies && holder.selected == species) {
                         EditableField(species)
                     }
@@ -163,8 +175,7 @@ fun BoxScope.Editor(
 @Composable
 fun BoxScope.Selector(
     tree: WorldTree,
-    holder: MultipleSpeciesHolder,
-    selected: Boolean
+    holder: MultipleSpeciesHolder
 ) {
 
     val onSelectChunk: (ChunkLocation, File?) -> Unit = select@ { loc, file ->
@@ -178,38 +189,8 @@ fun BoxScope.Selector(
         holder.add(NbtSpecies(newIdent, mutableStateOf(NbtState.new(root))))
     }
 
-    Column {
+    Column(modifier = Modifier.fillMaxSize()) {
         if (holder.format == Species.Format.MCA) AnvilSelector(tree, holder, onSelectChunk)
-        Column (
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxSize()
-                .weight(1f)
-                .alpha(if (selected) 1f else 0f)
-                .zIndex(if (selected) 100f else -1f)
-        ) {
-            Text(
-                holder.ident,
-                color = Color.White,
-                fontSize = 38.sp,
-            )
-            Spacer(modifier = Modifier.height(25.dp))
-            Text(
-                "No files opened",
-                color = ThemedColor.WhiteSecondary,
-                fontSize = 33.sp
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            LinkText(
-                "Select File",
-                color = ThemedColor.Bright,
-                fontSize = 30.sp
-            ) {
-//                holder.add(Species("Some Name"))
-            }
-            WhatIsThis("")
-        }
     }
 }
 
@@ -225,6 +206,9 @@ fun ColumnScope.AnvilSelector(
 
     val worldDimension = tree[dimension]
 
+    val selector = holder.species.find { it is SelectorSpecies } as SelectorSpecies
+    val state = selector.state
+
     val anvils = when(holder.contentType) {
         Species.ContentType.TERRAIN -> worldDimension.region
         Species.ContentType.POI -> worldDimension.poi
@@ -239,11 +223,11 @@ fun ColumnScope.AnvilSelector(
         chunks.addAll(AnvilWorker.loadChunkList(location, it.readBytes()))
     }
 
-    val selector = holder.species.find { it is SelectorSpecies } as SelectorSpecies
-    val state = selector.state
-
-    if (state.initialComposition && state.selectedChunk == null && chunks.isNotEmpty())
+    if (state.initialComposition && chunks.isNotEmpty() && (state.selectedChunk == null || !chunks.contains(state.selectedChunk))) {
         state.selectedChunk = chunks[0]
+        state.blockXValue = TextFieldValue("-")
+        state.blockZValue = TextFieldValue("-")
+    }
 
     if (state.chunkXValue.text == "") state.chunkXValue = TextFieldValue("${state.selectedChunk?.x ?: "-"}")
     if (state.chunkZValue.text == "") state.chunkZValue = TextFieldValue("${state.selectedChunk?.z ?: "-"}")
@@ -253,10 +237,18 @@ fun ColumnScope.AnvilSelector(
 
     val updateSelectedChunk: () -> Unit = {
         val isValid = state.isChunkXValid && state.isChunkZValid
-        val isInt = state.chunkXValue.text.toIntOrNull() != null && state.chunkZValue.text.toIntOrNull() != null
+        val xInt = state.chunkXValue.text.toIntOrNull()
+        val zInt = state.chunkZValue.text.toIntOrNull()
+        val isInt = xInt != null && zInt != null
+        // 이거 왜 스마트캐스팅 안해주더라?...
+        val exists = if (isInt) chunks.contains(ChunkLocation(xInt!!, zInt!!)) else false
         state.selectedChunk =
-            if (!isValid || !isInt) null
-            else ChunkLocation(state.chunkXValue.text.toInt(), state.chunkZValue.text.toInt())
+            if (!isValid || !isInt || !exists) null
+            else ChunkLocation(xInt!!, zInt!!)
+    }
+
+    val hasNbt: (ChunkLocation) -> Boolean = {
+        chunks.contains(it)
     }
 
     val validate: (List<Int>, AnnotatedString) -> Pair<TransformedText, Boolean> = validate@ { valid, actual ->
@@ -318,14 +310,19 @@ fun ColumnScope.AnvilSelector(
             val newChunk = BlockLocation(state.blockXValue.text.toInt(), state.blockZValue.text.toInt()).toChunkLocation()
             "${newChunk.x}".let { if (state.chunkXValue.text != it) state.chunkXValue = TextFieldValue(it) }
             "${newChunk.z}".let { if (state.chunkZValue.text != it) state.chunkZValue = TextFieldValue(it) }
+            println("UPDATE FROM BLOCK")
             newChunk.let { if (state.selectedChunk != it) state.selectedChunk = it }
         }
+    }
+
+    if (state.selectedChunk?.toAnvilLocation() != null) {
+        state.mapAnvil = state.selectedChunk?.toAnvilLocation()
     }
 
     var openPressed by remember { mutableStateOf(false) }
     var openFocused by remember { mutableStateOf(false) }
 
-    state.initialComposition = false
+    if (state.initialComposition) state.initialComposition = false
 
     Row (
         modifier = Modifier
@@ -407,6 +404,19 @@ fun ColumnScope.AnvilSelector(
                 color = ThemedColor.Editor.Selector.ButtonText,
                 fontFamily = JetBrainsMono
             )
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        if (state.mapAnvil != null)
+        RegionPreview(tree[dimension], dimension, state.mapAnvil!!, state.selectedChunk, holder.cachedMaps, hasNbt) {
+            state.chunkXValue = TextFieldValue(it.x.toString())
+            state.chunkZValue = TextFieldValue(it.z.toString())
+            state.blockXValue = TextFieldValue("-")
+            state.blockZValue = TextFieldValue("-")
+            state.selectedChunk = it
+            state.isChunkXValid = validChunkX.contains(it.x)
+            state.isChunkZValid = validChunkZ.contains(it.z)
         }
     }
 }

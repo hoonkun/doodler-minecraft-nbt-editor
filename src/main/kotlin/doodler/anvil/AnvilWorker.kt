@@ -15,6 +15,9 @@ data class BlockLocation(val x: Int, val z: Int) {
 }
 data class AnvilLocation(val x: Int, val z: Int)
 data class ChunkLocation(val x: Int, val z: Int) {
+    fun normalize(anvilLocation: AnvilLocation): ChunkLocation {
+        return ChunkLocation(x - 32 * anvilLocation.x, z - 32 * anvilLocation.z)
+    }
     fun toAnvilLocation(): AnvilLocation {
         return AnvilLocation(floor(this.x / 32.0).toInt(), floor(this.z / 32.0).toInt())
     }
@@ -62,11 +65,41 @@ class AnvilWorker {
 
             if (offset == 0 || sectors == 0) return null
 
+            val chunkBuffer = getChunkBuffer(bytes, offset, sectors)
+
+            return Tag.read(TagType.TAG_COMPOUND, chunkBuffer, null, null).getAs()
+        }
+
+        fun <R>loadChunksWith(bytes: ByteArray, callback: (ChunkLocation, CompoundTag) -> R): List<R> {
+            if (bytes.isEmpty()) return listOf()
+
+            val result = mutableListOf<R>()
+
+            for (m in 0 until 32 * 32) {
+                val x = m / 32
+                val z = m % 32
+
+                val (offset, sectors) = parseHeader(parseIndex(x, z), bytes)
+
+                if (offset == 0 || sectors == 0) continue
+
+                val chunkBuffer = getChunkBuffer(bytes, offset, sectors)
+
+                result.add(callback(
+                    ChunkLocation(x, z),
+                    Tag.read(TagType.TAG_COMPOUND, chunkBuffer, null, null).getAs()
+                ))
+            }
+
+            return result
+        }
+
+        private fun getChunkBuffer(bytes: ByteArray, offset: Int, sectors: Int): ByteBuffer {
             val data = ByteBuffer.wrap(bytes.slice(offset until offset + sectors).toByteArray())
             val size = data.int
 
             val compressionType = data.byte
-            val compressed = ByteArray(size).also { data.get(it) }
+            val compressed = ByteArray(size - 1).also { data.get(it) }
 
             if (compressionType.toInt() != 2) throw Exception("unsupported compression type '$compressionType'")
 
@@ -74,7 +107,7 @@ class AnvilWorker {
             chunkBuffer.byte
             chunkBuffer.short
 
-            return Tag.read(TagType.TAG_COMPOUND, chunkBuffer, null, null).getAs()
+            return chunkBuffer
         }
 
         private fun parseIndex(x: Int, z: Int) = 4 * ((x and 31) + (z and 31) * 32)

@@ -1,9 +1,10 @@
 package composables.states.editor.world
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateMap
+import androidx.compose.ui.graphics.ImageBitmap
+import doodler.anvil.AnvilLocation
+import doodler.anvil.BlockLocation
 
 
 abstract class SpeciesHolder(
@@ -29,6 +30,7 @@ class MultipleSpeciesHolder(
     ident: String,
     format: Species.Format,
     contentType: Species.ContentType,
+    val cachedMaps: SnapshotStateMap<AnvilLocation, ImageBitmap> = mutableStateMapOf(),
     val extra: Map<String, String> = mapOf()
 ): SpeciesHolder(ident, format, contentType) {
 
@@ -36,7 +38,9 @@ class MultipleSpeciesHolder(
     var selected by mutableStateOf<Species?>(null)
 
     init {
-        val selector = SelectorSpecies("+", mutableStateOf(SelectorState()))
+        val selector = SelectorSpecies("+", mutableStateOf(SelectorState.new(
+            extra["playerpos"]?.split(", ")?.let { BlockLocation(it[0].toInt(), it[1].toInt()) }
+        )))
         species.add(selector)
         selected = selector
     }
