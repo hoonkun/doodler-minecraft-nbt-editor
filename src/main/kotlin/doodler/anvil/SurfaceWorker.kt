@@ -39,20 +39,26 @@ class SurfaceWorker {
                     blocks.forEachIndexed { index, block ->
                         val (x, y, z) = coordinate(index, subChunk.y)
                         val indexInArray = (15 - x) + (15 - z) * 16
-                        if (resultBlocks[indexInArray] != null) return@forEachIndexed
+                        val already = resultBlocks[indexInArray]
+                        if (already != null && (!already.isWater || already.depth.toInt() != -99)) return@forEachIndexed
 
                         val blockName = subChunk.palette[block.toInt()].replace("minecraft:", "")
                         if (blockColors.containsKey(blockName)) {
-                            resultBlocks[indexInArray] = SurfaceBlock(
-                                blockColors
-                                    .getValue(blockName)
-                                    .chunked(2)
-                                    .map { it.toInt(16).toByte() }
-                                    .toMutableList()
-                                    .apply { add(-1) }
-                                    .toByteArray(),
-                                y
-                            )
+                            if (already == null) {
+                                resultBlocks[indexInArray] = SurfaceBlock(
+                                    blockColors
+                                        .getValue(blockName)
+                                        .chunked(2)
+                                        .map { it.toInt(16).toByte() }
+                                        .toMutableList()
+                                        .apply { add(-1) }
+                                        .toByteArray(),
+                                    y,
+                                    blockName == "water"
+                                )
+                            } else if (already.depth.toInt() == -99 && blockName != "water") {
+                                already.depth = (y.coerceIn(53, 60) - 53).toShort()
+                            }
                         }
                     }
                 }
@@ -130,7 +136,9 @@ data class Surface(
 
 data class SurfaceBlock(
     val color: ByteArray,
-    val y: Short
+    val y: Short,
+    val isWater: Boolean = false,
+    var depth: Short = -99
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true

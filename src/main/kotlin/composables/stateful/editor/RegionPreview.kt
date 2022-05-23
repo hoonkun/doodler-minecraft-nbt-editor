@@ -37,9 +37,11 @@ fun BoxScope.RegionPreview(tree: WorldTree, location: AnvilLocation = AnvilLocat
                     val x = 511 - (baseX + (index / 16))
                     val z = baseZ + (index % 16)
 
-                    pixels[(x * 512 + z) * 4 + 0] = block.color[2]
-                    pixels[(x * 512 + z) * 4 + 1] = block.color[1]
-                    pixels[(x * 512 + z) * 4 + 2] = block.color[0]
+                    val multiplier = if (block.isWater) block.depth / 7f * 30 - 30 else 1f
+
+                    pixels[(x * 512 + z) * 4 + 0] = (block.color[2] + multiplier).toInt().coerceIn(-128, 127).toByte()
+                    pixels[(x * 512 + z) * 4 + 1] = (block.color[1] + multiplier).toInt().coerceIn(-128, 127).toByte()
+                    pixels[(x * 512 + z) * 4 + 2] = (block.color[0] + multiplier).toInt().coerceIn(-128, 127).toByte()
                     pixels[(x * 512 + z) * 4 + 3] = block.color[3]
 
                     heights[x * 512 + z] = block.y
