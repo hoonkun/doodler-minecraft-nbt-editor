@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import composables.states.editor.world.Species
 import composables.states.editor.world.SpeciesHolder
+import doodler.file.WorldDimension
 import doodler.file.WorldTree
 
 
@@ -28,11 +29,11 @@ fun createCategories(tree: WorldTree): List<PhylumCategoryData> {
         )
     }
 
-    val dimensionItems: (String) -> List<PhylumCategoryItemData> = {
+    val dimensionItems: (WorldDimension) -> List<PhylumCategoryItemData> = {
         val holderType = SpeciesHolder.Type.Multiple
-        val prefix = display(it)
+        val prefix = it.displayName
         val result = mutableListOf<PhylumCategoryItemData>()
-        val extra = mapOf("dimension" to it)
+        val extra: Map<String, Any> = mapOf("dimension" to it)
 
         if (tree[it].region.isNotEmpty())
             result.add(PhylumCategoryItemData(prefix, holderType, Species.Format.MCA, Species.ContentType.TERRAIN, extra))
@@ -48,9 +49,9 @@ fun createCategories(tree: WorldTree): List<PhylumCategoryData> {
 
     return listOf(
         PhylumCategoryData("General", false, generalItems("General")),
-        PhylumCategoryData(display(""), false, dimensionItems("")),
-        PhylumCategoryData(display("DIM-1"), true, dimensionItems("DIM-1")).withDescription("DIM-1"),
-        PhylumCategoryData(display("DIM1"), true, dimensionItems("DIM1")).withDescription("DIM1")
+        PhylumCategoryData.withDimension(WorldDimension.OVERWORLD, false, dimensionItems),
+        PhylumCategoryData.withDimension(WorldDimension.NETHER, factory = dimensionItems),
+        PhylumCategoryData.withDimension(WorldDimension.THE_END, factory = dimensionItems)
     )
 }
 
@@ -109,6 +110,14 @@ class PhylumCategoryData(
     val defaultFolded: Boolean,
     val items: List<PhylumCategoryItemData>
 ) {
+    companion object {
+        fun withDimension(
+            dimension: WorldDimension,
+            defaultFolded: Boolean = true,
+            factory: (WorldDimension) -> List<PhylumCategoryItemData>
+        ) = PhylumCategoryData(dimension.displayName, defaultFolded, factory(dimension)).withDescription(dimension.ident)
+    }
+
     var description: String? = null
         private set
 
@@ -123,16 +132,7 @@ class PhylumCategoryItemData (
     val holderType: SpeciesHolder.Type,
     val format: Species.Format,
     val contentType: Species.ContentType,
-    val extras: Map<String, String> = mapOf()
+    val extras: Map<String, Any> = mapOf()
 ) {
     val key = "$parent/${contentType.displayName}"
-}
-
-fun display(dimension: String): String {
-    return when (dimension) {
-        "" -> "Overworld"
-        "DIM-1" -> "Nether"
-        "DIM1" -> "TheEnd"
-        else -> "Unknown"
-    }
 }

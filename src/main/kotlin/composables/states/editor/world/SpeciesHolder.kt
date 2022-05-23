@@ -27,7 +27,7 @@ class MultipleSpeciesHolder(
     ident: String,
     format: Species.Format,
     contentType: Species.ContentType,
-    val extra: Map<String, String> = mapOf()
+    val extra: Map<String, Any> = mapOf()
 ): SpeciesHolder(ident, format, contentType) {
 
     val species = mutableStateListOf<Species>()
@@ -35,7 +35,7 @@ class MultipleSpeciesHolder(
 
     init {
         val selector = SelectorSpecies("+", mutableStateOf(SelectorState.new(
-            extra["playerpos"]?.split(", ")?.let { BlockLocation(it[0].toInt(), it[1].toInt()) }
+            (extra["playerpos"] as String?)?.split(", ")?.let { BlockLocation(it[0].toInt(), it[1].toInt()) }
         )))
         species.add(selector)
         selected = selector

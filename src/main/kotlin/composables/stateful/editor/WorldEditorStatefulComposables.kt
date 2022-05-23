@@ -36,6 +36,7 @@ import doodler.anvil.BlockLocation
 import doodler.anvil.ChunkLocation
 import doodler.file.WorldTree
 import doodler.file.IOUtils
+import doodler.file.WorldDimension
 import keys
 import kotlinx.coroutines.launch
 import doodler.nbt.TagType
@@ -202,7 +203,7 @@ fun ColumnScope.AnvilSelector(
     onSelectChunk: (ChunkLocation, File?) -> Unit
 ) {
 
-    val dimension = holder.extra["dimension"] ?: return
+    val dimension = holder.extra["dimension"] as WorldDimension? ?: return
 
     val worldDimension = tree[dimension]
 

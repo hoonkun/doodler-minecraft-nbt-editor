@@ -15,6 +15,7 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import doodler.anvil.*
+import doodler.file.WorldDimension
 import doodler.file.WorldDimensionTree
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -26,7 +27,7 @@ import org.jetbrains.skiko.toBufferedImage
 @Composable
 fun BoxScope.RegionPreview(
     tree: WorldDimensionTree,
-    dimension: String,
+    dimension: WorldDimension,
     location: AnvilLocation,
     selected: ChunkLocation?,
     hasNbt: (ChunkLocation) -> Boolean,
@@ -40,7 +41,7 @@ fun BoxScope.RegionPreview(
         val subChunks = AnvilWorker.loadChunksWith(bytes) { chunkLoc, tag ->
             Pair(chunkLoc, SurfaceWorker.createSubChunk(tag))
         }
-        val yLimit = if (dimension == "DIM-1") 89 else 319
+        val yLimit = if (dimension == WorldDimension.NETHER) 89 else 319
         val pixels = ByteArray(512 * 512 * 4)
         val heights = ShortArray(512 * 512)
         subChunks.forEach { (loc, chunks) ->

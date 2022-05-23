@@ -74,12 +74,11 @@ class WorldTree (
     private val nether: WorldDimensionTree,
     private val end: WorldDimensionTree
 ) {
-    operator fun get(key: String): WorldDimensionTree {
+    operator fun get(key: WorldDimension): WorldDimensionTree {
         return when (key) {
-            "" -> overworld
-            "DIM1" -> end
-            "DIM-1" -> nether
-            else -> throw Exception("Invalid dimension name: $key")
+            WorldDimension.OVERWORLD -> overworld
+            WorldDimension.THE_END -> end
+            WorldDimension.NETHER -> nether
         }
     }
 }
@@ -91,3 +90,13 @@ class WorldDimensionTree (
     val data: List<File>,
     val cachedTerrains: SnapshotStateMap<AnvilLocation, ImageBitmap> = mutableStateMapOf()
 )
+
+enum class WorldDimension(
+    val ident: String,
+    val namespaceId: String,
+    val displayName: String
+) {
+    OVERWORLD("", "minecraft:overworld", "Overworld"),
+    NETHER("DIM-1", "minecraft:the_nether", "Nether"),
+    THE_END("DIM1", "minecraft:the_end", "The End")
+}
