@@ -93,7 +93,7 @@ fun WorldEditor(
                 val z = pos?.get(2)?.getAs<DoubleTag>()?.value?.toInt()
                 val extras = data.extras.toMutableMap()
                 if (x != null && z != null) extras["playerpos"] = "$x, $z"
-                MultipleSpeciesHolder(data.key, data.format, data.contentType, extras)
+                MultipleSpeciesHolder(data.key, data.format, data.contentType, extra = extras)
             }
 
         states.phylum.list.add(newHolder)
@@ -409,7 +409,7 @@ fun ColumnScope.AnvilSelector(
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (state.mapAnvil != null)
-        RegionPreview(tree, state.mapAnvil!!, state.selectedChunk, hasNbt) {
+        RegionPreview(tree, state.mapAnvil!!, state.selectedChunk, holder.cachedMaps, hasNbt) {
             state.chunkXValue = TextFieldValue(it.x.toString())
             state.chunkZValue = TextFieldValue(it.z.toString())
             state.blockXValue = TextFieldValue("-")

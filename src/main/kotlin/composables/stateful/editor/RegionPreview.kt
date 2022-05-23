@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -29,11 +30,10 @@ fun BoxScope.RegionPreview(
     tree: WorldTree,
     location: AnvilLocation,
     selected: ChunkLocation?,
+    cached: SnapshotStateMap<AnvilLocation, ImageBitmap>,
     hasNbt: (ChunkLocation) -> Boolean,
     onSelect: (ChunkLocation) -> Unit
 ) {
-    val cached = remember { mutableStateMapOf<AnvilLocation, ImageBitmap>() }
-
     val nSelected = selected?.normalize(location)
 
     val load = load@ {
