@@ -72,7 +72,7 @@ class SurfaceWorker {
         private fun coordinate(blockIndex: Int, y: Byte): Triple<Byte, Short, Byte> {
             return Triple(
                 ((blockIndex / 16) % 16).toByte(),
-                (y * 16 + ((blockIndex / (16 * 16)) % 16)).toShort(),
+                (y * 16 + (((4095 - blockIndex) / (16 * 16)) % 16)).toShort(),
                 (blockIndex % 16).toByte()
             )
         }
