@@ -18,7 +18,6 @@ import androidx.compose.ui.zIndex
 import doodler.anvil.*
 import doodler.file.WorldTree
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.jetbrains.skia.*
 import org.jetbrains.skiko.toBufferedImage
@@ -33,64 +32,69 @@ fun BoxScope.RegionPreview(
     hasNbt: (ChunkLocation) -> Boolean,
     onSelect: (ChunkLocation) -> Unit
 ) {
-    var map by remember { mutableStateOf<ImageBitmap?>(null) }
+    val cached = remember { mutableStateMapOf<AnvilLocation, ImageBitmap>() }
 
     val nSelected = selected?.normalize(location)
 
-    LaunchedEffect(location) {
-        withContext(Dispatchers.IO) {
-            val bytes = tree.overworld.region.find { it.name == "r.${location.x}.${location.z}.mca" }?.readBytes()
-                ?: return@withContext
-            val subChunks = AnvilWorker.loadChunksWith(bytes) { chunkLoc, tag ->
-                Pair(chunkLoc, SurfaceWorker.createSubChunk(tag))
-            }
-            val pixels = ByteArray(512 * 512 * 4)
-            val heights = ShortArray(512 * 512)
-            subChunks.forEach { (loc, chunks) ->
-                val baseX = loc.x * 16
-                val baseZ = loc.z * 16
-                val blocks = SurfaceWorker.createSurface(loc, chunks).blocks
-                blocks.forEachIndexed { index, block ->
-                    val x = 511 - (baseX + (index / 16))
-                    val z = baseZ + (index % 16)
+    val load = load@ {
+        val bytes = tree.overworld.region.find { it.name == "r.${location.x}.${location.z}.mca" }?.readBytes()
+            ?: return@load
+        val subChunks = AnvilWorker.loadChunksWith(bytes) { chunkLoc, tag ->
+            Pair(chunkLoc, SurfaceWorker.createSubChunk(tag))
+        }
+        val pixels = ByteArray(512 * 512 * 4)
+        val heights = ShortArray(512 * 512)
+        subChunks.forEach { (loc, chunks) ->
+            val baseX = loc.x * 16
+            val baseZ = loc.z * 16
+            val blocks = SurfaceWorker.createSurface(loc, chunks).blocks
+            blocks.forEachIndexed { index, block ->
+                val x = 511 - (baseX + (index / 16))
+                val z = baseZ + (index % 16)
 
-                    val multiplier = if (block.isWater) block.depth / 7f * 30 - 30 else 1f
+                val multiplier = if (block.isWater) block.depth / 7f * 30 - 30 else 1f
 
-                    pixels[(x * 512 + z) * 4 + 0] = (block.color[2] + multiplier).toInt().coerceIn(-128, 127).toByte()
-                    pixels[(x * 512 + z) * 4 + 1] = (block.color[1] + multiplier).toInt().coerceIn(-128, 127).toByte()
-                    pixels[(x * 512 + z) * 4 + 2] = (block.color[0] + multiplier).toInt().coerceIn(-128, 127).toByte()
-                    pixels[(x * 512 + z) * 4 + 3] = block.color[3]
+                pixels[(x * 512 + z) * 4 + 0] = (block.color[2] + multiplier).toInt().coerceIn(-128, 127).toByte()
+                pixels[(x * 512 + z) * 4 + 1] = (block.color[1] + multiplier).toInt().coerceIn(-128, 127).toByte()
+                pixels[(x * 512 + z) * 4 + 2] = (block.color[0] + multiplier).toInt().coerceIn(-128, 127).toByte()
+                pixels[(x * 512 + z) * 4 + 3] = block.color[3]
 
-                    heights[x * 512 + z] = block.y
+                heights[x * 512 + z] = block.y
 
-                    val hIndex = (x + 1).coerceAtMost(511) * 512 + z
-                    val pIndex = hIndex * 4
-                    val aboveY = heights[hIndex]
-                    if (block.y < aboveY) {
-                        (0..2).forEach {
-                            pixels[pIndex + it] = (pixels[pIndex + it] + 15)
-                                .coerceAtMost(127).toByte()
-                        }
-                    } else if (block.y > aboveY) {
-                        (0..2).forEach {
-                            pixels[pIndex + it] = (pixels[pIndex + it] - 15)
-                                .coerceAtLeast(-128).toByte()
-                        }
+                val hIndex = (x + 1).coerceAtMost(511) * 512 + z
+                val pIndex = hIndex * 4
+                val aboveY = heights[hIndex]
+                if (block.y < aboveY) {
+                    (0..2).forEach {
+                        pixels[pIndex + it] = (pixels[pIndex + it] + 15)
+                            .coerceAtMost(127).toByte()
+                    }
+                } else if (block.y > aboveY) {
+                    (0..2).forEach {
+                        pixels[pIndex + it] = (pixels[pIndex + it] - 15)
+                            .coerceAtLeast(-128).toByte()
                     }
                 }
             }
-            map = Bitmap()
-                .apply {
-                    allocPixels(ImageInfo(512, 512, ColorType.N32, ColorAlphaType.OPAQUE))
-                    installPixels(pixels)
-                }
-                .toBufferedImage()
-                .toComposeImageBitmap()
-            delay(3000)
+        }
+        cached[location] = Bitmap()
+            .apply {
+                allocPixels(ImageInfo(512, 512, ColorType.N32, ColorAlphaType.OPAQUE))
+                installPixels(pixels)
+            }
+            .toBufferedImage()
+            .toComposeImageBitmap()
+    }
+
+    LaunchedEffect(location) {
+        if (cached[location] != null) return@LaunchedEffect
+
+        withContext(Dispatchers.IO) {
+            load()
         }
     }
 
-    if (map == null) return
+    if (cached[location] == null) return
 
     var focused by remember { mutableStateOf(Pair(-1, -1)) }
 
@@ -103,7 +107,7 @@ fun BoxScope.RegionPreview(
             .zIndex(0f)
     ) {
         Image(
-            map!!,
+            cached[location]!!,
             null,
             filterQuality = androidx.compose.ui.graphics.FilterQuality.None,
             modifier = Modifier.fillMaxSize()
