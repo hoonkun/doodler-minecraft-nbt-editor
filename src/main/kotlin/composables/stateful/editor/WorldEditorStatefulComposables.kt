@@ -235,10 +235,14 @@ fun ColumnScope.AnvilSelector(
 
     val updateSelectedChunk: () -> Unit = {
         val isValid = state.isChunkXValid && state.isChunkZValid
-        val isInt = state.chunkXValue.text.toIntOrNull() != null && state.chunkZValue.text.toIntOrNull() != null
+        val xInt = state.chunkXValue.text.toIntOrNull()
+        val zInt = state.chunkZValue.text.toIntOrNull()
+        val isInt = xInt != null && zInt != null
+        // 이거 왜 스마트캐스팅 안해주더라?...
+        val exists = if (isInt) chunks.contains(ChunkLocation(xInt!!, zInt!!)) else false
         state.selectedChunk =
-            if (!isValid || !isInt) null
-            else ChunkLocation(state.chunkXValue.text.toInt(), state.chunkZValue.text.toInt())
+            if (!isValid || !isInt || !exists) null
+            else ChunkLocation(xInt!!, zInt!!)
     }
 
     val validate: (List<Int>, AnnotatedString) -> Pair<TransformedText, Boolean> = validate@ { valid, actual ->
