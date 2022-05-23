@@ -89,7 +89,7 @@ fun BoxScope.RegionPreview(
             .toComposeImageBitmap()
     }
 
-    LaunchedEffect(location) {
+    LaunchedEffect(cached, location) {
         if (cached[location] != null) return@LaunchedEffect
 
         withContext(Dispatchers.IO) {
