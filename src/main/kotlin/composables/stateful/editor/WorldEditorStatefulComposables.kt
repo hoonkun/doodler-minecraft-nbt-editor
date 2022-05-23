@@ -415,11 +415,8 @@ fun ColumnScope.AnvilSelector(
             state.blockXValue = TextFieldValue("-")
             state.blockZValue = TextFieldValue("-")
             state.selectedChunk = it
-            // TODO: FATAL
-            //  이거, 직접 확인하고 할당해야함.
-            //  보여주는 지도는 Terrain 이지만, 만약 탭이 Terrain이 아닐 경우 데이터가 없는 청크일 수도 있음.
-            state.isChunkXValid = true
-            state.isChunkZValid = true
+            state.isChunkXValid = validChunkX.contains(it.x)
+            state.isChunkZValid = validChunkZ.contains(it.z)
         }
     }
 }
