@@ -37,11 +37,12 @@ class BlockColorGenerator: StringSpec() {
         )
 
         val exceptionalNames = listOf("SLAB", "STAIRS", "LEAVES")
-        val exactMatchExceptions = listOf("WATER", "LAVA")
+        val exactMatchExceptions = listOf("WATER", "LAVA", "DIRT_PATH")
 
         val fixedColors = mapOf(
             "water" to "3D6F8D",
-            "grass_block" to "3F6530"
+            "grass_block" to "3F6530",
+            "dirt_path" to "8E7340"
         )
 
         val mapName: String.(where: Map<String, String>) -> String = map@ { where ->
