@@ -57,9 +57,9 @@ fun BoxScope.RegionPreview(
                 val multiplier = if (block.isWater) block.depth / 7f * 30 - 30 else 1f
                 val cutout = if (block.y.toInt() == yLimit) 0.5f else 1f
 
-                pixels[(x * 512 + z) * 4 + 0] = ((block.color[2] + multiplier) * cutout).toInt().coerceIn(-128, 127).toByte()
-                pixels[(x * 512 + z) * 4 + 1] = ((block.color[1] + multiplier) * cutout).toInt().coerceIn(-128, 127).toByte()
-                pixels[(x * 512 + z) * 4 + 2] = ((block.color[0] + multiplier) * cutout).toInt().coerceIn(-128, 127).toByte()
+                pixels[(x * 512 + z) * 4 + 0] = ((block.color[2].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
+                pixels[(x * 512 + z) * 4 + 1] = ((block.color[1].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
+                pixels[(x * 512 + z) * 4 + 2] = ((block.color[0].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
                 pixels[(x * 512 + z) * 4 + 3] = block.color[3]
 
                 heights[x * 512 + z] = block.y
@@ -69,13 +69,13 @@ fun BoxScope.RegionPreview(
                 val aboveY = heights[hIndex]
                 if (block.y < aboveY) {
                     (0..2).forEach {
-                        pixels[pIndex + it] = (pixels[pIndex + it] + 15)
-                            .coerceAtMost(127).toByte()
+                        pixels[pIndex + it] = (pixels[pIndex + it].toUByte().toInt() + 15)
+                            .coerceAtMost(255).toByte()
                     }
                 } else if (block.y > aboveY) {
                     (0..2).forEach {
-                        pixels[pIndex + it] = (pixels[pIndex + it] - 15)
-                            .coerceAtLeast(-128).toByte()
+                        pixels[pIndex + it] = (pixels[pIndex + it].toUByte().toInt() - 15)
+                            .coerceAtLeast(0).toByte()
                     }
                 }
             }
