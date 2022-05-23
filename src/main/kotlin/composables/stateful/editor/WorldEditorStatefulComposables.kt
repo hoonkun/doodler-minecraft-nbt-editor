@@ -40,6 +40,8 @@ import keys
 import kotlinx.coroutines.launch
 import doodler.nbt.TagType
 import doodler.nbt.tag.CompoundTag
+import doodler.nbt.tag.DoubleTag
+import doodler.nbt.tag.ListTag
 import doodler.nbt.tag.StringTag
 import java.io.File
 
@@ -54,8 +56,10 @@ fun WorldEditor(
     if (states.worldSpec.tree == null)
         states.worldSpec.tree = IOUtils.load(worldPath)
 
+    val levelInfo = IOUtils.readLevel(states.worldSpec.requireTree.level.readBytes())["Data"]
+
     if (states.worldSpec.name == null)
-        states.worldSpec.name = IOUtils.readLevel(states.worldSpec.requireTree.level.readBytes())["Data"]
+        states.worldSpec.name = levelInfo
             ?.getAs<CompoundTag>()!!["LevelName"]
             ?.getAs<StringTag>()
             ?.value
@@ -81,7 +85,15 @@ fun WorldEditor(
                     NbtSpecies("", mutableStateOf(NbtState.new(IOUtils.readLevel(tree.level.readBytes()))))
                 )
             } else {
-                MultipleSpeciesHolder(data.key, data.format, data.contentType, data.extras)
+                val pos = levelInfo
+                    ?.getAs<CompoundTag>()?.get("Player")
+                    ?.getAs<CompoundTag>()?.get("Pos")
+                    ?.getAs<ListTag>()
+                val x = pos?.get(0)?.getAs<DoubleTag>()?.value?.toInt()
+                val z = pos?.get(2)?.getAs<DoubleTag>()?.value?.toInt()
+                val extras = data.extras.toMutableMap()
+                if (x != null && z != null) extras["playerpos"] = "$x, $z"
+                MultipleSpeciesHolder(data.key, data.format, data.contentType, extras)
             }
 
         states.phylum.list.add(newHolder)

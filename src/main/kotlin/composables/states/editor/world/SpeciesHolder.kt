@@ -4,6 +4,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import doodler.anvil.BlockLocation
 
 
 abstract class SpeciesHolder(
@@ -36,7 +37,9 @@ class MultipleSpeciesHolder(
     var selected by mutableStateOf<Species?>(null)
 
     init {
-        val selector = SelectorSpecies("+", mutableStateOf(SelectorState()))
+        val selector = SelectorSpecies("+", mutableStateOf(SelectorState.new(
+            extra["playerpos"]?.split(", ")?.let { BlockLocation(it[0].toInt(), it[1].toInt()) }
+        )))
         species.add(selector)
         selected = selector
     }
