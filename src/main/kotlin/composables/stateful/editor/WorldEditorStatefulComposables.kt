@@ -225,6 +225,8 @@ fun ColumnScope.AnvilSelector(
 
     if (state.initialComposition && chunks.isNotEmpty() && (state.selectedChunk == null || !chunks.contains(state.selectedChunk))) {
         state.selectedChunk = chunks[0]
+        state.blockXValue = TextFieldValue("-")
+        state.blockZValue = TextFieldValue("-")
     }
 
     if (state.chunkXValue.text == "") state.chunkXValue = TextFieldValue("${state.selectedChunk?.x ?: "-"}")
@@ -243,6 +245,10 @@ fun ColumnScope.AnvilSelector(
         state.selectedChunk =
             if (!isValid || !isInt || !exists) null
             else ChunkLocation(xInt!!, zInt!!)
+    }
+
+    val hasNbt: (ChunkLocation) -> Boolean = {
+        chunks.contains(it)
     }
 
     val validate: (List<Int>, AnnotatedString) -> Pair<TransformedText, Boolean> = validate@ { valid, actual ->
@@ -403,7 +409,7 @@ fun ColumnScope.AnvilSelector(
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (state.mapAnvil != null)
-        RegionPreview(tree, state.mapAnvil!!, state.selectedChunk) {
+        RegionPreview(tree, state.mapAnvil!!, state.selectedChunk, hasNbt) {
             state.chunkXValue = TextFieldValue(it.x.toString())
             state.chunkZValue = TextFieldValue(it.z.toString())
             state.blockXValue = TextFieldValue("-")

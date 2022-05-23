@@ -29,7 +29,13 @@ import org.jetbrains.skiko.toBufferedImage
 //  관련하여, 데이터가 있는 청크와 없는 청크를 구별할 수 있는 방법이 필요해보임.
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun BoxScope.RegionPreview(tree: WorldTree, location: AnvilLocation, selected: ChunkLocation?, onSelect: (ChunkLocation) -> Unit) {
+fun BoxScope.RegionPreview(
+    tree: WorldTree,
+    location: AnvilLocation,
+    selected: ChunkLocation?,
+    hasNbt: (ChunkLocation) -> Boolean,
+    onSelect: (ChunkLocation) -> Unit
+) {
     var map by remember { mutableStateOf<ImageBitmap?>(null) }
 
     val nSelected = selected?.normalize(location)
@@ -41,7 +47,7 @@ fun BoxScope.RegionPreview(tree: WorldTree, location: AnvilLocation, selected: C
             val subChunks = AnvilWorker.loadChunksWith(bytes) { chunkLoc, tag ->
                 Pair(chunkLoc, SurfaceWorker.createSubChunk(tag))
             }
-            val pixels = ByteArray(512 * 512 * 4) { index -> if (index % 4 == 2 || index % 4 == 3) -1 else 0 }
+            val pixels = ByteArray(512 * 512 * 4)
             val heights = ShortArray(512 * 512)
             subChunks.forEach { (loc, chunks) ->
                 val baseX = loc.x * 16
@@ -109,17 +115,19 @@ fun BoxScope.RegionPreview(tree: WorldTree, location: AnvilLocation, selected: C
             for (x in 0 until 32) {
                 Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     for (z in 0 until 32) {
+                        val loc = ChunkLocation(x + 32 * location.x, z + 32 * location.z)
                         Box(
                             modifier = Modifier.weight(1f).fillMaxHeight()
                                 .background(
-                                    if (focused.first == x && focused.second == z) Color(255, 255, 255, 60)
+                                    if (!hasNbt(loc)) Color(245, 102, 66, 60)
+                                    else if (focused.first == x && focused.second == z) Color(255, 255, 255, 60)
                                     else Color.Transparent
                                 )
                                 .onPointerEvent(PointerEventType.Enter) {
                                     focused = Pair(x, z)
                                 }
                                 .onPointerEvent(PointerEventType.Press) {
-                                    onSelect(ChunkLocation(x + 32 * location.x, z + 32 * location.z))
+                                    onSelect(loc)
                                 }
                                 .let {
                                     if (nSelected?.x == x && nSelected.z == z)
