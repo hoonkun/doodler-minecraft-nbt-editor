@@ -223,8 +223,11 @@ fun ColumnScope.AnvilSelector(
     val selector = holder.species.find { it is SelectorSpecies } as SelectorSpecies
     val state = selector.state
 
-    if (state.initialComposition && state.selectedChunk == null && chunks.isNotEmpty())
+    // TODO: FATAL
+    //  extra.playerpos 를 통해 입력받은 플레이어 위치의 청크 데이터가 없을 경우에도 아래 문장을 수행해야함
+    if (state.initialComposition && state.selectedChunk == null && chunks.isNotEmpty()) {
         state.selectedChunk = chunks[0]
+    }
 
     if (state.chunkXValue.text == "") state.chunkXValue = TextFieldValue("${state.selectedChunk?.x ?: "-"}")
     if (state.chunkZValue.text == "") state.chunkZValue = TextFieldValue("${state.selectedChunk?.z ?: "-"}")
@@ -404,6 +407,9 @@ fun ColumnScope.AnvilSelector(
             state.blockXValue = TextFieldValue("-")
             state.blockZValue = TextFieldValue("-")
             state.selectedChunk = it
+            // TODO: FATAL
+            //  이거, 직접 확인하고 할당해야함.
+            //  보여주는 지도는 Terrain 이지만, 만약 탭이 Terrain이 아닐 경우 데이터가 없는 청크일 수도 있음.
             state.isChunkXValid = true
             state.isChunkZValid = true
         }
