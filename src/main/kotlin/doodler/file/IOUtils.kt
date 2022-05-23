@@ -1,5 +1,9 @@
 package doodler.file
 
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.snapshots.SnapshotStateMap
+import androidx.compose.ui.graphics.ImageBitmap
+import doodler.anvil.AnvilLocation
 import doodler.anvil.GZip
 import doodler.nbt.Tag
 import doodler.nbt.TagType
@@ -66,9 +70,9 @@ class WorldTree (
     val advancements: List<File>,
     val stats: List<File>,
     val players: List<File>,
-    val overworld: WorldDimensionTree,
-    val nether: WorldDimensionTree,
-    val end: WorldDimensionTree
+    private val overworld: WorldDimensionTree,
+    private val nether: WorldDimensionTree,
+    private val end: WorldDimensionTree
 ) {
     operator fun get(key: String): WorldDimensionTree {
         return when (key) {
@@ -84,5 +88,6 @@ class WorldDimensionTree (
     val region: List<File>,
     val entities: List<File>,
     val poi: List<File>,
-    val data: List<File>
+    val data: List<File>,
+    val cachedTerrains: SnapshotStateMap<AnvilLocation, ImageBitmap> = mutableStateMapOf()
 )

@@ -5,12 +5,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
@@ -31,7 +29,6 @@ fun BoxScope.RegionPreview(
     dimension: String,
     location: AnvilLocation,
     selected: ChunkLocation?,
-    cached: SnapshotStateMap<AnvilLocation, ImageBitmap>,
     hasNbt: (ChunkLocation) -> Boolean,
     onSelect: (ChunkLocation) -> Unit
 ) {
@@ -80,7 +77,7 @@ fun BoxScope.RegionPreview(
                 }
             }
         }
-        cached[location] = Bitmap()
+        tree.cachedTerrains[location] = Bitmap()
             .apply {
                 allocPixels(ImageInfo(512, 512, ColorType.N32, ColorAlphaType.OPAQUE))
                 installPixels(pixels)
@@ -89,15 +86,15 @@ fun BoxScope.RegionPreview(
             .toComposeImageBitmap()
     }
 
-    LaunchedEffect(cached, location) {
-        if (cached[location] != null) return@LaunchedEffect
+    LaunchedEffect(tree.cachedTerrains, location) {
+        if (tree.cachedTerrains[location] != null) return@LaunchedEffect
 
         withContext(Dispatchers.IO) {
             load()
         }
     }
 
-    if (cached[location] == null) return
+    if (tree.cachedTerrains[location] == null) return
 
     var focused by remember { mutableStateOf(Pair(-1, -1)) }
 
@@ -110,7 +107,7 @@ fun BoxScope.RegionPreview(
             .zIndex(0f)
     ) {
         Image(
-            cached[location]!!,
+            tree.cachedTerrains[location]!!,
             null,
             filterQuality = androidx.compose.ui.graphics.FilterQuality.None,
             modifier = Modifier.fillMaxSize()

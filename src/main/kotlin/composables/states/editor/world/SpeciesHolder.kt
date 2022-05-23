@@ -1,9 +1,6 @@
 package composables.states.editor.world
 
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateMap
-import androidx.compose.ui.graphics.ImageBitmap
-import doodler.anvil.AnvilLocation
 import doodler.anvil.BlockLocation
 
 
@@ -30,7 +27,6 @@ class MultipleSpeciesHolder(
     ident: String,
     format: Species.Format,
     contentType: Species.ContentType,
-    val cachedMaps: SnapshotStateMap<AnvilLocation, ImageBitmap> = mutableStateMapOf(),
     val extra: Map<String, String> = mapOf()
 ): SpeciesHolder(ident, format, contentType) {
 

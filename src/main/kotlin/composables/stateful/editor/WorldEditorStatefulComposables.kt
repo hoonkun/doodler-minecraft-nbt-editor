@@ -409,7 +409,7 @@ fun ColumnScope.AnvilSelector(
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (state.mapAnvil != null)
-        RegionPreview(tree[dimension], dimension, state.mapAnvil!!, state.selectedChunk, holder.cachedMaps, hasNbt) {
+        RegionPreview(tree[dimension], dimension, state.mapAnvil!!, state.selectedChunk, hasNbt) {
             state.chunkXValue = TextFieldValue(it.x.toString())
             state.chunkZValue = TextFieldValue(it.z.toString())
             state.blockXValue = TextFieldValue("-")
