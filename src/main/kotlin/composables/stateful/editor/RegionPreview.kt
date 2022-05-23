@@ -1,12 +1,19 @@
 package composables.stateful.editor
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import doodler.anvil.*
 import doodler.file.WorldTree
@@ -16,9 +23,12 @@ import kotlinx.coroutines.withContext
 import org.jetbrains.skia.*
 import org.jetbrains.skiko.toBufferedImage
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun BoxScope.RegionPreview(tree: WorldTree, location: AnvilLocation = AnvilLocation(0, -1)) {
+fun BoxScope.RegionPreview(tree: WorldTree, selected: ChunkLocation?, location: AnvilLocation) {
     var map by remember { mutableStateOf<ImageBitmap?>(null) }
+
+    val nSelected = selected?.normalize(location)
 
     LaunchedEffect(location) {
         withContext(Dispatchers.IO) {
@@ -75,6 +85,8 @@ fun BoxScope.RegionPreview(tree: WorldTree, location: AnvilLocation = AnvilLocat
 
     if (map == null) return
 
+    var focused by remember { mutableStateOf(Pair(-1, -1)) }
+
     Box(
         modifier = Modifier
             .fillMaxHeight()
@@ -88,6 +100,29 @@ fun BoxScope.RegionPreview(tree: WorldTree, location: AnvilLocation = AnvilLocat
             filterQuality = androidx.compose.ui.graphics.FilterQuality.None,
             modifier = Modifier.fillMaxSize()
         )
+        Column(modifier = Modifier.fillMaxSize()) {
+            for (x in 0 until 32) {
+                Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                    for (z in 0 until 32) {
+                        Box(
+                            modifier = Modifier.weight(1f).fillMaxHeight()
+                                .background(
+                                    if (focused.first == x && focused.second == z) Color(255, 255, 255, 60)
+                                    else Color.Transparent
+                                )
+                                .onPointerEvent(PointerEventType.Enter) {
+                                    focused = Pair(x, z)
+                                }
+                                .let {
+                                    if (nSelected?.x == x && nSelected.z == z)
+                                        it.border(2.dp, Color.White)
+                                    else it
+                                }
+                        )
+                    }
+                }
+            }
+        }
     }
 
 }

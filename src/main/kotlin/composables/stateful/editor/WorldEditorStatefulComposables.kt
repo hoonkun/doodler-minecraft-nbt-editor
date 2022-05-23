@@ -397,7 +397,7 @@ fun ColumnScope.AnvilSelector(
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (state.mapAnvil != null)
-        RegionPreview(tree, state.mapAnvil!!)
+        RegionPreview(tree, state.selectedChunk, state.mapAnvil!!)
     }
 }
 

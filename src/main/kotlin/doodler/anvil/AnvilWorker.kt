@@ -15,6 +15,9 @@ data class BlockLocation(val x: Int, val z: Int) {
 }
 data class AnvilLocation(val x: Int, val z: Int)
 data class ChunkLocation(val x: Int, val z: Int) {
+    fun normalize(anvilLocation: AnvilLocation): ChunkLocation {
+        return ChunkLocation(x - 32 * anvilLocation.x, z - 32 * anvilLocation.z)
+    }
     fun toAnvilLocation(): AnvilLocation {
         return AnvilLocation(floor(this.x / 32.0).toInt(), floor(this.z / 32.0).toInt())
     }
