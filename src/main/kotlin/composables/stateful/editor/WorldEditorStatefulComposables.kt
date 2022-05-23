@@ -238,8 +238,8 @@ fun ColumnScope.AnvilSelector(
         state.chunkZValue = TextFieldValue(chunks[0].z.toString())
         state.blockXValue = TextFieldValue("-")
         state.blockZValue = TextFieldValue("-")
-        state.initialComposition = false
     }
+    state.initialComposition = false
 
     val validChunkX = chunks.map { chunk -> chunk.x }
     val validChunkZ = chunks.map { chunk -> chunk.z }
@@ -252,12 +252,8 @@ fun ColumnScope.AnvilSelector(
 
     val isBlockValid = {
         val xInt = state.blockXValue.text.toIntOrNull()
-        val zInt = state.chunkZValue.text.toIntOrNull()
+        val zInt = state.blockZValue.text.toIntOrNull()
         Pair(xInt, zInt)
-    }
-
-    val hasNbt: (ChunkLocation) -> Boolean = {
-        chunks.contains(it)
     }
 
     val transformBlockCoordinate: (AnnotatedString) -> TransformedText = { annotated ->
@@ -293,28 +289,29 @@ fun ColumnScope.AnvilSelector(
     val updateFromChunk: () -> Unit = update@ {
         val (x, z, isValid) = isChunkValid()
         val isInt = x != null && z != null
-        // 이거 왜 스마트캐스팅 안해주더라?...
         val exists = if (isInt) chunks.contains(ChunkLocation(x!!, z!!)) else false
+
         val prevState = state.selectedChunk
         val newState =
             if (!isValid || !isInt || !exists) null
             else ChunkLocation(x!!, z!!)
 
-        // 이거 리액트처럼 같으면 스킵 안하나?
         if (prevState == newState) return@update
         state.selectedChunk = newState
     }
 
     val updateFromBlock: () -> Unit = update@ {
         val (x, z) = isBlockValid()
-        val isInt = x != null && z != null
 
+        val isInt = x != null && z != null
         if (!isInt) return@update
 
-        val newChunk = BlockLocation(x!!, z!!).toChunkLocation()
-        "${newChunk.x}".let { if (state.chunkXValue.text != it) state.chunkXValue = TextFieldValue(it) }
-        "${newChunk.z}".let { if (state.chunkZValue.text != it) state.chunkZValue = TextFieldValue(it) }
-        newChunk.let { if (state.selectedChunk != it) state.selectedChunk = it }
+        val chunk = BlockLocation(x!!, z!!).toChunkLocation()
+        val (chunkX, chunkZ) = chunk.toStringPair()
+
+        if (state.chunkXValue.text != chunkX) state.chunkXValue = TextFieldValue(chunkX)
+        if (state.chunkZValue.text != chunkZ) state.chunkZValue = TextFieldValue(chunkZ)
+        if (state.selectedChunk != chunk) state.selectedChunk = chunk
     }
 
     if (state.selectedChunk?.toAnvilLocation() != null) {
@@ -434,7 +431,13 @@ fun ColumnScope.AnvilSelector(
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (state.mapAnvil != null)
-        RegionPreview(tree[dimension], dimension, state.mapAnvil!!, state.selectedChunk, hasNbt) {
+        RegionPreview(
+            tree[dimension],
+            dimension,
+            state.mapAnvil!!,
+            state.selectedChunk,
+            { chunks.contains(it) }
+        ) {
             state.chunkXValue = TextFieldValue(it.x.toString())
             state.chunkZValue = TextFieldValue(it.z.toString())
             state.blockXValue = TextFieldValue("-")
