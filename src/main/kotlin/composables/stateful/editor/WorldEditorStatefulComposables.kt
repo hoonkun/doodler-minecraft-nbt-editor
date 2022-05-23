@@ -45,7 +45,6 @@ import doodler.nbt.tag.CompoundTag
 import doodler.nbt.tag.DoubleTag
 import doodler.nbt.tag.ListTag
 import doodler.nbt.tag.StringTag
-import java.io.File
 
 @Composable
 fun WorldEditor(
@@ -181,145 +180,138 @@ fun BoxScope.Selector(
     holder: MultipleSpeciesHolder
 ) {
 
-    val onSelectChunk: (ChunkLocation, File?) -> Unit = select@ { loc, file ->
-        if (file == null) return@select
+    val dimension = holder.extra["dimension"] as WorldDimension? ?: return
 
-        val newIdent = "[${loc.x}, ${loc.z}]"
+    val worldDimension = tree[dimension]
+
+    val anvils by remember(holder) { mutableStateOf(
+        when(holder.contentType) {
+            Species.ContentType.TERRAIN -> worldDimension.region
+            Species.ContentType.POI -> worldDimension.poi
+            Species.ContentType.ENTITY -> worldDimension.entities
+            else -> listOf()
+        }
+    ) }
+
+    val chunks by remember(holder, anvils) { mutableStateOf(
+        anvils.map {
+            val segments = it.name.split(".")
+            val location = AnvilLocation(segments[1].toInt(), segments[2].toInt())
+            AnvilWorker.loadChunkList(location, it.readBytes())
+        }.toList().flatten()
+    ) }
+
+    val onSelectChunk: (ChunkLocation) -> Unit = select@ { chunk ->
+        val file = anvils
+            .find { anvil -> anvil.name == chunk.toAnvilLocation().let { "r.${it.x}.${it.z}.mca" } } ?: return@select
+
+        val newIdent = "[${chunk.x}, ${chunk.z}]"
         if (holder.hasSpecies(newIdent)) return@select
 
-        val root = AnvilWorker.loadChunk(loc, file.readBytes()) ?: return@select
+        val root = AnvilWorker.loadChunk(chunk, file.readBytes()) ?: return@select
 
         holder.add(NbtSpecies(newIdent, mutableStateOf(NbtState.new(root))))
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        if (holder.format == Species.Format.MCA) AnvilSelector(tree, holder, onSelectChunk)
+        if (holder.format == Species.Format.MCA) AnvilSelector(chunks, tree, holder, onSelectChunk)
     }
 }
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun ColumnScope.AnvilSelector(
+    chunks: List<ChunkLocation>,
     tree: WorldTree,
     holder: MultipleSpeciesHolder,
-    onSelectChunk: (ChunkLocation, File?) -> Unit
+    onSelectChunk: (ChunkLocation) -> Unit
 ) {
 
     val dimension = holder.extra["dimension"] as WorldDimension? ?: return
 
-    val worldDimension = tree[dimension]
-
     val selector = holder.species.find { it is SelectorSpecies } as SelectorSpecies
     val state = selector.state
 
-    val anvils = when(holder.contentType) {
-        Species.ContentType.TERRAIN -> worldDimension.region
-        Species.ContentType.POI -> worldDimension.poi
-        Species.ContentType.ENTITY -> worldDimension.entities
-        else -> return
-    }
-
-    val chunks = mutableListOf<ChunkLocation>()
-    anvils.forEach {
-        val segments = it.name.split(".")
-        val location = AnvilLocation(segments[1].toInt(), segments[2].toInt())
-        chunks.addAll(AnvilWorker.loadChunkList(location, it.readBytes()))
-    }
-
     if (state.initialComposition && chunks.isNotEmpty() && (state.selectedChunk == null || !chunks.contains(state.selectedChunk))) {
         state.selectedChunk = chunks[0]
+        state.chunkXValue = TextFieldValue(chunks[0].x.toString())
+        state.chunkZValue = TextFieldValue(chunks[0].z.toString())
         state.blockXValue = TextFieldValue("-")
         state.blockZValue = TextFieldValue("-")
     }
-
-    if (state.chunkXValue.text == "") state.chunkXValue = TextFieldValue("${state.selectedChunk?.x ?: "-"}")
-    if (state.chunkZValue.text == "") state.chunkZValue = TextFieldValue("${state.selectedChunk?.z ?: "-"}")
+    state.initialComposition = false
 
     val validChunkX = chunks.map { chunk -> chunk.x }
     val validChunkZ = chunks.map { chunk -> chunk.z }
 
-    val updateSelectedChunk: () -> Unit = {
-        val isValid = state.isChunkXValid && state.isChunkZValid
+    val isChunkValid = {
         val xInt = state.chunkXValue.text.toIntOrNull()
         val zInt = state.chunkZValue.text.toIntOrNull()
-        val isInt = xInt != null && zInt != null
-        // 이거 왜 스마트캐스팅 안해주더라?...
-        val exists = if (isInt) chunks.contains(ChunkLocation(xInt!!, zInt!!)) else false
-        state.selectedChunk =
-            if (!isValid || !isInt || !exists) null
-            else ChunkLocation(xInt!!, zInt!!)
+        Triple(xInt, zInt, validChunkX.contains(xInt) && validChunkZ.contains(zInt))
     }
 
-    val hasNbt: (ChunkLocation) -> Boolean = {
-        chunks.contains(it)
+    val isBlockValid = {
+        val xInt = state.blockXValue.text.toIntOrNull()
+        val zInt = state.blockZValue.text.toIntOrNull()
+        Pair(xInt, zInt)
     }
 
-    val validate: (List<Int>, AnnotatedString) -> Pair<TransformedText, Boolean> = validate@ { valid, actual ->
-        val int = actual.text.toIntOrNull()
-        if (int == null) {
-            TransformedText(
-                AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Selector.Malformed), 0, actual.text.length))),
-                OffsetMapping.Identity
-            ) to false
-        } else {
-            if (valid.contains(int)) {
-                TransformedText(AnnotatedString(actual.text), OffsetMapping.Identity) to true
-            } else {
-                TransformedText(
-                    AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Selector.Invalid), 0, actual.text.length))),
-                    OffsetMapping.Identity
-                ) to false
-            }
-        }
+    val transformBlockCoordinate: (AnnotatedString) -> TransformedText = { annotated ->
+        val int = annotated.text.toIntOrNull()
+
+        val color =
+            if (int == null) ThemedColor.Editor.Selector.Malformed
+            else ThemedColor.Editor.Tag.General
+
+        val spans = listOf(AnnotatedString.Range(SpanStyle(color = color), 0, annotated.text.length))
+
+        TransformedText(AnnotatedString(annotated.text, spans), OffsetMapping.Identity)
     }
 
-    val validateIntOnly: (AnnotatedString) -> TransformedText = { actual ->
-        val int = actual.text.toIntOrNull()
-        if (int == null) {
-            TransformedText(
-                AnnotatedString(actual.text, listOf(AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Selector.Malformed), 0, actual.text.length))),
-                OffsetMapping.Identity
-            )
-        } else {
-            TransformedText(AnnotatedString(actual.text), OffsetMapping.Identity)
-        }
+    val transformChunkCoordinate: (AnnotatedString, List<Int>) -> TransformedText = validate@ { annotated, criteria ->
+        val int = annotated.text.toIntOrNull()
+
+        val color =
+            if (int == null) ThemedColor.Editor.Selector.Malformed
+            else if (!criteria.contains(int)) ThemedColor.Editor.Selector.Invalid
+            else ThemedColor.Editor.Tag.General
+
+        val spans = listOf(AnnotatedString.Range(SpanStyle(color = color), 0, annotated.text.length))
+
+        TransformedText(AnnotatedString(annotated.text, spans), OffsetMapping.Identity)
     }
 
-    val validateChunkX: (AnnotatedString) -> TransformedText = validate@ {
-        val validateResult = validate(validChunkX, it)
-
-        state.isChunkXValid = validateResult.second
-
-        updateSelectedChunk()
-        validateResult.first
-    }
-
-    val validateChunkZ: (AnnotatedString) -> TransformedText = validate@ {
-        val validateResult = validate(validChunkZ, it)
-
-        state.isChunkZValid = validateResult.second
-
-        updateSelectedChunk()
-        validateResult.first
-    }
-
-    val removeBlock: () -> Unit = {
+    val invalidateBlockCoordinate: () -> Unit = {
         if (state.blockXValue.text != "-") state.blockXValue = TextFieldValue("-")
         if (state.blockZValue.text != "-") state.blockZValue = TextFieldValue("-")
     }
 
-    val updateFromBlock: () -> Unit = {
-        if (state.blockXValue.text.toIntOrNull() != null && state.blockZValue.text.toIntOrNull() != null) {
-            val newChunk = BlockLocation(state.blockXValue.text.toInt(), state.blockZValue.text.toInt()).toChunkLocation()
-            "${newChunk.x}".let { if (state.chunkXValue.text != it) state.chunkXValue = TextFieldValue(it) }
-            "${newChunk.z}".let { if (state.chunkZValue.text != it) state.chunkZValue = TextFieldValue(it) }
-            println("UPDATE FROM BLOCK")
-            newChunk.let { if (state.selectedChunk != it) state.selectedChunk = it }
-        }
+    val updateFromChunk: () -> Unit = update@ {
+        val (x, z, isValid) = isChunkValid()
+        val isInt = x != null && z != null
+        val exists = if (isInt) chunks.contains(ChunkLocation(x!!, z!!)) else false
+
+        val prevState = state.selectedChunk
+        val newState =
+            if (!isValid || !isInt || !exists) null
+            else ChunkLocation(x!!, z!!)
+
+        if (prevState == newState) return@update
+        state.selectedChunk = newState
     }
 
-    if (state.selectedChunk?.toAnvilLocation() != null) {
-        state.mapAnvil = state.selectedChunk?.toAnvilLocation()
+    val updateFromBlock: () -> Unit = update@ {
+        val (x, z) = isBlockValid()
+
+        val isInt = x != null && z != null
+        if (!isInt) return@update
+
+        val chunk = BlockLocation(x!!, z!!).toChunkLocation()
+        val (chunkX, chunkZ) = chunk.toStringPair()
+
+        if (state.chunkXValue.text != chunkX) state.chunkXValue = TextFieldValue(chunkX)
+        if (state.chunkZValue.text != chunkZ) state.chunkZValue = TextFieldValue(chunkZ)
+        if (state.selectedChunk != chunk) state.selectedChunk = chunk
     }
 
     var openPressed by remember { mutableStateOf(false) }
@@ -327,8 +319,6 @@ fun ColumnScope.AnvilSelector(
 
     var drawerPressed by remember { mutableStateOf(false) }
     var drawerFocused by remember { mutableStateOf(false) }
-
-    if (state.initialComposition) state.initialComposition = false
 
     Row (
         modifier = Modifier
@@ -366,13 +356,13 @@ fun ColumnScope.AnvilSelector(
             CoordinateInput(
                 state.blockXValue,
                 { state.blockXValue = it; updateFromBlock() },
-                validateIntOnly
+                transformBlockCoordinate
             )
             CoordinateText(", ")
             CoordinateInput(
                 state.blockZValue,
                 { state.blockZValue = it; updateFromBlock() },
-                validateIntOnly
+                transformBlockCoordinate
             )
             CoordinateText("]")
         }
@@ -381,24 +371,24 @@ fun ColumnScope.AnvilSelector(
             CoordinateText("[")
             CoordinateInput(
                 state.chunkXValue,
-                { state.chunkXValue = it; removeBlock() },
-                validateChunkX
+                { state.chunkXValue = it; invalidateBlockCoordinate(); updateFromChunk() },
+                { transformChunkCoordinate(it, validChunkX) }
             )
             CoordinateText(", ")
             CoordinateInput(
                 state.chunkZValue,
-                { state.chunkZValue = it; removeBlock() },
-                validateChunkZ
+                { state.chunkZValue = it; invalidateBlockCoordinate(); updateFromChunk() },
+                { transformChunkCoordinate(it, validChunkZ) }
             )
             CoordinateText("]")
         }
         Spacer(modifier = Modifier.width(10.dp))
         AnvilSelectorDropdown("region:") {
-            val isChunkValid = state.isChunkXValid && state.isChunkZValid
+            val (_, _, isValid) = isChunkValid()
             CoordinateText("r.")
-            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.x ?: "-"}", !isChunkValid)
+            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.x ?: "-"}", !isValid)
             CoordinateText(".")
-            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.z ?: "-"}", !isChunkValid)
+            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.z ?: "-"}", !isValid)
             CoordinateText(".mca")
         }
         Spacer(modifier = Modifier.weight(1f))
@@ -418,8 +408,7 @@ fun ColumnScope.AnvilSelector(
                 .mouseClickable {
                     val chunk = state.selectedChunk
                     if (chunk != null) {
-                        val anvil = chunk.toAnvilLocation()
-                        onSelectChunk(chunk, anvils.find { it.name == "r.${anvil.x}.${anvil.z}.mca" })
+                        onSelectChunk(chunk)
                     }
                 }
                 .height(45.dp),
@@ -437,15 +426,17 @@ fun ColumnScope.AnvilSelector(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (state.mapAnvil != null)
-        RegionPreview(tree[dimension], dimension, state.mapAnvil!!, state.selectedChunk, hasNbt) {
+        RegionPreview(
+            tree[dimension],
+            dimension,
+            state.selectedChunk,
+            { chunks.contains(it) }
+        ) {
             state.chunkXValue = TextFieldValue(it.x.toString())
             state.chunkZValue = TextFieldValue(it.z.toString())
             state.blockXValue = TextFieldValue("-")
             state.blockZValue = TextFieldValue("-")
             state.selectedChunk = it
-            state.isChunkXValid = validChunkX.contains(it.x)
-            state.isChunkZValid = validChunkZ.contains(it.z)
         }
     }
 }

@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
@@ -200,6 +201,9 @@ fun RowScope.CoordinateInput(
         modifier = Modifier
             .width((value.text.length.coerceAtLeast(1) * 12.75).dp)
             .focusable(false)
+            .onFocusChanged {
+                if (!it.isFocused && value.text.isEmpty()) onValueChange(TextFieldValue("-"))
+            }
     )
 }
 

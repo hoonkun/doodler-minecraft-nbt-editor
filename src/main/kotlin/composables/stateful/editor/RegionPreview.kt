@@ -28,12 +28,19 @@ import org.jetbrains.skiko.toBufferedImage
 fun BoxScope.RegionPreview(
     tree: WorldDimensionTree,
     dimension: WorldDimension,
-    location: AnvilLocation,
     selected: ChunkLocation?,
     hasNbt: (ChunkLocation) -> Boolean,
     onSelect: (ChunkLocation) -> Unit
 ) {
-    val nSelected = selected?.normalize(location)
+    val (location, setLocation) = remember { mutableStateOf(selected?.toAnvilLocation()) }
+
+    if (selected != null) {
+        setLocation(selected.toAnvilLocation())
+    }
+
+    if (location == null) return
+
+    val nSelected = selected?.normalize(selected.toAnvilLocation())
 
     val load = load@ {
         val bytes = tree.region.find { it.name == "r.${location.x}.${location.z}.mca" }?.readBytes()
