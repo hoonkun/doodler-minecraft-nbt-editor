@@ -291,6 +291,10 @@ fun ColumnScope.AnvilSelector(
         }
     }
 
+    if (state.selectedChunk?.toAnvilLocation() != null) {
+        state.mapAnvil = state.selectedChunk?.toAnvilLocation()
+    }
+
     var openPressed by remember { mutableStateOf(false) }
     var openFocused by remember { mutableStateOf(false) }
 
@@ -380,7 +384,8 @@ fun ColumnScope.AnvilSelector(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        RegionPreview(tree)
+        if (state.mapAnvil != null)
+        RegionPreview(tree, state.mapAnvil!!)
     }
 }
 
