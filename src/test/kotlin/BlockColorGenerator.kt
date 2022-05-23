@@ -21,6 +21,8 @@ class BlockColorGenerator: StringSpec() {
         val mappings = mapOf(
             "log" to "log_top",
             "wood" to "log_top",
+            "(acacia|birch|dark_oak|oak|jungle|spruce|crimson|warped)_slab" to "$1_planks",
+            "(acacia|birch|dark_oak|oak|jungle|spruce|crimson|warped)_stairs" to "$1_planks",
             "_slab" to "",
             "_stairs" to "",
             "hyphae" to "stem_top",
@@ -29,7 +31,7 @@ class BlockColorGenerator: StringSpec() {
             "snow_block" to "snow",
             "waxed_" to "",
             "dried_kelp_block" to "dried_kelp_top",
-            "petrified" to ""
+            "petrified_" to ""
         )
 
         val conditionalMappings = mapOf(
@@ -48,7 +50,7 @@ class BlockColorGenerator: StringSpec() {
         val mapName: String.(where: Map<String, String>) -> String = map@ { where ->
             var result = this
             where.forEach {
-                if (contains(it.key)) result = result.replace(it.key, it.value)
+                if (contains(Regex(it.key))) result = result.replace(Regex(it.key), it.value)
             }
             result
         }
