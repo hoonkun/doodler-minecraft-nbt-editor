@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEvent
@@ -324,6 +325,9 @@ fun ColumnScope.AnvilSelector(
     var openPressed by remember { mutableStateOf(false) }
     var openFocused by remember { mutableStateOf(false) }
 
+    var drawerPressed by remember { mutableStateOf(false) }
+    var drawerFocused by remember { mutableStateOf(false) }
+
     if (state.initialComposition) state.initialComposition = false
 
     Row (
@@ -333,6 +337,29 @@ fun ColumnScope.AnvilSelector(
             .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .background(
+                    if (state.selectedChunk == null) Color.Transparent
+                    else ThemedColor.clickable(drawerPressed, drawerFocused)
+                )
+                .height(60.dp)
+                .onPointerEvent(PointerEventType.Release) { drawerPressed = false }
+                .onPointerEvent(PointerEventType.Press) { drawerPressed = true }
+                .onPointerEvent(PointerEventType.Enter) { drawerFocused = true }
+                .onPointerEvent(PointerEventType.Exit) { drawerFocused = false }
+        ) {
+            Spacer(modifier = Modifier.width(20.dp))
+            Text(
+                "≡",
+                fontFamily = JetBrainsMono,
+                fontSize = 30.sp,
+                color = Color.White,
+                modifier = Modifier.scale(1.8f, 1f)
+            )
+            Spacer(modifier = Modifier.width(20.dp))
+        }
         Spacer(modifier = Modifier.width(10.dp))
         AnvilSelectorDropdown("block:") {
             CoordinateText("[")
