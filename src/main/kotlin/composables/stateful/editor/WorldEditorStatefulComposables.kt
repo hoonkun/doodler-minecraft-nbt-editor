@@ -314,10 +314,6 @@ fun ColumnScope.AnvilSelector(
         if (state.selectedChunk != chunk) state.selectedChunk = chunk
     }
 
-    if (state.selectedChunk?.toAnvilLocation() != null) {
-        state.mapAnvil = state.selectedChunk?.toAnvilLocation()
-    }
-
     var openPressed by remember { mutableStateOf(false) }
     var openFocused by remember { mutableStateOf(false) }
 
@@ -430,11 +426,9 @@ fun ColumnScope.AnvilSelector(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        if (state.mapAnvil != null)
         RegionPreview(
             tree[dimension],
             dimension,
-            state.mapAnvil!!,
             state.selectedChunk,
             { chunks.contains(it) }
         ) {
