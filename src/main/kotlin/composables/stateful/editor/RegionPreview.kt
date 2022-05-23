@@ -24,9 +24,6 @@ import org.jetbrains.skia.*
 import org.jetbrains.skiko.toBufferedImage
 
 
-// TODO:
-//  지형이 보인다고 데이터가 꼭 있는 것이 아니며, 지형이 안보인다고 데이터가 꼭 없는 것도 아니다.
-//  관련하여, 데이터가 있는 청크와 없는 청크를 구별할 수 있는 방법이 필요해보임.
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.RegionPreview(
