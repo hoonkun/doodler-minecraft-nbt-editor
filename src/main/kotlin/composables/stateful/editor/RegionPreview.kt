@@ -17,7 +17,7 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import doodler.anvil.*
-import doodler.file.WorldTree
+import doodler.file.WorldDimensionTree
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.skia.*
@@ -27,7 +27,8 @@ import org.jetbrains.skiko.toBufferedImage
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.RegionPreview(
-    tree: WorldTree,
+    tree: WorldDimensionTree,
+    dimension: String,
     location: AnvilLocation,
     selected: ChunkLocation?,
     cached: SnapshotStateMap<AnvilLocation, ImageBitmap>,
@@ -37,17 +38,18 @@ fun BoxScope.RegionPreview(
     val nSelected = selected?.normalize(location)
 
     val load = load@ {
-        val bytes = tree.overworld.region.find { it.name == "r.${location.x}.${location.z}.mca" }?.readBytes()
+        val bytes = tree.region.find { it.name == "r.${location.x}.${location.z}.mca" }?.readBytes()
             ?: return@load
         val subChunks = AnvilWorker.loadChunksWith(bytes) { chunkLoc, tag ->
             Pair(chunkLoc, SurfaceWorker.createSubChunk(tag))
         }
+        val yLimit = if (dimension == "DIM-1") 89 else 319
         val pixels = ByteArray(512 * 512 * 4)
         val heights = ShortArray(512 * 512)
         subChunks.forEach { (loc, chunks) ->
             val baseX = loc.x * 16
             val baseZ = loc.z * 16
-            val blocks = SurfaceWorker.createSurface(loc, chunks).blocks
+            val blocks = SurfaceWorker.createSurface(loc, chunks, yLimit).blocks
             blocks.forEachIndexed { index, block ->
                 val x = 511 - (baseX + (index / 16))
                 val z = baseZ + (index % 16)

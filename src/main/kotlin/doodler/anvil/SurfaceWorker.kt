@@ -25,7 +25,7 @@ class SurfaceWorker {
             }.reversed()
         }
 
-        fun createSurface(location: ChunkLocation, input: List<SubChunk>): Surface {
+        fun createSurface(location: ChunkLocation, input: List<SubChunk>, yLimit: Int = 319): Surface {
             val resultBlocks = arrayOfNulls<SurfaceBlock>(256)
 
             run {
@@ -38,6 +38,9 @@ class SurfaceWorker {
 
                     blocks.forEachIndexed { index, block ->
                         val (x, y, z) = coordinate(index, subChunk.y)
+
+                        if (y > yLimit) return@forEachIndexed
+
                         val indexInArray = (15 - x) + (15 - z) * 16
                         val already = resultBlocks[indexInArray]
                         if (already != null && (!already.isWater || already.depth.toInt() != -99)) return@forEachIndexed
