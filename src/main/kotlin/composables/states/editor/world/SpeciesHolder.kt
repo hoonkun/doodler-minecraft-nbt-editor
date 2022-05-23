@@ -35,7 +35,7 @@ class MultipleSpeciesHolder(
 
     init {
         val selector = SelectorSpecies("+", mutableStateOf(SelectorState.new(
-            (extra["playerpos"] as String?)?.split(", ")?.let { BlockLocation(it[0].toInt(), it[1].toInt()) }
+            extra["playerpos"] as BlockLocation?
         )))
         species.add(selector)
         selected = selector

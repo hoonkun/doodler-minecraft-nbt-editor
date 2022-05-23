@@ -86,14 +86,15 @@ fun WorldEditor(
                     NbtSpecies("", mutableStateOf(NbtState.new(IOUtils.readLevel(tree.level.readBytes()))))
                 )
             } else {
-                val pos = levelInfo
-                    ?.getAs<CompoundTag>()?.get("Player")
-                    ?.getAs<CompoundTag>()?.get("Pos")
-                    ?.getAs<ListTag>()
-                val x = pos?.get(0)?.getAs<DoubleTag>()?.value?.toInt()
-                val z = pos?.get(2)?.getAs<DoubleTag>()?.value?.toInt()
+                val player = levelInfo?.getAs<CompoundTag>()?.get("Player")?.getAs<CompoundTag>()
+                val dimension = player?.get("Dimension")?.getAs<StringTag>()?.value
                 val extras = data.extras.toMutableMap()
-                if (x != null && z != null) extras["playerpos"] = "$x, $z"
+                if (dimension != null && dimension == (extras["dimension"] as? WorldDimension?)?.namespaceId) {
+                    val pos = player["Pos"]?.getAs<ListTag>()
+                    val x = pos?.get(0)?.getAs<DoubleTag>()?.value?.toInt()
+                    val z = pos?.get(2)?.getAs<DoubleTag>()?.value?.toInt()
+                    if (x != null && z != null) extras["playerpos"] = BlockLocation(x, z)
+                }
                 MultipleSpeciesHolder(data.key, data.format, data.contentType, extra = extras)
             }
 
