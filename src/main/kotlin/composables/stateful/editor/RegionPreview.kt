@@ -28,18 +28,36 @@ fun BoxScope.RegionPreview(tree: WorldTree, location: AnvilLocation = AnvilLocat
                 Pair(chunkLoc, SurfaceWorker.createSubChunk(tag))
             }
             val pixels = ByteArray(512 * 512 * 4) { index -> if (index % 4 == 2 || index % 4 == 3) -1 else 0 }
+            val heights = ShortArray(512 * 512)
             subChunks.forEach { (loc, chunks) ->
                 val baseX = loc.x * 16
                 val baseZ = loc.z * 16
                 val blocks = SurfaceWorker.createSurface(loc, chunks).blocks
                 blocks.forEachIndexed { index, block ->
-                    val x = baseX + (index / 16)
-                    val z = 511 - (baseZ + (index % 16))
+                    val x = 511 - (baseX + (index / 16))
+                    val z = baseZ + (index % 16)
 
                     pixels[(x * 512 + z) * 4 + 0] = block.color[2]
                     pixels[(x * 512 + z) * 4 + 1] = block.color[1]
                     pixels[(x * 512 + z) * 4 + 2] = block.color[0]
                     pixels[(x * 512 + z) * 4 + 3] = block.color[3]
+
+                    heights[x * 512 + z] = block.y
+
+                    val hIndex = (x + 1).coerceAtMost(511) * 512 + z
+                    val pIndex = hIndex * 4
+                    val aboveY = heights[hIndex]
+                    if (block.y < aboveY) {
+                        (0..2).forEach {
+                            pixels[pIndex + it] = (pixels[pIndex + it] + 15)
+                                .coerceAtMost(127).toByte()
+                        }
+                    } else if (block.y > aboveY) {
+                        (0..2).forEach {
+                            pixels[pIndex + it] = (pixels[pIndex + it] - 15)
+                                .coerceAtLeast(-128).toByte()
+                        }
+                    }
                 }
             }
             map = Bitmap()
