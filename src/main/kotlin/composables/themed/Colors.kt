@@ -54,6 +54,17 @@ class ThemedColor {
 
     }
 
+    class Aside {
+        companion object {
+
+            val DAT = Color(0x3642a5f5)
+            val MCA = Color(0x36689f38)
+            val PNG = Color(0x36ef6c00)
+            val JSON = Color(0x36bdbdbd)
+
+        }
+    }
+
     class Editor {
         companion object {
 
