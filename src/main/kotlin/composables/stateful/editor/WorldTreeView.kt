@@ -123,6 +123,7 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequ
                                 }
                             }
                             is FileItem -> {
+                                Spacer(modifier = Modifier.width(4.dp))
                                 Box(
                                     modifier = Modifier.width(35.dp).height(35.dp)
                                 ) {
@@ -141,6 +142,7 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequ
                                     )
                                     TreeViewIndicatorText(EXTENSION_ALIAS[item.file.extension] ?: "")
                                 }
+                                Spacer(modifier = Modifier.width(4.dp))
                             }
                         }
                         Spacer(modifier = Modifier.width(15.dp))
