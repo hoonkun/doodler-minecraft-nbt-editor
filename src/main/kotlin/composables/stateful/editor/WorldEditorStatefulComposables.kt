@@ -147,50 +147,6 @@ fun BoxScope.Editor(
 }
 
 @Composable
-fun BoxScope.Selector(
-    tree: WorldTree,
-    holder: MultipleSpeciesHolder
-) {
-
-    val dimension = holder.extra["dimension"] as WorldDimension? ?: return
-
-    val worldDimension = tree[dimension]
-
-    val anvils by remember(holder) { mutableStateOf(
-        when(holder.contentType) {
-            Species.ContentType.TERRAIN -> worldDimension.region
-            Species.ContentType.POI -> worldDimension.poi
-            Species.ContentType.ENTITY -> worldDimension.entities
-            else -> listOf()
-        }
-    ) }
-
-    val chunks by remember(holder, anvils) { mutableStateOf(
-        anvils.map {
-            val segments = it.name.split(".")
-            val location = AnvilLocation(segments[1].toInt(), segments[2].toInt())
-            AnvilWorker.loadChunkList(location, it.readBytes())
-        }.toList().flatten()
-    ) }
-
-    val onSelectChunk: (ChunkLocation) -> Unit = select@ { chunk ->
-        val file = anvils
-            .find { anvil -> anvil.name == chunk.toAnvilLocation().let { "r.${it.x}.${it.z}.mca" } } ?: return@select
-
-        val newIdent = "[${chunk.x}, ${chunk.z}]"
-        if (holder.hasSpecies(newIdent)) return@select
-
-        val root = AnvilWorker.loadChunk(chunk, file.readBytes()) ?: return@select
-
-        holder.add(NbtSpecies(newIdent, mutableStateOf(NbtState.new(root))))
-    }
-
-    Column(modifier = Modifier.fillMaxSize()) {
-//        if (holder.format == Species.Format.MCA) AnvilSelector(chunks, tree, holder, onSelectChunk)
-    }
-}
-
-@Composable
 fun McaMap(selector: SelectorItem, tree: WorldTree, onOpenRequest: (ChunkLocation, File) -> Unit) {
     val request = selector.from ?: return
 
@@ -218,13 +174,13 @@ fun McaMap(selector: SelectorItem, tree: WorldTree, onOpenRequest: (ChunkLocatio
     ) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        AnvilSelector(chunks, tree, selector, dimension, onOpenRequest)
+        ChunkSelector(chunks, tree, selector, dimension, onOpenRequest)
     }
 }
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun ColumnScope.AnvilSelector(
+fun ColumnScope.ChunkSelector(
     chunks: List<ChunkLocation>,
     tree: WorldTree,
     selector: SelectorItem,
@@ -366,7 +322,7 @@ fun ColumnScope.AnvilSelector(
             Spacer(modifier = Modifier.width(20.dp))
         }
         Spacer(modifier = Modifier.width(10.dp))
-        AnvilSelectorDropdown("block:") {
+        ChunkSelectorDropdown("block:") {
             CoordinateText("[")
             CoordinateInput(
                 state.blockXValue,
@@ -382,7 +338,7 @@ fun ColumnScope.AnvilSelector(
             CoordinateText("]")
         }
         Spacer(modifier = Modifier.width(10.dp))
-        AnvilSelectorDropdown("chunk:", true, state.selectedChunk != null) {
+        ChunkSelectorDropdown("chunk:", true, state.selectedChunk != null) {
             CoordinateText("[")
             CoordinateInput(
                 state.chunkXValue,
@@ -398,7 +354,7 @@ fun ColumnScope.AnvilSelector(
             CoordinateText("]")
         }
         Spacer(modifier = Modifier.width(10.dp))
-        AnvilSelectorDropdown("region:") {
+        ChunkSelectorDropdown("region:") {
             val (_, _, isValid) = isChunkValid()
             CoordinateText("r.")
             CoordinateText("${state.selectedChunk?.toAnvilLocation()?.x ?: "-"}", !isValid)

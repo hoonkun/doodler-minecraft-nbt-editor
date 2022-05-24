@@ -14,7 +14,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
@@ -72,34 +71,6 @@ fun RowScope.MainFiles(content: @Composable BoxScope.() -> Unit) {
     Box (modifier = Modifier.fillMaxHeight().requiredWidth(400.dp).background(ThemedColor.TaskArea), content = content)
 }
 
-
-@Composable
-fun BoxScope.FileCategoryListScrollable(scrollState: ScrollState, content: @Composable ColumnScope.() -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxHeight()
-            .background(ThemedColor.TaskArea)
-            .verticalScroll(scrollState),
-        content = content
-    )
-}
-
-@Composable
-fun BoxScope.FileCategoryListScrollbar(scrollState: ScrollState) {
-    VerticalScrollbar(
-        ScrollbarAdapter(scrollState),
-        style = ScrollbarStyle(
-            100.dp,
-            15.dp,
-            RectangleShape,
-            250,
-            ThemedColor.ScrollBarNormal,
-            ThemedColor.ScrollBarHover
-        ),
-        modifier = Modifier.align(Alignment.TopEnd)
-    )
-}
-
 @Composable
 fun RowScope.MainContents(content: @Composable BoxScope.() -> Unit) {
     Box(
@@ -131,22 +102,6 @@ fun RowScope.BottomBarText(text: String) {
         color = ThemedColor.Copyright,
         fontSize = 14.sp
     )
-}
-
-@Composable
-fun ColumnScope.PhylumCategoryItems(
-    parent: PhylumCategoryData,
-    selected: String,
-    onClick: (PhylumCategoryItemData) -> Unit
-) {
-    for (item in parent.items) {
-        PhylumCategoryItem(item, selected, onClick)
-    }
-}
-
-@Composable
-fun ColumnScope.CategoriesBottomMargin() {
-    Spacer(modifier = Modifier.height(25.dp))
 }
 
 @Composable
@@ -207,9 +162,8 @@ fun RowScope.CoordinateInput(
     )
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun RowScope.AnvilSelectorDropdown(prefix: String, accent: Boolean = false, valid: Boolean = true, content: @Composable RowScope.() -> Unit) {
+fun RowScope.ChunkSelectorDropdown(prefix: String, accent: Boolean = false, valid: Boolean = true, content: @Composable RowScope.() -> Unit) {
     Row (
         modifier = Modifier
             .background(

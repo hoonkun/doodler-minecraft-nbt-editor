@@ -13,8 +13,6 @@ class Editor {
     val items = mutableStateListOf<EditorItem>()
     var selected by mutableStateOf<EditorItem?>(null)
 
-    fun hasItem(item: EditorItem) = items.find { it.ident == item.ident } != null
-
     fun hasItem(ident: String) = items.find { it.ident == ident } != null
 
     operator fun get(ident: String): EditorItem? = items.find { it.ident == ident }

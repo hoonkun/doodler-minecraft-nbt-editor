@@ -12,35 +12,7 @@ import doodler.anvil.ChunkLocation
 import doodler.nbt.TagType
 import doodler.nbt.tag.*
 
-abstract class Species (
-    val ident: String
-) {
-    enum class Format {
-        DAT, MCA
-    }
-
-    enum class ContentType(val displayName: String, val description: String) {
-        LEVEL("World Data", "level.dat"),
-        PLAYER("Players", "playerdata/"),
-        STATISTICS("Statistics", "stats/"),
-        ADVANCEMENTS("Advancements", "advancements/"),
-        OTHERS("Others", "data/"),
-
-        TERRAIN("Terrain", "region/"),
-        ENTITY("Entities", "entities/"),
-        POI("Work Block Owners", "poi/")
-    }
-}
-
-class SelectorSpecies (
-    ident: String,
-    state: MutableState<SelectorState>
-): Species(ident) {
-    var state by state
-}
-
 class SelectorState (
-    var initialComposition: Boolean = true,
     selectedChunk: MutableState<ChunkLocation?> = mutableStateOf(null),
     chunkXValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("")),
     chunkZValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("")),
@@ -64,26 +36,6 @@ class SelectorState (
                 chunkZValue = mutableStateOf(TextFieldValue(initialPos?.toChunkLocation()?.z?.toString() ?: "-")),
                 selectedChunk = mutableStateOf(initialPos?.toChunkLocation()),
             )
-    }
-}
-
-class NbtSpecies (
-    ident: String,
-    state: MutableState<NbtState>
-): Species(ident) {
-    var state by state
-
-    val hasChanges = false
-
-    override fun equals(other: Any?): Boolean {
-        if (other === this) return true
-        if (other !is NbtSpecies) return false
-
-        return other.ident == this.ident
-    }
-
-    override fun hashCode(): Int {
-        return this.ident.hashCode()
     }
 }
 
