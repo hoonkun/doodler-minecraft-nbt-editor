@@ -42,16 +42,12 @@ import keys
 import kotlinx.coroutines.launch
 import doodler.nbt.TagType
 import doodler.nbt.tag.CompoundTag
-import doodler.nbt.tag.DoubleTag
-import doodler.nbt.tag.ListTag
 import doodler.nbt.tag.StringTag
 
 @Composable
 fun WorldEditor(
     worldPath: String
 ) {
-    val scrollState = rememberScrollState()
-
     val states = rememberWorldEditorState()
 
     if (states.worldSpec.tree == null)
@@ -73,36 +69,13 @@ fun WorldEditor(
     val tree = states.worldSpec.requireTree
     val name = states.worldSpec.requireName
 
-    val onCategoryItemClick: (PhylumCategoryItemData) -> Unit = lambda@ { data ->
-        states.phylum.list.find { it.ident == data.key }?.let {
-            states.phylum.species = it
-            return@lambda
-        }
-
-        val newHolder =
-            if (data.holderType == SpeciesHolder.Type.Single) {
-                SingleSpeciesHolder(
-                    data.key, data.format, data.contentType,
-                    NbtSpecies("", mutableStateOf(NbtState.new(IOUtils.readLevel(tree.level.readBytes()))))
-                )
-            } else {
-                val player = levelInfo?.getAs<CompoundTag>()?.get("Player")?.getAs<CompoundTag>()
-                val dimension = player?.get("Dimension")?.getAs<StringTag>()?.value
-                val extras = data.extras.toMutableMap()
-                if (dimension != null && dimension == (extras["dimension"] as? WorldDimension?)?.namespaceId) {
-                    val pos = player["Pos"]?.getAs<ListTag>()
-                    val x = pos?.get(0)?.getAs<DoubleTag>()?.value?.toInt()
-                    val z = pos?.get(2)?.getAs<DoubleTag>()?.value?.toInt()
-                    if (x != null && z != null) extras["playerpos"] = BlockLocation(x, z)
-                }
-                MultipleSpeciesHolder(data.key, data.format, data.contentType, extra = extras)
+    val onOpenRequest: (OpenRequest) -> Unit = { request ->
+        when (request) {
+            is NbtOpenRequest -> {
+                states.editor.open(request.target)
             }
-
-        states.phylum.list.add(newHolder)
-        states.phylum.species = newHolder
+        }
     }
-
-    val categories = createCategories(tree)
 
     MaterialTheme {
         MainColumn {
@@ -110,29 +83,13 @@ fun WorldEditor(
 
             MainArea {
                 MainFiles {
-                    WorldTreeView(name, tree)
-//                    FileCategoryListScrollable(scrollState) {
-//                        for (category in categories) {
-//                            PhylumCategory(category) {
-//                                PhylumCategoryItems(
-//                                    category,
-//                                    states.phylum.species?.ident ?: "",
-//                                    onCategoryItemClick
-//                                )
-//                            }
-//                        }
-//                        CategoriesBottomMargin()
-//                    }
-//                    FileCategoryListScrollbar(scrollState)
+                    WorldTreeView(name, tree, onOpenRequest)
                 }
                 MainContents {
-                    if (states.phylum.list.size == 0) {
+                    if (states.editor.items.size == 0) {
                         NoFileSelected(name)
                     } else {
-                        val phylum = states.phylum.list.find { states.phylum.species?.ident == it.ident }
-                            ?: return@MainContents
-
-                        Editor(tree, phylum, true)
+                        Editor(tree, states.editor)
                     }
                 }
             }
@@ -148,29 +105,17 @@ fun WorldEditor(
 @Composable
 fun BoxScope.Editor(
     tree: WorldTree,
-    holder: SpeciesHolder,
-    selected: Boolean
+    editor: Editor,
 ) {
-    if (!selected) return
-
     EditorRoot {
-        if (holder is MultipleSpeciesHolder) {
-            SpeciesTabGroup(
-                holder.species.map { TabData(holder.selected == it, it) },
-                { holder.select(it) },
-                { holder.remove(it) }
-            )
-            Editables {
-                for (species in holder.species) {
-                    if (species is SelectorSpecies && holder.selected == species) {
-                        Selector(tree, holder)
-                    } else if (species is NbtSpecies && holder.selected == species) {
-                        EditableField(species)
-                    }
-                }
-            }
-        } else if (holder is SingleSpeciesHolder) {
-            Editables { EditableField(holder.species) }
+        SpeciesTabGroup(
+            editor.items.map { TabData(editor.selected == it, it) },
+            { editor.select(it) },
+            { editor.close(it) }
+        )
+        Editables {
+            val selected = editor.selected
+            if (selected is NbtItem) EditableField(selected)
         }
     }
 }
@@ -445,7 +390,7 @@ fun ColumnScope.AnvilSelector(
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.EditableField(
-    species: NbtSpecies,
+    species: NbtItem,
 ) {
     val coroutineScope = rememberCoroutineScope()
 

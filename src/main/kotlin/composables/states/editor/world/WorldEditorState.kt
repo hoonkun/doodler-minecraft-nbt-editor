@@ -3,14 +3,14 @@ package composables.states.editor.world
 import androidx.compose.runtime.*
 
 class WorldEditorState (
-    val phylum: Phylum,
+    val editor: Editor,
     val worldSpec: WorldSpecification
 )
 
 @Composable
 fun rememberWorldEditorState (
-    phylum: Phylum = Phylum(),
+    editor: Editor = Editor(),
     worldSpec: WorldSpecification = WorldSpecification()
-) = remember (phylum, worldSpec) {
-    WorldEditorState(phylum, worldSpec)
+) = remember (editor, worldSpec) {
+    WorldEditorState(editor, worldSpec)
 }

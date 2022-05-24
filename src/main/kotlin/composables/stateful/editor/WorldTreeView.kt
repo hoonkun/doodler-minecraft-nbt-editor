@@ -17,6 +17,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import composables.states.editor.world.EditorItem
+import composables.states.editor.world.StandaloneNbtItem
 import composables.themed.JetBrainsMono
 import composables.themed.ThemedColor
 import doodler.file.WorldDimension
@@ -39,7 +41,7 @@ val EXTENSION_ALIAS = mapOf(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree) {
+fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequest) -> Unit) {
 
     val width = 400.dp
     val height = 45.dp
@@ -151,7 +153,14 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree) {
     Box(modifier = Modifier.requiredWidthIn(width).verticalScroll(vs).fillMaxWidth()) {
         Column(modifier = Modifier.fillMaxWidth()) {
             for (item in items) {
-                Box(modifier = Modifier.mouseClickable { selected = item }.height(height).fillMaxWidth()) {
+                Box(modifier = Modifier.mouseClickable {
+                    selected = item
+                    if (item is FileItem && item.file.extension == "dat") {
+                        onOpen(NbtOpenRequest(
+                            StandaloneNbtItem.fromFile(item.file)
+                        ))
+                    }
+                }.height(height).fillMaxWidth()) {
                     Row(
                         modifier = Modifier
                             .padding(start = itemPaddingStart(item).dp, end = 15.dp)
@@ -305,3 +314,9 @@ class DirectoryItem(
         expanded = false
     }
 }
+
+open class OpenRequest
+
+class NbtOpenRequest(
+    val target: EditorItem
+): OpenRequest()

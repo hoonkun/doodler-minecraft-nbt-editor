@@ -14,15 +14,14 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import composables.states.editor.world.NbtSpecies
-import composables.states.editor.world.Species
+import composables.states.editor.world.EditorItem
 import composables.themed.ThemedColor.Companion.selectable
 
 @Composable
 fun ColumnScope.SpeciesTabGroup(
     tabs: List<TabData>,
-    onSelectEditable: (Species) -> Unit,
-    onCloseEditable: (Species) -> Unit
+    onSelectEditable: (EditorItem) -> Unit,
+    onCloseEditable: (EditorItem) -> Unit
 ) {
     val scrollState = rememberScrollState()
 
@@ -39,8 +38,8 @@ fun ColumnScope.SpeciesTabGroup(
 @Composable
 fun SpeciesTab(
     data: TabData,
-    onSelectEditable: (Species) -> Unit,
-    onCloseEditable: (Species) -> Unit
+    onSelectEditable: (EditorItem) -> Unit,
+    onCloseEditable: (EditorItem) -> Unit
 ) {
     var hover by remember { mutableStateOf(false) }
     var press by remember { mutableStateOf(false) }
@@ -49,7 +48,7 @@ fun SpeciesTab(
         modifier = Modifier
             .wrapContentSize()
             .onPointerEvent(PointerEventType.Press) { press = true }
-            .onPointerEvent(PointerEventType.Release) { press = false; onSelectEditable(data.species); }
+            .onPointerEvent(PointerEventType.Release) { press = false; onSelectEditable(data.item); }
             .onPointerEvent(PointerEventType.Enter) { hover = true }
             .onPointerEvent(PointerEventType.Exit) { hover = false }
             .background(selectable(data.selected, press, hover))
@@ -62,14 +61,14 @@ fun SpeciesTab(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Spacer(modifier = Modifier.width(20.dp))
                 Text(
-                    data.species.ident,
-                    color = if (data.species is NbtSpecies && data.species.hasChanges) ThemedColor.Editor.HasChanges else Color.White,
+                    data.item.name,
+                    color = Color.White,
                     fontSize = 22.sp,
                     fontFamily = JetBrainsMono
                 )
-                if (data.species.ident != "+") {
+                if (data.item.ident != "+") {
                     Spacer(modifier = Modifier.width(15.dp))
-                    CloseButton { onCloseEditable(data.species) }
+                    CloseButton { onCloseEditable(data.item) }
                 }
                 Spacer(modifier = Modifier.width(18.dp))
             }
@@ -113,5 +112,5 @@ private fun RowScope.CloseButton(onCloseEditable: () -> Unit) {
 
 class TabData(
     val selected: Boolean,
-    val species: Species
+    val item: EditorItem
 )
