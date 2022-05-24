@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import composables.stateful.editor.DirectoryItem
 import composables.stateful.editor.FileItem
 import composables.stateful.editor.WorldTreeItem
+import composables.states.editor.world.DoodleException
 import doodler.anvil.AnvilLocation
 import doodler.anvil.GZip
 import doodler.nbt.Tag
@@ -25,6 +26,9 @@ class IOUtils {
 
             if (!world.exists()) throw FileNotFoundException()
 
+            val nether = "$path/${WorldDimension.NETHER.ident}"
+            val theEnd = "$path/${WorldDimension.THE_END.ident}"
+
             return (
                 WorldTree(
                     File("$path/icon.png"),
@@ -39,16 +43,16 @@ class IOUtils {
                         File("$path/data").listIfExists()
                     ),
                     WorldDimensionTree(
-                        File("$path/DIM-1/region").listIfExists(),
-                        File("$path/DIM-1/entities").listIfExists(),
-                        File("$path/DIM-1/poi").listIfExists(),
-                        File("$path/DIM-1/data").listIfExists()
+                        File("$nether/region").listIfExists(),
+                        File("$nether/entities").listIfExists(),
+                        File("$nether/poi").listIfExists(),
+                        File("$nether/data").listIfExists()
                     ),
                     WorldDimensionTree(
-                        File("$path/DIM1/region").listIfExists(),
-                        File("$path/DIM1/entities").listIfExists(),
-                        File("$path/DIM1/poi").listIfExists(),
-                        File("$path/DIM1/data").listIfExists()
+                        File("$theEnd/region").listIfExists(),
+                        File("$theEnd/entities").listIfExists(),
+                        File("$theEnd/poi").listIfExists(),
+                        File("$theEnd/data").listIfExists()
                     )
                 )
             )
@@ -97,9 +101,9 @@ class WorldTree (
 }
 
 class WorldDimensionTree (
-    val region: List<File>,
-    val entities: List<File>,
-    val poi: List<File>,
+    private val region: List<File>,
+    private val entities: List<File>,
+    private val poi: List<File>,
     val data: List<File>,
     val cachedTerrains: SnapshotStateMap<AnvilLocation, ImageBitmap> = mutableStateMapOf()
 ) {
@@ -112,14 +116,30 @@ class WorldDimensionTree (
             else -> listOf()
         }
     }
+    enum class McaType(val pathName: String) {
+        TERRAIN("region"), ENTITY("entities"), POI("poi");
+
+        companion object {
+
+            operator fun get(pathName: String): McaType =
+                values().find { it.pathName == pathName } ?: throw DoodleException(
+                    "Internal Error",
+                    null,
+                    "Cannot find McaInfo.Type with pathName '$pathName'"
+                )
+
+        }
+    }
 }
 
 enum class WorldDimension(
-    val ident: String,
-    val namespaceId: String,
-    val displayName: String
+    val ident: String
 ) {
-    OVERWORLD("", "minecraft:overworld", "Overworld"),
-    NETHER("DIM-1", "minecraft:the_nether", "Nether"),
-    THE_END("DIM1", "minecraft:the_end", "The End")
+    OVERWORLD(""),
+    NETHER("DIM-1"),
+    THE_END("DIM1");
+
+    companion object {
+        operator fun get(pathName: String): WorldDimension = values().find { it.ident == pathName } ?: OVERWORLD
+    }
 }

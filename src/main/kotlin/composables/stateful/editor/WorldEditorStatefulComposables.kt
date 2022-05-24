@@ -38,6 +38,7 @@ import doodler.anvil.ChunkLocation
 import doodler.file.WorldTree
 import doodler.file.IOUtils
 import doodler.file.WorldDimension
+import doodler.file.WorldDimensionTree
 import keys
 import kotlinx.coroutines.launch
 import doodler.nbt.TagType
@@ -148,33 +149,38 @@ fun BoxScope.Editor(
 
 @Composable
 fun McaMap(selector: SelectorItem, tree: WorldTree, onOpenRequest: (ChunkLocation, File) -> Unit) {
-    val request = selector.from ?: return
+    val request = selector.from
+    val info = selector.globalInfo
 
-    val dimension by remember(request.file) { mutableStateOf(
-        request.file.parentFile.parentFile.name.let {
-            when (it) {
-                "DIM-1" -> WorldDimension.NETHER
-                "DIM1" -> WorldDimension.THE_END
-                else -> WorldDimension.OVERWORLD
-            }
-        }
-    ) }
+    val file = request?.file ?: info?.file ?: return
+    val location = request?.location ?: info?.location ?: return
 
-    val anvils by remember(request.file, dimension) {
-        val type = request.file.parentFile.name
-        mutableStateOf(tree[dimension][type])
+    val dimension by remember(file) { mutableStateOf(WorldDimension[file.parentFile.parentFile.name]) }
+
+    val type by remember(file) { mutableStateOf(WorldDimensionTree.McaType[file.parentFile.name]) }
+
+    val anvils by remember(file, dimension) {
+        mutableStateOf(tree[dimension][type.pathName])
     }
 
-    val chunks by remember(request.file, anvils) { mutableStateOf(
-        anvils.map {
-            val segments = it.name.split(".")
-            val location = AnvilLocation(segments[1].toInt(), segments[2].toInt())
-            AnvilWorker.loadChunkList(location, it.readBytes())
-        }.toList().flatten()
+    val chunks by remember(file, anvils) { mutableStateOf(
+        if (request != null)
+            AnvilWorker.loadChunkList(request.location, request.file.readBytes())
+        else if (info != null)
+            anvils.map {
+                val segments = it.name.split(".")
+                val itLocation = AnvilLocation(segments[1].toInt(), segments[2].toInt())
+                AnvilWorker.loadChunkList(itLocation, it.readBytes())
+            }.toList().flatten()
+        else throw DoodleException("Internal Error", null, "McaOpenRequest or GlobalMcaInfo must not be null, but both are empty.")
     ) }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        ChunkSelector(chunks, tree, selector, dimension, onOpenRequest)
+        ChunkSelector(
+            chunks, tree, selector,
+            if (request != null) McaInfo(dimension, type, location, file) else selector.globalInfo,
+            onOpenRequest
+        )
     }
 }
 
@@ -184,27 +190,29 @@ fun ColumnScope.ChunkSelector(
     chunks: List<ChunkLocation>,
     tree: WorldTree,
     selector: SelectorItem,
-    dimension: WorldDimension,
+    mcaInfo: McaInfo?,
     onSelectChunk: (ChunkLocation, File) -> Unit
 ) {
 
-    val from = selector.from ?: return
-
-    val initial by remember(selector.state[from.location]?.get(dimension)) {
-        mutableStateOf(selector.state[from.location]?.get(dimension) == null)
+    val initial by remember(selector.state[mcaInfo]) {
+        mutableStateOf(selector.state[mcaInfo] == null)
     }
 
-    selector.state[from.location] ?: let {
-        selector.state[from.location] = mutableStateMapOf()
-    }
-    val state = selector.state[from.location]!![dimension] ?: let {
+    val state = selector.state[mcaInfo] ?: let {
         SelectorState.new(null).also { newState ->
-            selector.state[from.location]!![dimension] = newState
+            selector.state[mcaInfo] = newState
         }
     }
 
+    if (mcaInfo == null) return
+
+    val dimension = mcaInfo.dimension
+    val location = mcaInfo.location
+    val type = mcaInfo.type
+    val file = mcaInfo.file
+
     if (initial) {
-        val forcedChunk = chunks.firstOrNull { it.toAnvilLocation() == from.location }
+        val forcedChunk = chunks.firstOrNull { it.toAnvilLocation() == location }
         state.selectedChunk = forcedChunk
         state.chunkXValue = TextFieldValue(forcedChunk?.x?.toString() ?: "-")
         state.chunkZValue = TextFieldValue(forcedChunk?.z?.toString() ?: "-")
@@ -379,7 +387,7 @@ fun ColumnScope.ChunkSelector(
                 .mouseClickable {
                     val chunk = state.selectedChunk
                     if (chunk != null) {
-                        onSelectChunk(chunk, from.file)
+                        onSelectChunk(chunk, file)
                     }
                 }
                 .height(45.dp),

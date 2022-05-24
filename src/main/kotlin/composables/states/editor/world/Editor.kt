@@ -7,6 +7,7 @@ import doodler.anvil.AnvilLocation
 import doodler.anvil.ChunkLocation
 import doodler.file.IOUtils
 import doodler.file.WorldDimension
+import doodler.file.WorldDimensionTree
 import java.io.File
 
 class Editor {
@@ -39,14 +40,45 @@ abstract class EditorItem {
     abstract val name: String
 }
 
+data class McaInfo(
+    val dimension: WorldDimension,
+    val type: WorldDimensionTree.McaType,
+    val location: AnvilLocation,
+    val file: File
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as McaInfo
+
+        if (dimension != other.dimension) return false
+        if (type != other.type) return false
+        if (location != other.location) return false
+        if (file.absolutePath != other.file.absolutePath) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = dimension.hashCode()
+        result = 31 * result + type.hashCode()
+        result = 31 * result + location.hashCode()
+        result = 31 * result + file.absolutePath.hashCode()
+        return result
+    }
+}
+
 class SelectorItem(
-    val state: SnapshotStateMap<AnvilLocation?, SnapshotStateMap<WorldDimension, SelectorState>> = mutableStateMapOf(),
+    val state: SnapshotStateMap<McaInfo?, SelectorState> = mutableStateMapOf(),
+    globalInfo: MutableState<McaInfo?> = mutableStateOf<McaInfo?>(null),
     from: MutableState<AnvilOpenRequest?> = mutableStateOf(null)
 ): EditorItem() {
     override val ident: String get() = "ANVIL_SELECTOR"
     override val name: String get() = "MAP"
 
     var from by from
+    var globalInfo by globalInfo
 }
 
 abstract class NbtItem(
@@ -69,7 +101,7 @@ class StandaloneNbtItem(
 class AnvilNbtItem(
     state: NbtState,
     val anvil: File,
-    val location: ChunkLocation
+    private val location: ChunkLocation
 ): NbtItem(state) {
     override val ident: String get() = "${anvil.absolutePath}/c.${location.x}.${location.z}"
     override val name: String get() = "[] c.${location.x}.${location.z}"

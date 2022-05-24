@@ -92,7 +92,7 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequ
         Column {
             for (item in items) {
                 Box(
-                    modifier = Modifier.height(height)
+                    modifier = Modifier.height(height).alpha(if (item is FileItem && item.file.length() == 0L) 0.4f else 1f)
                 ) {
                     Row(
                         modifier = Modifier
@@ -155,6 +155,7 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequ
         Column(modifier = Modifier.fillMaxWidth()) {
             for (item in items) {
                 Box(modifier = Modifier.mouseClickable {
+                    if (item is FileItem && item.file.length() == 0L) return@mouseClickable
                     selected = item
                     if (item !is FileItem) return@mouseClickable
                     when (item.file.extension) {

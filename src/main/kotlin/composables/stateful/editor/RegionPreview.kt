@@ -43,8 +43,8 @@ fun BoxScope.RegionPreview(
     val nSelected = selected?.normalize(selected.toAnvilLocation())
 
     val load = load@ {
-        val bytes = tree.region.find { it.name == "r.${location.x}.${location.z}.mca" }?.readBytes()
-            ?: return@load
+        val bytes = tree[WorldDimensionTree.McaType.TERRAIN.pathName]
+            .find { it.name == "r.${location.x}.${location.z}.mca" }?.readBytes() ?: return@load
         val subChunks = AnvilWorker.loadChunksWith(bytes) { chunkLoc, tag ->
             Pair(chunkLoc, SurfaceWorker.createSubChunk(tag))
         }
