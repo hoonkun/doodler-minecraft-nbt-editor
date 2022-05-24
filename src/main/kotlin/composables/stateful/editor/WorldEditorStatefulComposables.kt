@@ -43,6 +43,7 @@ import kotlinx.coroutines.launch
 import doodler.nbt.TagType
 import doodler.nbt.tag.CompoundTag
 import doodler.nbt.tag.StringTag
+import java.io.File
 
 @Composable
 fun WorldEditor(
@@ -69,10 +70,27 @@ fun WorldEditor(
     val tree = states.worldSpec.requireTree
     val name = states.worldSpec.requireName
 
-    val onOpenRequest: (OpenRequest) -> Unit = { request ->
+    val onOpenRequest: (OpenRequest) -> Unit = handleRequest@ { request ->
         when (request) {
             is NbtOpenRequest -> {
-                states.editor.open(request.target)
+                if (states.editor.hasItem(request.target.ident)) {
+                    states.editor.select(request.target)
+                } else {
+                    states.editor.open(request.target)
+                }
+            }
+            is AnvilOpenRequest -> {
+                if (!states.editor.hasItem("ANVIL_SELECTOR")) {
+                    states.editor.open(
+                        SelectorItem().apply { from = request }
+                    )
+                } else {
+                    val selector = states.editor["ANVIL_SELECTOR"] ?: return@handleRequest
+                    if (selector !is SelectorItem) return@handleRequest
+                    selector.from = request
+
+                    states.editor.select(selector)
+                }
             }
         }
     }
@@ -116,6 +134,14 @@ fun BoxScope.Editor(
         Editables {
             val selected = editor.selected
             if (selected is NbtItem) EditableField(selected)
+            else if (selected is SelectorItem) {
+                McaMap(selected, tree) open@ { location, file ->
+                    if (editor.hasItem("${file.absolutePath}/c.${location.x}.${location.z}")) return@open
+
+                    val root = AnvilWorker.loadChunk(location, file.readBytes()) ?: return@open
+                    editor.open(AnvilNbtItem(NbtState.new(root), file, location))
+                }
+            }
         }
     }
 }
@@ -160,7 +186,39 @@ fun BoxScope.Selector(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        if (holder.format == Species.Format.MCA) AnvilSelector(chunks, tree, holder, onSelectChunk)
+//        if (holder.format == Species.Format.MCA) AnvilSelector(chunks, tree, holder, onSelectChunk)
+    }
+}
+
+@Composable
+fun McaMap(selector: SelectorItem, tree: WorldTree, onOpenRequest: (ChunkLocation, File) -> Unit) {
+    val request = selector.from ?: return
+
+    val dimension by remember(request.file) { mutableStateOf(
+        request.file.parentFile.parentFile.name.let {
+            when (it) {
+                "DIM-1" -> WorldDimension.NETHER
+                "DIM1" -> WorldDimension.THE_END
+                else -> WorldDimension.OVERWORLD
+            }
+        }
+    ) }
+
+    val anvils by remember(request.file, dimension) {
+        val type = request.file.parentFile.name
+        mutableStateOf(tree[dimension][type])
+    }
+
+    val chunks by remember(request.file, anvils) { mutableStateOf(
+        anvils.map {
+            val segments = it.name.split(".")
+            val location = AnvilLocation(segments[1].toInt(), segments[2].toInt())
+            AnvilWorker.loadChunkList(location, it.readBytes())
+        }.toList().flatten()
+    ) }
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        AnvilSelector(chunks, tree, selector, dimension, onOpenRequest)
     }
 }
 
@@ -169,23 +227,34 @@ fun BoxScope.Selector(
 fun ColumnScope.AnvilSelector(
     chunks: List<ChunkLocation>,
     tree: WorldTree,
-    holder: MultipleSpeciesHolder,
-    onSelectChunk: (ChunkLocation) -> Unit
+    selector: SelectorItem,
+    dimension: WorldDimension,
+    onSelectChunk: (ChunkLocation, File) -> Unit
 ) {
 
-    val dimension = holder.extra["dimension"] as WorldDimension? ?: return
+    val from = selector.from ?: return
 
-    val selector = holder.species.find { it is SelectorSpecies } as SelectorSpecies
-    val state = selector.state
+    val initial by remember(selector.state[from.location]?.get(dimension)) {
+        mutableStateOf(selector.state[from.location]?.get(dimension) == null)
+    }
 
-    if (state.initialComposition && chunks.isNotEmpty() && (state.selectedChunk == null || !chunks.contains(state.selectedChunk))) {
-        state.selectedChunk = chunks[0]
-        state.chunkXValue = TextFieldValue(chunks[0].x.toString())
-        state.chunkZValue = TextFieldValue(chunks[0].z.toString())
+    selector.state[from.location] ?: let {
+        selector.state[from.location] = mutableStateMapOf()
+    }
+    val state = selector.state[from.location]!![dimension] ?: let {
+        SelectorState.new(null).also { newState ->
+            selector.state[from.location]!![dimension] = newState
+        }
+    }
+
+    if (initial) {
+        val forcedChunk = chunks.firstOrNull { it.toAnvilLocation() == from.location }
+        state.selectedChunk = forcedChunk
+        state.chunkXValue = TextFieldValue(forcedChunk?.x?.toString() ?: "-")
+        state.chunkZValue = TextFieldValue(forcedChunk?.z?.toString() ?: "-")
         state.blockXValue = TextFieldValue("-")
         state.blockZValue = TextFieldValue("-")
     }
-    state.initialComposition = false
 
     val validChunkX = chunks.map { chunk -> chunk.x }
     val validChunkZ = chunks.map { chunk -> chunk.z }
@@ -354,7 +423,7 @@ fun ColumnScope.AnvilSelector(
                 .mouseClickable {
                     val chunk = state.selectedChunk
                     if (chunk != null) {
-                        onSelectChunk(chunk)
+                        onSelectChunk(chunk, from.file)
                     }
                 }
                 .height(45.dp),

@@ -1,11 +1,12 @@
 package composables.states.editor.world
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateMap
+import composables.stateful.editor.AnvilOpenRequest
+import doodler.anvil.AnvilLocation
 import doodler.anvil.ChunkLocation
 import doodler.file.IOUtils
+import doodler.file.WorldDimension
 import java.io.File
 
 class Editor {
@@ -13,6 +14,10 @@ class Editor {
     var selected by mutableStateOf<EditorItem?>(null)
 
     fun hasItem(item: EditorItem) = items.find { it.ident == item.ident } != null
+
+    fun hasItem(ident: String) = items.find { it.ident == ident } != null
+
+    operator fun get(ident: String): EditorItem? = items.find { it.ident == ident }
 
     fun select(item: EditorItem) {
         if (!items.any { item.ident == it.ident }) return
@@ -34,6 +39,16 @@ class Editor {
 abstract class EditorItem {
     abstract val ident: String
     abstract val name: String
+}
+
+class SelectorItem(
+    val state: SnapshotStateMap<AnvilLocation?, SnapshotStateMap<WorldDimension, SelectorState>> = mutableStateMapOf(),
+    from: MutableState<AnvilOpenRequest?> = mutableStateOf(null)
+): EditorItem() {
+    override val ident: String get() = "ANVIL_SELECTOR"
+    override val name: String get() = "MAP"
+
+    var from by from
 }
 
 abstract class NbtItem(
