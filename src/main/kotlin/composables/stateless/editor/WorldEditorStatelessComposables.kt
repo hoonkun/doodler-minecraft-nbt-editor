@@ -69,7 +69,7 @@ fun ColumnScope.MainArea(content: @Composable RowScope.() -> Unit) {
 
 @Composable
 fun RowScope.MainFiles(content: @Composable BoxScope.() -> Unit) {
-    Box (modifier = Modifier.fillMaxHeight().weight(0.3f), content = content)
+    Box (modifier = Modifier.fillMaxHeight().requiredWidth(400.dp).background(ThemedColor.TaskArea), content = content)
 }
 
 

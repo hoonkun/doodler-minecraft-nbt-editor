@@ -110,19 +110,20 @@ fun WorldEditor(
 
             MainArea {
                 MainFiles {
-                    FileCategoryListScrollable(scrollState) {
-                        for (category in categories) {
-                            PhylumCategory(category) {
-                                PhylumCategoryItems(
-                                    category,
-                                    states.phylum.species?.ident ?: "",
-                                    onCategoryItemClick
-                                )
-                            }
-                        }
-                        CategoriesBottomMargin()
-                    }
-                    FileCategoryListScrollbar(scrollState)
+                    WorldTreeView(name, tree)
+//                    FileCategoryListScrollable(scrollState) {
+//                        for (category in categories) {
+//                            PhylumCategory(category) {
+//                                PhylumCategoryItems(
+//                                    category,
+//                                    states.phylum.species?.ident ?: "",
+//                                    onCategoryItemClick
+//                                )
+//                            }
+//                        }
+//                        CategoriesBottomMargin()
+//                    }
+//                    FileCategoryListScrollbar(scrollState)
                 }
                 MainContents {
                     if (states.phylum.list.size == 0) {

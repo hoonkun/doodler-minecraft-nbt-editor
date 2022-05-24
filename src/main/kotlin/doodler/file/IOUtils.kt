@@ -3,6 +3,9 @@ package doodler.file
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.ImageBitmap
+import composables.stateful.editor.DirectoryItem
+import composables.stateful.editor.FileItem
+import composables.stateful.editor.WorldTreeItem
 import doodler.anvil.AnvilLocation
 import doodler.anvil.GZip
 import doodler.nbt.Tag
@@ -81,6 +84,16 @@ class WorldTree (
             WorldDimension.NETHER -> nether
         }
     }
+
+    fun listWorldFiles(dimension: WorldDimension): List<WorldTreeItem> {
+        val world = get(dimension)
+        val list = listOf("data", "region", "poi", "entities").sorted()
+
+        return list.map {
+            val files = world[it].map { file -> FileItem(file.name, 3, file) }
+            DirectoryItem(it, 2, files)
+        }
+    }
 }
 
 class WorldDimensionTree (
@@ -89,7 +102,17 @@ class WorldDimensionTree (
     val poi: List<File>,
     val data: List<File>,
     val cachedTerrains: SnapshotStateMap<AnvilLocation, ImageBitmap> = mutableStateMapOf()
-)
+) {
+    operator fun get(key: String): List<File> {
+        return when (key) {
+            "entities" -> entities
+            "region" -> region
+            "poi" -> poi
+            "data" -> data
+            else -> listOf()
+        }
+    }
+}
 
 enum class WorldDimension(
     val ident: String,
