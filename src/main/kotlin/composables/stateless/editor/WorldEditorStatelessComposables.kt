@@ -128,7 +128,7 @@ fun ColumnScope.Editables(content: @Composable BoxScope.() -> Unit) {
 fun RowScope.CoordinateText(text: String, invalid: Boolean = false) {
     Text(
         text,
-        fontSize = 21.sp,
+        fontSize = 16.sp,
         color = if (invalid) ThemedColor.Editor.Selector.Malformed else ThemedColor.Editor.Tag.General,
         fontFamily = JetBrainsMono,
         modifier = Modifier.focusable(false)
@@ -145,7 +145,7 @@ fun RowScope.CoordinateInput(
         value,
         onValueChange,
         textStyle = TextStyle(
-            fontSize = 21.sp,
+            fontSize = 16.sp,
             color = ThemedColor.Editor.Tag.General,
             fontFamily = JetBrainsMono
         ),
@@ -154,7 +154,7 @@ fun RowScope.CoordinateInput(
         cursorBrush = SolidColor(ThemedColor.Editor.Tag.General),
         visualTransformation = transformer,
         modifier = Modifier
-            .width((value.text.length.coerceAtLeast(1) * 12.75).dp)
+            .width((value.text.length.coerceAtLeast(1) * 9.75).dp)
             .focusable(false)
             .onFocusChanged {
                 if (!it.isFocused && value.text.isEmpty()) onValueChange(TextFieldValue("-"))
@@ -171,19 +171,19 @@ fun RowScope.ChunkSelectorDropdown(prefix: String, accent: Boolean = false, vali
                 RoundedCornerShape(4.dp)
             )
             .wrapContentWidth()
-            .height(45.dp),
+            .height(40.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Spacer(modifier = Modifier.width(17.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
             prefix,
-            fontSize = 18.sp,
+            fontSize = 14.sp,
             color = ThemedColor.Editor.Selector.Normal,
             fontFamily = JetBrainsMono
         )
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(8.dp))
         content()
-        Spacer(modifier = Modifier.width(17.dp))
+        Spacer(modifier = Modifier.width(12.dp))
     }
 }
 
