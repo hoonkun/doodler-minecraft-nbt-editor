@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -13,6 +14,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
@@ -42,20 +45,43 @@ val EXTENSION_ALIAS = mapOf(
     "json" to "JSN"
 )
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
-fun GlobalMapViewerButton(onClick: (MouseClickScope.() -> Unit)? = null) {
+fun GlobalMapViewerButton(
+    hoverState: MutableState<Boolean>,
+    selected: Boolean,
+    onClick: (MouseClickScope.() -> Unit)? = null
+) {
+    var hover by hoverState
+
     Spacer(modifier = Modifier.width(10.dp))
-    Box(
-        modifier = Modifier
-            .background(ThemedColor.TreeViewSelected, shape = RoundedCornerShape(4.dp))
-            .padding(top = 3.dp, bottom = 3.dp, start = 8.dp, end = 8.dp)
-            .let {
-                if (onClick != null) it.mouseClickable(onClick = onClick)
-                else it
-            }
+    Box(modifier = Modifier
+        .let {
+            if (onClick != null)
+                it.onPointerEvent(PointerEventType.Enter) { hover = true }
+                    .onPointerEvent(PointerEventType.Exit) { hover = false }
+            else it
+        }
     ) {
-        TreeViewText("map viewer", fontSize = 15.sp)
+        Box(
+            modifier = Modifier
+                .background(
+                    if (selected) {
+                        if (hover) ThemedColor.MapViewButtonHover else ThemedColor.MapViewButton
+                    } else {
+                        if (hover) ThemedColor.MapViewButtonHoverN else ThemedColor.MapViewButtonN
+                    },
+                    shape = RoundedCornerShape(4.dp)
+                )
+                .padding(top = 3.dp, bottom = 3.dp, start = 8.dp, end = 8.dp)
+                .let {
+                    if (onClick != null)
+                        it.mouseClickable(onClick = onClick)
+                    else it
+                }
+        ) {
+            TreeViewText("map viewer", fontSize = 15.sp)
+        }
     }
 }
 
@@ -83,6 +109,8 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequ
 
     val vs = rememberScrollState()
     val hs = rememberScrollState()
+
+    val mapViewButtonHoverState = remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -167,7 +195,7 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequ
                         Spacer(modifier = Modifier.width(15.dp))
                         TreeViewText(item.name, items.indexOf(item) == 0)
                         if (item is DirectoryItem && item.name == "dimensions") {
-                            GlobalMapViewerButton()
+                            GlobalMapViewerButton(mapViewButtonHoverState, selected == item)
                         }
                     }
                 }
@@ -201,7 +229,7 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequ
                             Spacer(modifier = iconModifier.padding(4.dp))
                             Spacer(modifier = Modifier.width(15.dp))
                             TreeViewText(item.name, items.indexOf(item) == 0)
-                            GlobalMapViewerButton {
+                            GlobalMapViewerButton(mapViewButtonHoverState, false) {
                                 onOpen(GlobalAnvilInitRequest)
                             }
                         }

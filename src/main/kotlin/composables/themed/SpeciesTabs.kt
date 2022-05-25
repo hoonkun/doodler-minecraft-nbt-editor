@@ -62,7 +62,7 @@ fun SpeciesTab(
                 Spacer(modifier = Modifier.width(15.dp))
                 Text(
                     data.item.name,
-                    color = Color.White,
+                    color = ThemedColor.Editor.Tag.General,
                     fontSize = 19.sp,
                     fontFamily = JetBrainsMono
                 )

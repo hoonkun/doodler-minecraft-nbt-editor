@@ -9,13 +9,20 @@ import androidx.compose.material.BottomAppBar
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
@@ -165,7 +172,7 @@ fun RowScope.CoordinateInput(
     )
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun ChunkSelectorDropdown(
     prefix: String,
@@ -173,21 +180,25 @@ fun ChunkSelectorDropdown(
     valid: Boolean = true,
     modifier: Modifier = Modifier,
     disabled: Boolean = false,
-    onClick: MouseClickScope.() -> Unit = {},
+    onClick: (MouseClickScope.() -> Unit)? = null,
     content: @Composable RowScope.(Boolean) -> Unit
 ) {
+    var hover by remember { mutableStateOf(false) }
+
     Row (
         modifier = Modifier.then(modifier)
             .background(
                 ThemedColor.from(
-                    ThemedColor.Editor.Selector.background(accent, valid),
+                    ThemedColor.Editor.Selector.background(accent, valid, onClick != null && hover),
                     alpha = if (disabled) (255 * 0.6f).toInt() else 255
                 ),
                 RoundedCornerShape(4.dp)
             )
-            .mouseClickable(onClick = onClick)
             .height(40.dp)
-            .alpha(if (disabled) 0.6f else 1f),
+            .alpha(if (disabled) 0.6f else 1f)
+            .let { if (onClick != null) it.mouseClickable(onClick = onClick) else it }
+            .onPointerEvent(PointerEventType.Enter) { hover = true }
+            .onPointerEvent(PointerEventType.Exit) { hover = false },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start
     ) {

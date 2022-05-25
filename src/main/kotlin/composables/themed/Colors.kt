@@ -25,6 +25,10 @@ class ThemedColor {
         val Copyright = Color(255, 255, 255, 180)
 
         val TreeViewSelected = Color(0xFF49544A)
+        val MapViewButton = Color(0xFF404A41)
+        val MapViewButtonHover = Color(0xFF464F47)
+        val MapViewButtonN = Color(0xFF49544A)
+        val MapViewButtonHoverN = Color(0xFF4F5B50)
 
         val DocumentationDescription = Color(255, 255, 255, 145)
 
@@ -44,7 +48,7 @@ class ThemedColor {
             )
 
         fun selectable(selected: Boolean, pressed: Boolean, focused: Boolean) =
-            if (selected) Color(255, 255, 255, 30)
+            if (selected) Color(255, 255, 255, 20)
             else if (pressed) Color(0, 0, 0, 80)
             else if (focused) Color(0, 0, 0, 40)
             else Color.Transparent
@@ -157,10 +161,12 @@ class ThemedColor {
                 private val ValidAccent = Color(50, 54, 47)
                 private val InvalidAccent = Color(64, 55, 52)
                 private val Default = Color(42, 42, 42)
+                private val DefaultHover = Color(50, 50, 50)
 
-                fun background(accent: Boolean, valid: Boolean) =
+                fun background(accent: Boolean, valid: Boolean, hover: Boolean) =
                     if (accent && valid) ValidAccent
                     else if (accent) InvalidAccent
+                    else if (hover) DefaultHover
                     else Default
 
             }
