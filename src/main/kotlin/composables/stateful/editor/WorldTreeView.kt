@@ -24,6 +24,7 @@ import composables.themed.JetBrainsMono
 import composables.themed.ThemedColor
 import doodler.anvil.AnvilLocation
 import doodler.file.WorldDimension
+import doodler.file.WorldDimensionTree
 import doodler.file.WorldTree
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.ColorAlphaType
@@ -183,7 +184,7 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequ
                     if (item !is FileItem) return@mouseClickable
                     when (item.file.extension) {
                         "dat" -> onOpen(NbtOpenRequest(StandaloneNbtItem.fromFile(item.file)))
-                        "mca" -> onOpen(AnvilOpenRequest(item.file.name.split(".").let { AnvilLocation(it[1].toInt(), it[2].toInt()) }, item.file))
+                        "mca" -> onOpen(McaAnvilRequest(item.file.name.split(".").let { AnvilLocation(it[1].toInt(), it[2].toInt()) }, item.file))
                     }
                 }.height(height).fillMaxWidth()) {
                     Row(
@@ -201,7 +202,7 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequ
                             Spacer(modifier = Modifier.width(15.dp))
                             TreeViewText(item.name, items.indexOf(item) == 0)
                             GlobalMapViewerButton {
-                                onOpen(GlobalAnvilOpenRequest)
+                                onOpen(GlobalAnvilInitRequest)
                             }
                         }
                     }
@@ -354,9 +355,16 @@ class NbtOpenRequest(
     val target: EditorItem
 ): OpenRequest()
 
-object GlobalAnvilOpenRequest: OpenRequest()
+sealed class AnvilOpenRequest: OpenRequest()
 
-class AnvilOpenRequest(
+object GlobalAnvilInitRequest: AnvilOpenRequest()
+
+class GlobalAnvilUpdateRequest(
+    val dimension: WorldDimension?,
+    val type: WorldDimensionTree.McaType?
+): AnvilOpenRequest()
+
+class McaAnvilRequest(
     val location: AnvilLocation,
     val file: File
-): OpenRequest()
+): AnvilOpenRequest()

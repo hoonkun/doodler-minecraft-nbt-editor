@@ -56,11 +56,10 @@ fun WorldEditor(
     if (states.worldSpec.tree == null)
         states.worldSpec.tree = IOUtils.load(worldPath)
 
-    val levelInfo = IOUtils.readLevel(states.worldSpec.requireTree.level.readBytes())["Data"]
+    val levelInfo = IOUtils.readLevel(states.worldSpec.requireTree.level.readBytes())["Data"]?.getAs<CompoundTag>()
 
     if (states.worldSpec.name == null)
-        states.worldSpec.name = levelInfo
-            ?.getAs<CompoundTag>()!!["LevelName"]
+        states.worldSpec.name = levelInfo!!["LevelName"]
             ?.getAs<StringTag>()
             ?.value
 
@@ -71,33 +70,6 @@ fun WorldEditor(
 
     val tree = states.worldSpec.requireTree
     val name = states.worldSpec.requireName
-
-    val initialGlobalInfo: () -> McaInfo = {
-        val player = levelInfo?.getAs<CompoundTag>()?.get("Player")?.getAs<CompoundTag>()
-        val dimensionId = player?.get("Dimension")?.getAs<StringTag>()?.value
-
-        val pos = player?.get("Pos")?.getAs<ListTag>()
-        val x = pos?.get(0)?.getAs<DoubleTag>()?.value?.toInt()
-        val z = pos?.get(2)?.getAs<DoubleTag>()?.value?.toInt()
-
-        if (player == null || dimensionId == null || x == null || z == null)
-            throw DoodleException("Internal Error", null, "Could not find dimension data of Player.")
-
-        val dimension = WorldDimension.namespace(dimensionId)
-        val defaultChunkLocation = BlockLocation(x, z).toChunkLocation()
-        val location = defaultChunkLocation.toAnvilLocation()
-        val file = tree[dimension][WorldDimensionTree.McaType.TERRAIN.pathName]
-            .find { it.name == "r.${location.x}.${location.z}.mca" }
-            ?: throw DoodleException("Internal Error", null, "Could not find terrain region file which player exists.")
-
-        McaInfo(
-            dimension,
-            WorldDimensionTree.McaType.TERRAIN,
-            location,
-            file,
-            defaultChunkLocation
-        )
-    }
 
     val onOpenRequest: (OpenRequest) -> Unit = handleRequest@ { request ->
         when (request) {
@@ -110,30 +82,11 @@ fun WorldEditor(
             }
             is AnvilOpenRequest -> {
                 if (!states.editor.hasItem("ANVIL_SELECTOR")) {
-                    states.editor.open(
-                        SelectorItem().apply { from = request }
-                    )
+                    states.editor.open(SelectorItem().apply { from = request })
                 } else {
                     val selector = states.editor["ANVIL_SELECTOR"] ?: return@handleRequest
                     if (selector !is SelectorItem) return@handleRequest
                     selector.from = request
-
-                    states.editor.select(selector)
-                }
-            }
-            is GlobalAnvilOpenRequest -> {
-                if (!states.editor.hasItem("ANVIL_SELECTOR")) {
-                    states.editor.open(
-                        SelectorItem().apply {
-                            from = null
-                            if (globalInfo == null) globalInfo = initialGlobalInfo()
-                        }
-                    )
-                } else {
-                    val selector = states.editor["ANVIL_SELECTOR"] ?: return@handleRequest
-                    if (selector !is SelectorItem) return@handleRequest
-                    selector.from = null
-                    if (selector.globalInfo == null) selector.globalInfo = initialGlobalInfo()
 
                     states.editor.select(selector)
                 }
@@ -153,7 +106,7 @@ fun WorldEditor(
                     if (states.editor.items.size == 0) {
                         NoFileSelected(name)
                     } else {
-                        Editor(tree, states.editor)
+                        Editor(levelInfo, tree, states.editor)
                     }
                 }
             }
@@ -168,6 +121,7 @@ fun WorldEditor(
 
 @Composable
 fun BoxScope.Editor(
+    levelInfo: CompoundTag?,
     tree: WorldTree,
     editor: Editor,
 ) {
@@ -181,7 +135,7 @@ fun BoxScope.Editor(
             val selected = editor.selected
             if (selected is NbtItem) EditableField(selected)
             else if (selected is SelectorItem) {
-                McaMap(selected, tree) open@ { location, file ->
+                McaMap(levelInfo, selected, tree) open@ { location, file ->
                     if (editor.hasItem("${file.absolutePath}/c.${location.x}.${location.z}")) return@open
 
                     val root = AnvilWorker.loadChunk(location, file.readBytes()) ?: return@open
@@ -193,37 +147,86 @@ fun BoxScope.Editor(
 }
 
 @Composable
-fun McaMap(selector: SelectorItem, tree: WorldTree, onOpenRequest: (ChunkLocation, File) -> Unit) {
+fun McaMap(levelInfo: CompoundTag?, selector: SelectorItem, tree: WorldTree, onOpenRequest: (ChunkLocation, File) -> Unit) {
     val request = selector.from
-    val info = selector.globalInfo
 
-    val file = request?.file ?: info?.file ?: return
-    val location = request?.location ?: info?.location ?: return
+    val data by remember(request) { mutableStateOf(
+        when (request) {
+            is McaAnvilRequest -> {
+                val file = request.file
+                val location = request.location
 
-    val dimension by remember(file) { mutableStateOf(WorldDimension[file.parentFile.parentFile.name]) }
+                val dimension = WorldDimension[file.parentFile.parentFile.name]
 
-    val type by remember(file) { mutableStateOf(WorldDimensionTree.McaType[file.parentFile.name]) }
+                val type = WorldDimensionTree.McaType[file.parentFile.name]
 
-    val anvils by remember(request, info, file, dimension) {
-        mutableStateOf(tree[dimension][type.pathName])
-    }
+                val chunks = AnvilWorker.loadChunkList(location, file.readBytes())
 
-    val chunks by remember(request, info, file, anvils) { mutableStateOf(
-        if (request != null)
-            AnvilWorker.loadChunkList(location, file.readBytes())
-        else if (info != null)
-            anvils.map {
-                val segments = it.name.split(".")
-                val itLocation = AnvilLocation(segments[1].toInt(), segments[2].toInt())
-                AnvilWorker.loadChunkList(itLocation, it.readBytes())
-            }.toList().flatten()
-        else throw DoodleException("Internal Error", null, "McaOpenRequest or GlobalMcaInfo must not be null, but both are empty.")
+                Pair(chunks, McaInfo(request, dimension, type, location, file))
+            }
+            is GlobalAnvilInitRequest -> {
+                val player = levelInfo?.get("Player")?.getAs<CompoundTag>()
+                val dimensionId = player?.get("Dimension")?.getAs<StringTag>()?.value
+
+                val pos = player?.get("Pos")?.getAs<ListTag>()
+                val x = pos?.get(0)?.getAs<DoubleTag>()?.value?.toInt()
+                val z = pos?.get(2)?.getAs<DoubleTag>()?.value?.toInt()
+
+                if (player == null || dimensionId == null || x == null || z == null)
+                    throw DoodleException("Internal Error", null, "Could not find dimension data of Player.")
+
+                val dimension = WorldDimension.namespace(dimensionId)
+                val type = WorldDimensionTree.McaType.TERRAIN
+                val initial = BlockLocation(x, z)
+                val location = initial.toChunkLocation().toAnvilLocation()
+                val file = tree[dimension][WorldDimensionTree.McaType.TERRAIN.pathName]
+                    .find { it.name == "r.${location.x}.${location.z}.mca" }
+                    ?: throw DoodleException("Internal Error", null, "Could not find terrain region file which player exists.")
+
+                val chunks = tree[dimension][WorldDimensionTree.McaType.TERRAIN.pathName].map {
+                    val segments = it.name.split(".")
+                    val itLocation = AnvilLocation(segments[1].toInt(), segments[2].toInt())
+                    AnvilWorker.loadChunkList(itLocation, it.readBytes())
+                }.toList().flatten()
+
+                val mcaInfo = McaInfo(request, dimension, type, location, file, initial)
+                selector.baseGlobalMcaInfo = mcaInfo
+
+                Pair(chunks, mcaInfo)
+            }
+            is GlobalAnvilUpdateRequest -> {
+                val base = selector.baseGlobalMcaInfo
+
+                val chunks = tree[request.dimension ?: base.dimension][(request.type ?: base.type).pathName].map {
+                    val segments = it.name.split(".")
+                    val itLocation = AnvilLocation(segments[1].toInt(), segments[2].toInt())
+                    AnvilWorker.loadChunkList(itLocation, it.readBytes())
+                }.toList().flatten()
+
+                Pair(
+                    chunks,
+                    McaInfo(
+                        request,
+                        request.dimension ?: base.dimension,
+                        request.type ?: base.type,
+                        base.location,
+                        base.file,
+                        base.initial
+                    )
+                )
+            }
+            else -> {
+                throw DoodleException("Internal Error", null, "Cannot initialize McaInfo.")
+            }
+        }
     ) }
+
+    val (chunks, mcaInfo) = data
 
     Column(modifier = Modifier.fillMaxSize()) {
         ChunkSelector(
             chunks, tree, selector,
-            if (request != null) McaInfo(dimension, type, location, file) else selector.globalInfo,
+            mcaInfo,
             onOpenRequest
         )
     }
@@ -235,35 +238,26 @@ fun ColumnScope.ChunkSelector(
     chunks: List<ChunkLocation>,
     tree: WorldTree,
     selector: SelectorItem,
-    mcaInfo: McaInfo?,
+    mcaInfo: McaInfo,
     onSelectChunk: (ChunkLocation, File) -> Unit
 ) {
 
-    val initial by remember(selector.state[mcaInfo]) {
-        mutableStateOf(selector.state[mcaInfo] == null)
-    }
-
-    val state = selector.state[mcaInfo] ?: let {
-        SelectorState.new(null).also { newState ->
-            selector.state[mcaInfo] = newState
-        }
-    }
-
-    if (mcaInfo == null) return
-
     val dimension = mcaInfo.dimension
     val location = mcaInfo.location
-    val type = mcaInfo.type
     val file = mcaInfo.file
 
-    if (initial) {
-        val forcedChunk = mcaInfo.defaultChunkLocation ?: chunks.firstOrNull { it.toAnvilLocation() == location }
-        state.selectedChunk = forcedChunk
-        state.chunkXValue = TextFieldValue(forcedChunk?.x?.toString() ?: "-")
-        state.chunkZValue = TextFieldValue(forcedChunk?.z?.toString() ?: "-")
-        state.blockXValue = TextFieldValue("-")
-        state.blockZValue = TextFieldValue("-")
-    }
+    val type = mcaInfo.type
+
+    val state by remember(mcaInfo) { mutableStateOf(
+        when (mcaInfo.request) {
+            is McaAnvilRequest -> selector.mcaState[mcaInfo]
+                ?: SelectorState.new(chunks.firstOrNull { it.toAnvilLocation() == location }).also { newState -> selector.mcaState[mcaInfo] = newState }
+            is GlobalAnvilInitRequest -> selector.globalState[mcaInfo.dimension]
+                ?: SelectorState.new(mcaInfo.initial).also { newState -> selector.globalState[mcaInfo.dimension] = newState }
+            is GlobalAnvilUpdateRequest -> selector.globalState[mcaInfo.dimension]
+                ?: throw DoodleException("Internal Error", null, "Cannot update global selector")
+        }
+    ) }
 
     val validChunkX = chunks.map { chunk -> chunk.x }
     val validChunkZ = chunks.map { chunk -> chunk.z }

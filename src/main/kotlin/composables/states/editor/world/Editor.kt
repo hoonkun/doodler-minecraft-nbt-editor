@@ -4,6 +4,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import composables.stateful.editor.AnvilOpenRequest
 import doodler.anvil.AnvilLocation
+import doodler.anvil.BlockLocation
 import doodler.anvil.ChunkLocation
 import doodler.file.IOUtils
 import doodler.file.WorldDimension
@@ -41,11 +42,12 @@ abstract class EditorItem {
 }
 
 data class McaInfo(
+    val request: AnvilOpenRequest,
     val dimension: WorldDimension,
     val type: WorldDimensionTree.McaType,
     val location: AnvilLocation,
     val file: File,
-    val defaultChunkLocation: ChunkLocation? = null
+    val initial: BlockLocation? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -57,7 +59,7 @@ data class McaInfo(
         if (type != other.type) return false
         if (location != other.location) return false
         if (file.absolutePath != other.file.absolutePath) return false
-        if (defaultChunkLocation != other.defaultChunkLocation) return false
+        if (initial != other.initial) return false
 
         return true
     }
@@ -67,20 +69,22 @@ data class McaInfo(
         result = 31 * result + type.hashCode()
         result = 31 * result + location.hashCode()
         result = 31 * result + file.absolutePath.hashCode()
+        result = 31 * result + initial.hashCode()
         return result
     }
 }
 
 class SelectorItem(
-    val state: SnapshotStateMap<McaInfo?, SelectorState> = mutableStateMapOf(),
-    globalInfo: MutableState<McaInfo?> = mutableStateOf(null),
+    val globalState: SnapshotStateMap<WorldDimension?, SelectorState> = mutableStateMapOf(),
+    val mcaState: SnapshotStateMap<McaInfo?, SelectorState> = mutableStateMapOf(),
     from: MutableState<AnvilOpenRequest?> = mutableStateOf(null)
 ): EditorItem() {
     override val ident: String get() = "ANVIL_SELECTOR"
     override val name: String get() = "MAP"
 
     var from by from
-    var globalInfo by globalInfo
+
+    lateinit var baseGlobalMcaInfo: McaInfo
 }
 
 abstract class NbtItem(

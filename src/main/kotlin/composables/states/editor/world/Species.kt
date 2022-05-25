@@ -33,6 +33,13 @@ class SelectorState (
                 chunkZValue = mutableStateOf(TextFieldValue(initialPos?.toChunkLocation()?.z?.toString() ?: "-")),
                 selectedChunk = mutableStateOf(initialPos?.toChunkLocation()),
             )
+
+        fun new(initialChunk: ChunkLocation?) =
+            SelectorState(
+                chunkXValue = mutableStateOf(TextFieldValue(initialChunk?.x?.toString() ?: "-")),
+                chunkZValue = mutableStateOf(TextFieldValue(initialChunk?.z?.toString() ?: "-")),
+                selectedChunk = mutableStateOf(initialChunk),
+            )
     }
 }
 
