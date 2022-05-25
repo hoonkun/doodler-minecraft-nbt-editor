@@ -93,9 +93,11 @@ class WorldTree (
         val world = get(dimension)
         val list = listOf("data", "region", "poi", "entities").sorted()
 
-        return list.map {
-            val files = world[it].map { file -> FileItem(file.name, 3, file) }
-            DirectoryItem(it, 2, files)
+        return list.mapNotNull {
+            if (world[it].isNotEmpty()) {
+                val files = world[it].map { file -> FileItem(file.name, 3, file) }
+                DirectoryItem(it, 2, files)
+            } else null
         }
     }
 }

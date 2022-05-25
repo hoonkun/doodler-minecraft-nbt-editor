@@ -196,9 +196,13 @@ fun ChunkSelectorDropdown(
             )
             .height(40.dp)
             .alpha(if (disabled) 0.6f else 1f)
-            .let { if (onClick != null) it.mouseClickable(onClick = onClick) else it }
-            .onPointerEvent(PointerEventType.Enter) { hover = true }
-            .onPointerEvent(PointerEventType.Exit) { hover = false },
+            .let {
+                if (onClick != null)
+                    it.mouseClickable(onClick = onClick)
+                        .onPointerEvent(PointerEventType.Enter) { hover = true }
+                        .onPointerEvent(PointerEventType.Exit) { hover = false }
+                else it
+            },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start
     ) {
