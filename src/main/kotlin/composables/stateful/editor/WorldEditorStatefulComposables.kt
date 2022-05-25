@@ -1,5 +1,8 @@
 package composables.stateful.editor
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -49,6 +52,7 @@ import doodler.nbt.tag.CompoundTag
 import doodler.nbt.tag.DoubleTag
 import doodler.nbt.tag.ListTag
 import doodler.nbt.tag.StringTag
+import kotlinx.coroutines.delay
 import java.io.File
 
 @Composable
@@ -537,43 +541,50 @@ fun ColumnScope.ChunkSelector(
             state.blockZValue = TextFieldValue("-")
         }
 
-        if (popup == "region") {
-            SelectorDropdown(
-                items = regions.toMutableList().apply {
-                    remove(state.selectedChunk?.toAnvilLocation() ?: mcaInfo.location)
-                },
-                indent = 3,
-                onCloseRequest = { popup = null },
-                valueMapper = { "r.${it.x}.${it.z}.mca" },
-                anchor = regionPopupPos,
-            ) {
-                resetChunk()
-                onUpdateRequest(GlobalAnvilUpdateRequest(region = it))
-            }
+        PopupBackground(
+            current = popup,
+            onCloseRequest = { popup = null }
+        )
+
+        SelectorDropdown(
+            ident = "region",
+            items = regions.toMutableList().apply {
+                remove(state.selectedChunk?.toAnvilLocation() ?: mcaInfo.location)
+            },
+            indent = 3,
+            current = popup,
+            onCloseRequest = { popup = null },
+            valueMapper = { "r.${it.x}.${it.z}.mca" },
+            anchor = regionPopupPos,
+        ) {
+            resetChunk()
+            onUpdateRequest(GlobalAnvilUpdateRequest(region = it))
         }
-        if (popup == "type") {
-            SelectorDropdown(
-                items = WorldDimensionTree.McaType.values().toMutableList().apply { remove(type) },
-                indent = 1,
-                onCloseRequest = { popup = null },
-                valueMapper = { it.name },
-                anchor = typePopupPos,
-            ) {
-                resetChunk()
-                onUpdateRequest(GlobalAnvilUpdateRequest(type = it))
-            }
+
+        SelectorDropdown(
+            ident = "type",
+            items = WorldDimensionTree.McaType.values().toMutableList().apply { remove(type) },
+            indent = 1,
+            current = popup,
+            onCloseRequest = { popup = null },
+            valueMapper = { it.name },
+            anchor = typePopupPos,
+        ) {
+            resetChunk()
+            onUpdateRequest(GlobalAnvilUpdateRequest(type = it))
         }
-        if (popup == "dimension") {
-            SelectorDropdown(
-                items = WorldDimension.values().toMutableList().apply { remove(dimension) },
-                indent = 0,
-                onCloseRequest = { popup = null },
-                valueMapper = { it.name },
-                anchor = dimensionPopupPos,
-            ) {
-                resetChunk()
-                onUpdateRequest(GlobalAnvilUpdateRequest(dimension = it))
-            }
+
+        SelectorDropdown(
+            ident = "dimension",
+            items = WorldDimension.values().toMutableList().apply { remove(dimension) },
+            indent = 0,
+            current = popup,
+            onCloseRequest = { popup = null },
+            valueMapper = { it.name },
+            anchor = dimensionPopupPos,
+        ) {
+            resetChunk()
+            onUpdateRequest(GlobalAnvilUpdateRequest(dimension = it))
         }
     }
 
@@ -581,25 +592,63 @@ fun ColumnScope.ChunkSelector(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
+fun PopupBackground(
+    current: String?,
+    onCloseRequest: MouseClickScope.() -> Unit,
+) {
+    var state by remember { mutableStateOf(-1) }
+    val alpha by animateFloatAsState(if (state == 1) 1f else 0f, tween(75, easing = LinearEasing))
+
+    LaunchedEffect(current) {
+        if (current != null) state = 1
+        else if (state != -1) {
+            state = 0
+            delay(125)
+            state = -1
+        }
+    }
+
+    if (state == -1) return
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ThemedColor.from(Color.Black, alpha = (alpha * 150).toInt()))
+            .mouseClickable(onClick = onCloseRequest)
+    )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
 fun <T>SelectorDropdown(
+    ident: String,
     items: List<T>,
     indent: Int,
+    current: String?,
     onCloseRequest: MouseClickScope.() -> Unit,
     valueMapper: (T) -> String,
     anchor: Offset,
     onClick: (T) -> Unit
 ) {
+    var state by remember { mutableStateOf(-1) }
+    val alpha by animateFloatAsState(if (state == 1) 1f else 0f, tween(75, easing = LinearEasing))
+
+    LaunchedEffect(ident, current) {
+        if (ident == current) state = 1
+        else if (state != -1) {
+            state = 0
+            delay(125)
+            state = -1
+        }
+    }
+
     var width by remember { mutableStateOf<Int?>(null) }
 
     val s = rememberScrollState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(ThemedColor.from(Color.Black, alpha = 150))
-            .padding(top = 7.dp)
-            .mouseClickable(onClick = onCloseRequest)
-    ) {
+    if (state == -1) return
+
+    Box (modifier = Modifier.fillMaxSize().alpha(alpha).padding(top = 7.dp)) {
         Column(
             modifier = Modifier
                 .absoluteOffset(x = anchor.x.dp)
