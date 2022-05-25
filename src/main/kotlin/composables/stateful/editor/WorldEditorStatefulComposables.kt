@@ -814,10 +814,10 @@ fun ColumnScope.UndoRedoActionColumn(
             .padding(5.dp)
     ) {
         NbtActionButton(disabled = !actions.history.canBeUndo, onClick = { actions.withLog { history.undo() } }) {
-            NbtText("UND", ThemedColor.Editor.Tag.General)
+            NbtText("UND", ThemedColor.Editor.Tag.General, 16.sp)
         }
         NbtActionButton(disabled = !actions.history.canBeRedo, onClick = { actions.withLog { history.redo() } }) {
-            NbtText("RED", ThemedColor.Editor.Tag.General)
+            NbtText("RED", ThemedColor.Editor.Tag.General, 16.sp)
         }
     }
 }
@@ -846,13 +846,13 @@ fun ColumnScope.IndexChangeActionColumn(
             disabled = !(available && canMoveUp),
             onClick = { state.actions.elevator.moveUp(state.ui.selected) }
         ) {
-            NbtText("<- ", ThemedColor.Editor.Tag.General, rotate = 90f, multiplier = 1)
+            NbtText("<- ", ThemedColor.Editor.Tag.General, 16.sp, rotate = 90f, multiplier = 1)
         }
         NbtActionButton(
             disabled = !(available && canMoveDown),
             onClick = { state.actions.elevator.moveDown(state.ui.selected) }
         ) {
-            NbtText(" ->", ThemedColor.Editor.Tag.General, rotate = 90f, multiplier = -1)
+            NbtText(" ->", ThemedColor.Editor.Tag.General, 16.sp, rotate = 90f, multiplier = -1)
         }
     }
 }

@@ -122,7 +122,7 @@ private fun NbtContentText(text: String, color: Color, fontSize: TextUnit = 20.s
 }
 
 @Composable
-private fun TagTypeIndicatorText(type: TagType, disabled: Boolean) {
+private fun TagTypeIndicatorText(type: TagType, disabled: Boolean, fontSize: TextUnit = 18.sp) {
     val text = if (type.isArray()) {
         AnnotatedString(type.shorten(), listOf(
             AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.NumberArray), 0, 1),
@@ -136,7 +136,7 @@ private fun TagTypeIndicatorText(type: TagType, disabled: Boolean) {
             AnnotatedString.Range(SpanStyle(color = color), 0, string.length),
         ))
     }
-    NbtText(text)
+    NbtText(text, fontSize = fontSize)
 }
 
 @Composable
@@ -154,7 +154,7 @@ fun TagCreationButton(holderTag: AnyTag?, type: TagType, actions: NbtState.Actio
         disabled = disabled,
         onClick = { actions.withLog { creator.prepare(type) } }
     ) {
-        TagTypeIndicatorText(type, disabled)
+        TagTypeIndicatorText(type, disabled, 16.sp)
     }
 }
 
