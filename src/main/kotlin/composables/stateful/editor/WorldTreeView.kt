@@ -360,8 +360,9 @@ sealed class AnvilOpenRequest: OpenRequest()
 object GlobalAnvilInitRequest: AnvilOpenRequest()
 
 class GlobalAnvilUpdateRequest(
-    val dimension: WorldDimension?,
-    val type: WorldDimensionTree.McaType?
+    val dimension: WorldDimension? = null,
+    val type: WorldDimensionTree.McaType? = null,
+    val region: AnvilLocation? = null
 ): AnvilOpenRequest()
 
 class McaAnvilRequest(

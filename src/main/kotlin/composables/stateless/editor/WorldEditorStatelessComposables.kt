@@ -129,7 +129,7 @@ fun RowScope.CoordinateText(text: String, invalid: Boolean = false) {
     Text(
         text,
         fontSize = 16.sp,
-        color = if (invalid) ThemedColor.Editor.Selector.Malformed else ThemedColor.Editor.Tag.General,
+        color = if (invalid) ThemedColor.Editor.Selector.Invalid else ThemedColor.Editor.Tag.General,
         fontFamily = JetBrainsMono,
         modifier = Modifier.focusable(false)
     )
@@ -162,17 +162,26 @@ fun RowScope.CoordinateInput(
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun RowScope.ChunkSelectorDropdown(prefix: String, accent: Boolean = false, valid: Boolean = true, content: @Composable RowScope.() -> Unit) {
+fun ChunkSelectorDropdown(
+    prefix: String,
+    accent: Boolean = false,
+    valid: Boolean = true,
+    modifier: Modifier = Modifier,
+    onClick: MouseClickScope.() -> Unit = {},
+    content: @Composable RowScope.() -> Unit
+) {
     Row (
-        modifier = Modifier
+        modifier = Modifier.then(modifier)
             .background(
                 ThemedColor.Editor.Selector.background(accent, valid),
                 RoundedCornerShape(4.dp)
             )
-            .wrapContentWidth()
+            .mouseClickable(onClick = onClick)
             .height(40.dp),
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Start
     ) {
         Spacer(modifier = Modifier.width(12.dp))
         Text(

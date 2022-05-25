@@ -72,6 +72,25 @@ data class McaInfo(
         result = 31 * result + initial.hashCode()
         return result
     }
+
+    companion object {
+        fun from(
+            from: McaInfo,
+            request: AnvilOpenRequest,
+            dimension: WorldDimension? = null,
+            type: WorldDimensionTree.McaType ? = null,
+            location: AnvilLocation? = null,
+            file: File? = null,
+            initial: BlockLocation? = null
+        ) = McaInfo(
+            request,
+            dimension = dimension ?: from.dimension,
+            type = type ?: from.type,
+            location = location ?: from.location,
+            file = file ?: from.file,
+            initial = initial ?: from.initial
+        )
+    }
 }
 
 class SelectorItem(

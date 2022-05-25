@@ -12,11 +12,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -135,19 +139,33 @@ fun BoxScope.Editor(
             val selected = editor.selected
             if (selected is NbtItem) EditableField(selected)
             else if (selected is SelectorItem) {
-                McaMap(levelInfo, selected, tree) open@ { location, file ->
-                    if (editor.hasItem("${file.absolutePath}/c.${location.x}.${location.z}")) return@open
+                McaMap(
+                    levelInfo, selected, tree,
+                    open@ { location, file ->
+                        if (editor.hasItem("${file.absolutePath}/c.${location.x}.${location.z}")) return@open
 
-                    val root = AnvilWorker.loadChunk(location, file.readBytes()) ?: return@open
-                    editor.open(AnvilNbtItem(NbtState.new(root), file, location))
-                }
+                        val root = AnvilWorker.loadChunk(location, file.readBytes()) ?: return@open
+                        editor.open(AnvilNbtItem(NbtState.new(root), file, location))
+                    },
+                    update@ {
+                        val selector = editor["ANVIL_SELECTOR"] ?: return@update
+                        if (selector !is SelectorItem) return@update
+                        selector.from = it
+                    }
+                )
             }
         }
     }
 }
 
 @Composable
-fun McaMap(levelInfo: CompoundTag?, selector: SelectorItem, tree: WorldTree, onOpenRequest: (ChunkLocation, File) -> Unit) {
+fun BoxScope.McaMap(
+    levelInfo: CompoundTag?,
+    selector: SelectorItem,
+    tree: WorldTree,
+    onOpenRequest: (ChunkLocation, File) -> Unit,
+    onUpdateRequest: (GlobalAnvilUpdateRequest) -> Unit
+) {
     val request = selector.from
 
     val data by remember(request) { mutableStateOf(
@@ -195,25 +213,28 @@ fun McaMap(levelInfo: CompoundTag?, selector: SelectorItem, tree: WorldTree, onO
                 Pair(chunks, mcaInfo)
             }
             is GlobalAnvilUpdateRequest -> {
-                val base = selector.baseGlobalMcaInfo
+                val newMcaInfo = McaInfo.from(
+                    selector.baseGlobalMcaInfo,
+                    request = request,
+                    dimension = request.dimension,
+                    type = request.type,
+                    location = request.region,
+                    file = tree[request.dimension ?: selector.baseGlobalMcaInfo.dimension][(request.type ?: selector.baseGlobalMcaInfo.type).pathName].find {
+                        val reg = request.region
+                        if (reg != null) it.name == "r.${reg.x}.${reg.z}.mca" else false
+                    },
+                    initial = null
+                )
 
-                val chunks = tree[request.dimension ?: base.dimension][(request.type ?: base.type).pathName].map {
+                selector.baseGlobalMcaInfo = newMcaInfo
+
+                val chunks = tree[request.dimension ?: newMcaInfo.dimension][(request.type ?: newMcaInfo.type).pathName].map {
                     val segments = it.name.split(".")
                     val itLocation = AnvilLocation(segments[1].toInt(), segments[2].toInt())
                     AnvilWorker.loadChunkList(itLocation, it.readBytes())
                 }.toList().flatten()
 
-                Pair(
-                    chunks,
-                    McaInfo(
-                        request,
-                        request.dimension ?: base.dimension,
-                        request.type ?: base.type,
-                        base.location,
-                        base.file,
-                        base.initial
-                    )
-                )
+                Pair(chunks, newMcaInfo)
             }
             else -> {
                 throw DoodleException("Internal Error", null, "Cannot initialize McaInfo.")
@@ -227,7 +248,8 @@ fun McaMap(levelInfo: CompoundTag?, selector: SelectorItem, tree: WorldTree, onO
         ChunkSelector(
             chunks, tree, selector,
             mcaInfo,
-            onOpenRequest
+            onOpenRequest,
+            onUpdateRequest
         )
     }
 }
@@ -239,33 +261,37 @@ fun ColumnScope.ChunkSelector(
     tree: WorldTree,
     selector: SelectorItem,
     mcaInfo: McaInfo,
-    onSelectChunk: (ChunkLocation, File) -> Unit
+    onSelectChunk: (ChunkLocation, File) -> Unit,
+    onUpdateRequest: (GlobalAnvilUpdateRequest) -> Unit
 ) {
 
     val dimension = mcaInfo.dimension
-    val location = mcaInfo.location
-    val file = mcaInfo.file
-
     val type = mcaInfo.type
 
     val state by remember(mcaInfo) { mutableStateOf(
         when (mcaInfo.request) {
             is McaAnvilRequest -> selector.mcaState[mcaInfo]
-                ?: SelectorState.new(chunks.firstOrNull { it.toAnvilLocation() == location }).also { newState -> selector.mcaState[mcaInfo] = newState }
+                ?: SelectorState.new(chunks.firstOrNull { it.toAnvilLocation() == mcaInfo.location }).also { newState -> selector.mcaState[mcaInfo] = newState }
             is GlobalAnvilInitRequest -> selector.globalState[mcaInfo.dimension]
                 ?: SelectorState.new(mcaInfo.initial).also { newState -> selector.globalState[mcaInfo.dimension] = newState }
             is GlobalAnvilUpdateRequest -> selector.globalState[mcaInfo.dimension]
-                ?: throw DoodleException("Internal Error", null, "Cannot update global selector")
+                ?: SelectorState.new(initialChunk = null).also { newState -> selector.globalState[mcaInfo.dimension] = newState }
         }
     ) }
 
     val validChunkX = chunks.map { chunk -> chunk.x }
     val validChunkZ = chunks.map { chunk -> chunk.z }
 
+    val regions by remember(chunks) { mutableStateOf(chunks.map { it.toAnvilLocation() }.toSet().toList().sortedBy { "${it.x}.${it.z}" }) }
+
     val isChunkValid = {
         val xInt = state.chunkXValue.text.toIntOrNull()
         val zInt = state.chunkZValue.text.toIntOrNull()
         Triple(xInt, zInt, validChunkX.contains(xInt) && validChunkZ.contains(zInt))
+    }
+
+    val isRegionExists: (AnvilLocation) -> Boolean = { location ->
+        regions.contains(location)
     }
 
     val isBlockValid = {
@@ -335,7 +361,13 @@ fun ColumnScope.ChunkSelector(
     var openPressed by remember { mutableStateOf(false) }
     var openFocused by remember { mutableStateOf(false) }
 
-    Row (
+    var regionPopupPos by remember { mutableStateOf(Offset.Zero) }
+    var typePopupPos by remember { mutableStateOf(Offset.Zero) }
+    var dimensionPopupPos by remember { mutableStateOf(Offset.Zero) }
+
+    var popup by remember { mutableStateOf<String?>(null) }
+
+    Row(
         modifier = Modifier
             .background(ThemedColor.SelectorArea)
             .height(60.dp)
@@ -375,24 +407,57 @@ fun ColumnScope.ChunkSelector(
             CoordinateText("]")
         }
         Spacer(modifier = Modifier.width(10.dp))
-        ChunkSelectorDropdown("region:") {
+        ChunkSelectorDropdown(
+            "region:",
+            onClick = {
+                popup =
+                    if (popup == "region") null
+                    else "region"
+            },
+            modifier = Modifier.onGloballyPositioned {
+                regionPopupPos = it.positionInParent()
+            }
+        ) {
             val (_, _, isValid) = isChunkValid()
+            val regionExists = isRegionExists(state.selectedChunk?.toAnvilLocation() ?: mcaInfo.location)
             CoordinateText("r.")
-            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.x ?: "-"}", !isValid)
+            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.x ?: mcaInfo.location.x}", !isValid && !regionExists)
             CoordinateText(".")
-            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.z ?: "-"}", !isValid)
+            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.z ?: mcaInfo.location.z}", !isValid && !regionExists)
             CoordinateText(".mca")
         }
-        Spacer(modifier = Modifier.width(10.dp))
-        ChunkSelectorDropdown("type:") {
-            CoordinateText(type.name)
-        }
-        Spacer(modifier = Modifier.width(10.dp))
-        ChunkSelectorDropdown("dim:") {
-            CoordinateText(dimension.name)
+        if (mcaInfo.request !is McaAnvilRequest) {
+            Spacer(modifier = Modifier.width(10.dp))
+            ChunkSelectorDropdown(
+                "type:",
+                onClick = {
+                    popup =
+                        if (popup == "type") null
+                        else "type"
+                },
+                modifier = Modifier.onGloballyPositioned {
+                    typePopupPos = it.positionInParent()
+                }
+            ) {
+                CoordinateText(type.name)
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            ChunkSelectorDropdown(
+                "dim:",
+                onClick = {
+                    popup =
+                        if (popup == "dimension") null
+                        else "dimension"
+                },
+                modifier = Modifier.onGloballyPositioned {
+                    dimensionPopupPos = it.positionInParent()
+                }
+            ) {
+                CoordinateText(dimension.name)
+            }
         }
         Spacer(modifier = Modifier.weight(1f))
-        Row (
+        Row(
             modifier = Modifier
                 .background(
                     if (state.selectedChunk == null) Color.Transparent
@@ -407,7 +472,11 @@ fun ColumnScope.ChunkSelector(
                 .alpha(if (state.selectedChunk == null) 0.5f else 1f)
                 .mouseClickable {
                     val chunk = state.selectedChunk
-                    if (chunk != null) {
+                    val file =
+                        if (chunk != null)
+                            tree[dimension][type.pathName].find { it.name == "r.${chunk.toAnvilLocation().x}.${chunk.toAnvilLocation().z}.mca" }
+                        else null
+                    if (chunk != null && file != null) {
                         onSelectChunk(chunk, file)
                     }
                 }
@@ -430,13 +499,106 @@ fun ColumnScope.ChunkSelector(
             tree[dimension],
             dimension,
             state.selectedChunk,
-            { chunks.contains(it) }
+            { chunks.contains(it) },
+            forceAnvilLocation = if (mcaInfo.request is GlobalAnvilUpdateRequest) mcaInfo.location else null
         ) {
             state.chunkXValue = TextFieldValue(it.x.toString())
             state.chunkZValue = TextFieldValue(it.z.toString())
             state.blockXValue = TextFieldValue("-")
             state.blockZValue = TextFieldValue("-")
             state.selectedChunk = it
+        }
+
+        val resetChunk = {
+            state.selectedChunk = null
+            state.chunkXValue = TextFieldValue("-")
+            state.chunkZValue = TextFieldValue("-")
+            state.blockXValue = TextFieldValue("-")
+            state.blockZValue = TextFieldValue("-")
+        }
+
+        if (popup == "region") {
+            SelectorDropdown(
+                items = regions.toMutableList().apply {
+                    remove(state.selectedChunk?.toAnvilLocation() ?: mcaInfo.location)
+                },
+                indent = 3,
+                onCloseRequest = { popup = null },
+                valueMapper = { "r.${it.x}.${it.z}.mca" },
+                anchor = regionPopupPos,
+            ) {
+                resetChunk()
+                onUpdateRequest(GlobalAnvilUpdateRequest(region = it))
+            }
+        }
+        if (popup == "type") {
+            SelectorDropdown(
+                items = WorldDimensionTree.McaType.values().toMutableList().apply { remove(type) },
+                indent = 1,
+                onCloseRequest = { popup = null },
+                valueMapper = { it.name },
+                anchor = typePopupPos,
+            ) {
+                resetChunk()
+                onUpdateRequest(GlobalAnvilUpdateRequest(type = it))
+            }
+        }
+        if (popup == "dimension") {
+            SelectorDropdown(
+                items = WorldDimension.values().toMutableList().apply { remove(dimension) },
+                indent = 0,
+                onCloseRequest = { popup = null },
+                valueMapper = { it.name },
+                anchor = dimensionPopupPos,
+            ) {
+                resetChunk()
+                onUpdateRequest(GlobalAnvilUpdateRequest(dimension = it))
+            }
+        }
+    }
+
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun <T>SelectorDropdown(
+    items: List<T>,
+    indent: Int,
+    onCloseRequest: MouseClickScope.() -> Unit,
+    valueMapper: (T) -> String,
+    anchor: Offset,
+    onClick: (T) -> Unit
+) {
+    var width by remember { mutableStateOf<Int?>(null) }
+
+    val s = rememberScrollState()
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ThemedColor.from(Color.Black, alpha = 150))
+            .padding(top = 7.dp)
+            .mouseClickable(onClick = onCloseRequest)
+    ) {
+        Column(
+            modifier = Modifier
+                .absoluteOffset(x = anchor.x.dp)
+                .padding(start = (8.7f * (indent + 4)).dp)
+                .verticalScroll(s)
+                .onGloballyPositioned { width = it.size.width }
+        ) {
+            for (item in items) {
+                ChunkSelectorDropdown(
+                    "",
+                    onClick = { onClick(item); onCloseRequest() },
+                    modifier = Modifier.shadow(7.dp)
+                        .let { modifier -> width.let { if (it == null) modifier else modifier.width(it.dp) } }
+                ) {
+                    CoordinateText(valueMapper(item))
+                    Spacer(modifier = Modifier.width(5.dp))
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+            }
         }
     }
 }
