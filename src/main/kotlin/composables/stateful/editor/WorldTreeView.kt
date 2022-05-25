@@ -130,8 +130,8 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequ
                                     )
                                 }
                                 if (item == fileTree) {
-                                    Box(modifier = Modifier.padding(2.dp).wrapContentSize()) {
-                                        Image(image, null, modifier = iconModifier.clip(RoundedCornerShape(3.dp)))
+                                    Box(modifier = iconModifier.padding(3.dp)) {
+                                        Image(image, null, modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(3.dp)))
                                     }
                                 } else {
                                     Image(
