@@ -382,34 +382,46 @@ fun ColumnScope.ChunkSelector(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Spacer(modifier = Modifier.width(10.dp))
-        ChunkSelectorDropdown("block:") {
+        ChunkSelectorDropdown(
+            "block:",
+            disabled = popup != null
+        ) { disabled ->
             CoordinateText("[")
             CoordinateInput(
                 state.blockXValue,
                 { state.blockXValue = it; updateFromBlock() },
-                transformBlockCoordinate
+                transformBlockCoordinate,
+                disabled
             )
             CoordinateText(", ")
             CoordinateInput(
                 state.blockZValue,
                 { state.blockZValue = it; updateFromBlock() },
-                transformBlockCoordinate
+                transformBlockCoordinate,
+                disabled
             )
             CoordinateText("]")
         }
         Spacer(modifier = Modifier.width(10.dp))
-        ChunkSelectorDropdown("chunk:", true, state.selectedChunk != null) {
+        ChunkSelectorDropdown(
+            "chunk:",
+            accent = true,
+            valid = state.selectedChunk != null,
+            disabled = popup != null
+        ) { disabled ->
             CoordinateText("[")
             CoordinateInput(
                 state.chunkXValue,
                 { state.chunkXValue = it; invalidateBlockCoordinate(); updateFromChunk() },
-                { transformChunkCoordinate(it, validChunkX) }
+                { transformChunkCoordinate(it, validChunkX) },
+                disabled
             )
             CoordinateText(", ")
             CoordinateInput(
                 state.chunkZValue,
                 { state.chunkZValue = it; invalidateBlockCoordinate(); updateFromChunk() },
-                { transformChunkCoordinate(it, validChunkZ) }
+                { transformChunkCoordinate(it, validChunkZ) },
+                disabled
             )
             CoordinateText("]")
         }

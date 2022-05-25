@@ -11,6 +11,7 @@ import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -139,7 +140,8 @@ fun RowScope.CoordinateText(text: String, invalid: Boolean = false) {
 fun RowScope.CoordinateInput(
     value: TextFieldValue,
     onValueChange: (TextFieldValue) -> Unit,
-    transformer: (AnnotatedString) -> TransformedText = { TransformedText(it, OffsetMapping.Identity) }
+    transformer: (AnnotatedString) -> TransformedText = { TransformedText(it, OffsetMapping.Identity) },
+    disabled: Boolean = false
 ) {
     BasicTextField(
         value,
@@ -153,6 +155,7 @@ fun RowScope.CoordinateInput(
         singleLine = true,
         cursorBrush = SolidColor(ThemedColor.Editor.Tag.General),
         visualTransformation = transformer,
+        enabled = !disabled,
         modifier = Modifier
             .width((value.text.length.coerceAtLeast(1) * 9.75).dp)
             .focusable(false)
@@ -169,17 +172,22 @@ fun ChunkSelectorDropdown(
     accent: Boolean = false,
     valid: Boolean = true,
     modifier: Modifier = Modifier,
+    disabled: Boolean = false,
     onClick: MouseClickScope.() -> Unit = {},
-    content: @Composable RowScope.() -> Unit
+    content: @Composable RowScope.(Boolean) -> Unit
 ) {
     Row (
         modifier = Modifier.then(modifier)
             .background(
-                ThemedColor.Editor.Selector.background(accent, valid),
+                ThemedColor.from(
+                    ThemedColor.Editor.Selector.background(accent, valid),
+                    alpha = if (disabled) (255 * 0.6f).toInt() else 255
+                ),
                 RoundedCornerShape(4.dp)
             )
             .mouseClickable(onClick = onClick)
-            .height(40.dp),
+            .height(40.dp)
+            .alpha(if (disabled) 0.6f else 1f),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Start
     ) {
@@ -191,7 +199,7 @@ fun ChunkSelectorDropdown(
             fontFamily = JetBrainsMono
         )
         Spacer(modifier = Modifier.width(8.dp))
-        content()
+        content(disabled)
         Spacer(modifier = Modifier.width(12.dp))
     }
 }
