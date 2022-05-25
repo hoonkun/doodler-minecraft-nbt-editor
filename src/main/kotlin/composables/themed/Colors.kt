@@ -91,7 +91,7 @@ class ThemedColor {
             private val FocusedDepthLine = offset(DepthLine, 40)
 
             private val FocusedTabCloseButtonBackground = Color(255, 255, 255, 75)
-            private val FocusedTabButtonIcon = Color(0, 0, 0, 200)
+            private val FocusedTabButtonIcon = Color(25, 25, 25, 200)
             private val TabButtonIcon = Color(255, 255, 255, 100)
 
             fun tabCloseButtonBackground(focused: Boolean) =

@@ -52,34 +52,34 @@ fun SpeciesTab(
             .onPointerEvent(PointerEventType.Enter) { hover = true }
             .onPointerEvent(PointerEventType.Exit) { hover = false }
             .background(selectable(data.selected, press, hover))
-            .height(50.dp)
+            .height(40.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Spacer(modifier = Modifier.width(20.dp))
+                Spacer(modifier = Modifier.width(15.dp))
                 Text(
                     data.item.name,
                     color = Color.White,
-                    fontSize = 22.sp,
+                    fontSize = 19.sp,
                     fontFamily = JetBrainsMono
                 )
                 if (data.item.ident != "+") {
-                    Spacer(modifier = Modifier.width(15.dp))
+                    Spacer(modifier = Modifier.width(10.dp))
                     CloseButton { onCloseEditable(data.item) }
                 }
-                Spacer(modifier = Modifier.width(18.dp))
+                Spacer(modifier = Modifier.width(13.dp))
             }
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(6.dp))
         }
         Box (modifier = Modifier.matchParentSize()) {
             Box (
                 modifier = Modifier
                     .align(Alignment.BottomStart)
                     .fillMaxWidth()
-                    .height(4.dp)
+                    .height(2.dp)
                     .background(if (data.selected) ThemedColor.Bright else Color.Transparent)
             ) { }
         }
@@ -97,13 +97,13 @@ private fun RowScope.CloseButton(onCloseEditable: () -> Unit) {
             .onPointerEvent(PointerEventType.Exit) { hover = false }
             .mouseClickable(onClick = { onCloseEditable() })
             .background(ThemedColor.Editor.tabCloseButtonBackground(hover), CircleShape)
-            .width(26.dp).height(26.dp)
+            .width(21.dp).height(21.dp)
     ) {
         Text (
             "\u2715",
             color = ThemedColor.Editor.tabCloseButtonIcon(hover),
             fontWeight = FontWeight.Bold,
-            fontSize = 20.sp,
+            fontSize = 15.sp,
             modifier = Modifier
                 .align(Alignment.Center)
         )
