@@ -90,7 +90,11 @@ fun WorldEditor(
                 } else {
                     val selector = states.editor["ANVIL_SELECTOR"] ?: return@handleRequest
                     if (selector !is SelectorItem) return@handleRequest
-                    selector.from = request
+
+                    if (request is GlobalAnvilInitRequest && selector.baseGlobalMcaInfo != null)
+                        selector.from = GlobalAnvilUpdateRequest()
+                    else
+                        selector.from = request
 
                     states.editor.select(selector)
                 }
@@ -150,6 +154,7 @@ fun BoxScope.Editor(
                     update@ {
                         val selector = editor["ANVIL_SELECTOR"] ?: return@update
                         if (selector !is SelectorItem) return@update
+
                         selector.from = it
                     }
                 )
@@ -213,13 +218,15 @@ fun BoxScope.McaMap(
                 Pair(chunks, mcaInfo)
             }
             is GlobalAnvilUpdateRequest -> {
+                val base = selector.baseGlobalMcaInfo ?: throw DoodleException("Internal Error", null, "Failed to update null McaInfo")
+
                 val newMcaInfo = McaInfo.from(
-                    selector.baseGlobalMcaInfo,
+                    base,
                     request = request,
                     dimension = request.dimension,
                     type = request.type,
                     location = request.region,
-                    file = tree[request.dimension ?: selector.baseGlobalMcaInfo.dimension][(request.type ?: selector.baseGlobalMcaInfo.type).pathName].find {
+                    file = tree[request.dimension ?: base.dimension][(request.type ?: base.type).pathName].find {
                         val reg = request.region
                         if (reg != null) it.name == "r.${reg.x}.${reg.z}.mca" else false
                     },

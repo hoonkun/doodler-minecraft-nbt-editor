@@ -103,7 +103,7 @@ class SelectorItem(
 
     var from by from
 
-    lateinit var baseGlobalMcaInfo: McaInfo
+    var baseGlobalMcaInfo: McaInfo? = null
 }
 
 abstract class NbtItem(
