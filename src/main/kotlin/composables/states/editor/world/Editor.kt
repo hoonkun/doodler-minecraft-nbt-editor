@@ -44,7 +44,8 @@ data class McaInfo(
     val dimension: WorldDimension,
     val type: WorldDimensionTree.McaType,
     val location: AnvilLocation,
-    val file: File
+    val file: File,
+    val defaultChunkLocation: ChunkLocation? = null
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -56,6 +57,7 @@ data class McaInfo(
         if (type != other.type) return false
         if (location != other.location) return false
         if (file.absolutePath != other.file.absolutePath) return false
+        if (defaultChunkLocation != other.defaultChunkLocation) return false
 
         return true
     }
@@ -71,7 +73,7 @@ data class McaInfo(
 
 class SelectorItem(
     val state: SnapshotStateMap<McaInfo?, SelectorState> = mutableStateMapOf(),
-    globalInfo: MutableState<McaInfo?> = mutableStateOf<McaInfo?>(null),
+    globalInfo: MutableState<McaInfo?> = mutableStateOf(null),
     from: MutableState<AnvilOpenRequest?> = mutableStateOf(null)
 ): EditorItem() {
     override val ident: String get() = "ANVIL_SELECTOR"

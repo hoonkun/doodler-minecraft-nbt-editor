@@ -24,6 +24,8 @@ class ThemedColor {
 
         val Copyright = Color(255, 255, 255, 180)
 
+        val TreeViewSelected = Color(0xFF49544A)
+
         val DocumentationDescription = Color(255, 255, 255, 145)
 
         fun from(base: Color, red: Int? = null, green: Int? = null, blue: Int? = null, alpha: Int? = null) =

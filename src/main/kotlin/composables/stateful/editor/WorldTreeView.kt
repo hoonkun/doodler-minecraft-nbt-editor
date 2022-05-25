@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import composables.states.editor.world.EditorItem
@@ -39,6 +40,23 @@ val EXTENSION_ALIAS = mapOf(
     "jpg" to "IMG",
     "json" to "JSN"
 )
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun GlobalMapViewerButton(onClick: (MouseClickScope.() -> Unit)? = null) {
+    Spacer(modifier = Modifier.width(10.dp))
+    Box(
+        modifier = Modifier
+            .background(ThemedColor.TreeViewSelected, shape = RoundedCornerShape(4.dp))
+            .padding(top = 3.dp, bottom = 3.dp, start = 8.dp, end = 8.dp)
+            .let {
+                if (onClick != null) it.mouseClickable(onClick = onClick)
+                else it
+            }
+    ) {
+        TreeViewText("map viewer", fontSize = 15.sp)
+    }
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -77,7 +95,7 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequ
                     modifier = Modifier
                         .height(height)
                         .fillMaxWidth()
-                        .background(if (selected == item) Color(0xFF49544A) else Color.Transparent)
+                        .background(if (selected == item) ThemedColor.TreeViewSelected else Color.Transparent)
                 ) { }
             }
         }
@@ -147,13 +165,16 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequ
                         }
                         Spacer(modifier = Modifier.width(15.dp))
                         TreeViewText(item.name, items.indexOf(item) == 0)
+                        if (item is DirectoryItem && item.name == "dimensions") {
+                            GlobalMapViewerButton()
+                        }
                     }
                 }
             }
         }
     }
 
-    Box(modifier = Modifier.requiredWidthIn(width).verticalScroll(vs).fillMaxWidth()) {
+    Box(modifier = Modifier.requiredWidthIn(width).verticalScroll(vs).fillMaxWidth().alpha(0f)) {
         Column(modifier = Modifier.fillMaxWidth()) {
             for (item in items) {
                 Box(modifier = Modifier.mouseClickable {
@@ -174,6 +195,14 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequ
                         Spacer(modifier = Modifier.width(10.dp))
                         if (item is DirectoryItem && item.depth >= 0) {
                             Box(modifier = iconModifier.absoluteOffset(x = ((-hs.value).dp)).mouseClickable { item.toggle() })
+                        }
+                        if (item is DirectoryItem && item.name == "dimensions") {
+                            Spacer(modifier = iconModifier.padding(4.dp))
+                            Spacer(modifier = Modifier.width(15.dp))
+                            TreeViewText(item.name, items.indexOf(item) == 0)
+                            GlobalMapViewerButton {
+                                onOpen(GlobalAnvilOpenRequest)
+                            }
                         }
                     }
                 }
@@ -211,12 +240,12 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequ
 }
 
 @Composable
-fun TreeViewText(text: String, bold: Boolean = false) {
+fun TreeViewText(text: String, bold: Boolean = false, fontSize: TextUnit? = null) {
     Text(
         text,
         color = Color(0xFFBBBBBB),
         fontFamily = JetBrainsMono,
-        fontSize = 20.sp,
+        fontSize = fontSize ?: 20.sp,
         fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal
     )
 }
@@ -319,11 +348,13 @@ class DirectoryItem(
     }
 }
 
-open class OpenRequest
+sealed class OpenRequest
 
 class NbtOpenRequest(
     val target: EditorItem
 ): OpenRequest()
+
+object GlobalAnvilOpenRequest: OpenRequest()
 
 class AnvilOpenRequest(
     val location: AnvilLocation,

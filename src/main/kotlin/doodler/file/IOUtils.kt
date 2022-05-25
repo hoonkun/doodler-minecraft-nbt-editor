@@ -133,13 +133,16 @@ class WorldDimensionTree (
 }
 
 enum class WorldDimension(
-    val ident: String
+    val ident: String,
+    val namespaceId: String
 ) {
-    OVERWORLD(""),
-    NETHER("DIM-1"),
-    THE_END("DIM1");
+    OVERWORLD("", "minecraft:overworld"),
+    NETHER("DIM-1", "minecraft:the_nether"),
+    THE_END("DIM1", "minecraft:the_end");
 
     companion object {
         operator fun get(pathName: String): WorldDimension = values().find { it.ident == pathName } ?: OVERWORLD
+        fun namespace(namespaceId: String): WorldDimension = values().find { it.namespaceId == namespaceId }
+            ?: throw DoodleException("Internal Error", null, "unknown dimension id: $namespaceId")
     }
 }

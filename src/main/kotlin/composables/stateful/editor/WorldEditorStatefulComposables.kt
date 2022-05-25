@@ -43,6 +43,8 @@ import keys
 import kotlinx.coroutines.launch
 import doodler.nbt.TagType
 import doodler.nbt.tag.CompoundTag
+import doodler.nbt.tag.DoubleTag
+import doodler.nbt.tag.ListTag
 import doodler.nbt.tag.StringTag
 import java.io.File
 
@@ -71,6 +73,33 @@ fun WorldEditor(
     val tree = states.worldSpec.requireTree
     val name = states.worldSpec.requireName
 
+    val initialGlobalInfo: () -> McaInfo = {
+        val player = levelInfo?.getAs<CompoundTag>()?.get("Player")?.getAs<CompoundTag>()
+        val dimensionId = player?.get("Dimension")?.getAs<StringTag>()?.value
+
+        val pos = player?.get("Pos")?.getAs<ListTag>()
+        val x = pos?.get(0)?.getAs<DoubleTag>()?.value?.toInt()
+        val z = pos?.get(2)?.getAs<DoubleTag>()?.value?.toInt()
+
+        if (player == null || dimensionId == null || x == null || z == null)
+            throw DoodleException("Internal Error", null, "Could not find dimension data of Player.")
+
+        val dimension = WorldDimension.namespace(dimensionId)
+        val defaultChunkLocation = BlockLocation(x, z).toChunkLocation()
+        val location = defaultChunkLocation.toAnvilLocation()
+        val file = tree[dimension][WorldDimensionTree.McaType.TERRAIN.pathName]
+            .find { it.name == "r.${location.x}.${location.z}.mca" }
+            ?: throw DoodleException("Internal Error", null, "Could not find terrain region file which player exists.")
+
+        McaInfo(
+            dimension,
+            WorldDimensionTree.McaType.TERRAIN,
+            location,
+            file,
+            defaultChunkLocation
+        )
+    }
+
     val onOpenRequest: (OpenRequest) -> Unit = handleRequest@ { request ->
         when (request) {
             is NbtOpenRequest -> {
@@ -89,6 +118,23 @@ fun WorldEditor(
                     val selector = states.editor["ANVIL_SELECTOR"] ?: return@handleRequest
                     if (selector !is SelectorItem) return@handleRequest
                     selector.from = request
+
+                    states.editor.select(selector)
+                }
+            }
+            is GlobalAnvilOpenRequest -> {
+                if (!states.editor.hasItem("ANVIL_SELECTOR")) {
+                    states.editor.open(
+                        SelectorItem().apply {
+                            from = null
+                            if (globalInfo == null) globalInfo = initialGlobalInfo()
+                        }
+                    )
+                } else {
+                    val selector = states.editor["ANVIL_SELECTOR"] ?: return@handleRequest
+                    if (selector !is SelectorItem) return@handleRequest
+                    selector.from = null
+                    if (selector.globalInfo == null) selector.globalInfo = initialGlobalInfo()
 
                     states.editor.select(selector)
                 }
@@ -159,13 +205,13 @@ fun McaMap(selector: SelectorItem, tree: WorldTree, onOpenRequest: (ChunkLocatio
 
     val type by remember(file) { mutableStateOf(WorldDimensionTree.McaType[file.parentFile.name]) }
 
-    val anvils by remember(file, dimension) {
+    val anvils by remember(request, info, file, dimension) {
         mutableStateOf(tree[dimension][type.pathName])
     }
 
-    val chunks by remember(file, anvils) { mutableStateOf(
+    val chunks by remember(request, info, file, anvils) { mutableStateOf(
         if (request != null)
-            AnvilWorker.loadChunkList(request.location, request.file.readBytes())
+            AnvilWorker.loadChunkList(location, file.readBytes())
         else if (info != null)
             anvils.map {
                 val segments = it.name.split(".")
@@ -212,7 +258,7 @@ fun ColumnScope.ChunkSelector(
     val file = mcaInfo.file
 
     if (initial) {
-        val forcedChunk = chunks.firstOrNull { it.toAnvilLocation() == location }
+        val forcedChunk = mcaInfo.defaultChunkLocation ?: chunks.firstOrNull { it.toAnvilLocation() == location }
         state.selectedChunk = forcedChunk
         state.chunkXValue = TextFieldValue(forcedChunk?.x?.toString() ?: "-")
         state.chunkZValue = TextFieldValue(forcedChunk?.z?.toString() ?: "-")
