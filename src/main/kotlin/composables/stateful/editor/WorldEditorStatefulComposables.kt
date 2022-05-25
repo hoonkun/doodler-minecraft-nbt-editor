@@ -428,7 +428,8 @@ fun ColumnScope.ChunkSelector(
         Spacer(modifier = Modifier.width(10.dp))
         ChunkSelectorDropdown(
             "region:",
-            onClick = {
+            onClick = regionDropdown@ {
+                if (regions.size == 1) return@regionDropdown
                 popup =
                     if (popup == "region") null
                     else "region"
