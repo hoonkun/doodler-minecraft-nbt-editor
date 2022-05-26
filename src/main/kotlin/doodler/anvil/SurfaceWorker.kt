@@ -38,14 +38,22 @@ class SurfaceWorker {
                     blocks.forEachIndexed { index, block ->
                         val (x, y, z) = coordinate(index, subChunk.y)
 
-                        val blockName = subChunk.palette[block.toInt()]
-                        val containsBlock = blockColors.containsKey(blockName)
-                        if (containsBlock && createValidY) validYList.add(y)
+                        var blockName: String? = null
+                        var containsBlock: Boolean? = null
+                        if (createValidY) {
+                            // 아래 두 줄이 생각보다 무겁다... 이거 별로 안무거울 줄 알았는데 이거 있고 없고가 굉장한 차이를 만드네.
+                            blockName = subChunk.palette[block.toInt()]
+                            containsBlock = blockColors.containsKey(blockName)
+                            if (containsBlock) validYList.add(y)
+                        }
                         if (y > yLimit) return@forEachIndexed
 
                         val indexInArray = (15 - x) + (15 - z) * 16
                         val already = resultBlocks[indexInArray]
                         if (already != null && (!already.isWater || already.depth.toInt() != -99)) return@forEachIndexed
+
+                        if (blockName == null) blockName = subChunk.palette[block.toInt()]
+                        if (containsBlock == null) containsBlock = blockColors.containsKey(blockName)
 
                         if (containsBlock) {
                             if (already == null) {
