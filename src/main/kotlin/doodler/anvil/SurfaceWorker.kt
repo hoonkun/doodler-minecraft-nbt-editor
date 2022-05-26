@@ -25,7 +25,7 @@ class SurfaceWorker {
             }.reversed()
         }
 
-        fun createSurface(location: ChunkLocation, input: List<SubChunk>, yLimit: Int = 319): Surface {
+        fun createSurface(location: ChunkLocation, input: List<SubChunk>, yLimit: Short = 319): Surface {
             val resultBlocks = arrayOfNulls<SurfaceBlock>(256)
 
             run {

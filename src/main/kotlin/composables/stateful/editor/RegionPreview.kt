@@ -27,7 +27,7 @@ import org.jetbrains.skiko.toBufferedImage
 @Composable
 fun BoxScope.RegionPreview(
     tree: WorldDimensionTree,
-    yLimit: Int,
+    yLimit: Short,
     selected: ChunkLocation?,
     hasNbt: (ChunkLocation) -> Boolean,
     rightClick: () -> Unit,
@@ -71,7 +71,7 @@ fun BoxScope.RegionPreview(
                 val z = baseZ + (index % 16)
 
                 val multiplier = if (block.isWater) block.depth / 7f * 30 - 30 else 1f
-                val cutout = if (block.y.toInt() == yLimit) 0.5f else 1f
+                val cutout = if (block.y == yLimit) 0.5f else 1f
 
                 pixels[(x * 512 + z) * 4 + 0] = ((block.color[2].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
                 pixels[(x * 512 + z) * 4 + 1] = ((block.color[1].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
@@ -105,7 +105,7 @@ fun BoxScope.RegionPreview(
             .toComposeImageBitmap()
     }
 
-    LaunchedEffect(yLimit, tree.cachedTerrains, location) {
+    LaunchedEffect(tree.cachedTerrains, terrainInfo) {
         if (tree.cachedTerrains[terrainInfo] != null) return@LaunchedEffect
 
         withContext(Dispatchers.IO) {

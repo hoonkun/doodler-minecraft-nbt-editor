@@ -397,7 +397,7 @@ fun ColumnScope.ChunkSelector(
 
     var popup by remember { mutableStateOf<String?>(null) }
 
-    val previewerYLimit = remember(dimension) { mutableStateOf(if (dimension == WorldDimension.OVERWORLD) 319 else 89) }
+    val previewerYLimit = remember(dimension) { mutableStateOf((if (dimension == WorldDimension.OVERWORLD) 319 else 89).toShort()) }
 
     Row(
         modifier = Modifier
@@ -622,7 +622,7 @@ fun ColumnScope.ChunkSelector(
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.ChunkSelectorProperties(
-    yLimit: MutableState<Int>,
+    yLimit: MutableState<Short>,
     surroundings: AnvilLocationSurroundings,
     onMoveSurroundings: (AnvilLocation) -> Unit,
     content: @Composable BoxScope.(MutableState<Boolean>, MutableState<Boolean>) -> Unit
@@ -678,7 +678,7 @@ fun BoxScope.ChunkSelectorProperties(
                             Box(
                                 modifier = Modifier
                                     .onPointerEvent(PointerEventType.Scroll) {
-                                        yLimit.value = yLimit.value + this.currentEvent.changes[0].scrollDelta.y.toInt()
+                                        yLimit.value = (yLimit.value + this.currentEvent.changes[0].scrollDelta.y.toInt()).toShort()
                                     }
                                     .padding(top = 3.dp, bottom = 3.dp)
                             ) {

@@ -102,15 +102,17 @@ class WorldTree (
     }
 }
 
-data class CachedTerrainInfo(val yLimit: Int, val location: AnvilLocation)
+data class CachedTerrainInfo(val yLimit: Short, val location: AnvilLocation)
 
 class WorldDimensionTree (
     private val region: List<File>,
     private val entities: List<File>,
     private val poi: List<File>,
     val data: List<File>,
-    val cachedTerrains: SnapshotStateMap<CachedTerrainInfo, ImageBitmap> = mutableStateMapOf()
 ) {
+
+    val cachedTerrains: SnapshotStateMap<CachedTerrainInfo, ImageBitmap> = mutableStateMapOf()
+
     operator fun get(key: String): List<File> {
         return when (key) {
             "entities" -> entities
