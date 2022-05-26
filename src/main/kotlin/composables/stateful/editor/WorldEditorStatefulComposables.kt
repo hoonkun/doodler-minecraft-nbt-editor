@@ -1,8 +1,11 @@
 package composables.stateful.editor
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -14,9 +17,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEvent
@@ -37,10 +40,7 @@ import composables.stateless.editor.*
 import composables.states.editor.world.*
 import composables.states.editor.world.extensions.toRanges
 import composables.themed.*
-import doodler.anvil.AnvilLocation
-import doodler.anvil.AnvilWorker
-import doodler.anvil.BlockLocation
-import doodler.anvil.ChunkLocation
+import doodler.anvil.*
 import doodler.file.WorldTree
 import doodler.file.IOUtils
 import doodler.file.WorldDimension
@@ -293,7 +293,18 @@ fun ColumnScope.ChunkSelector(
     val validChunkX = chunks.map { chunk -> chunk.x }
     val validChunkZ = chunks.map { chunk -> chunk.z }
 
-    val regions by remember(chunks) { mutableStateOf(chunks.map { it.toAnvilLocation() }.toSet().toList().sortedBy { "${it.x}.${it.z}" }) }
+    val anvil by remember(state.selectedChunk, mcaInfo.location) { mutableStateOf(state.selectedChunk?.toAnvilLocation() ?: mcaInfo.location) }
+    val anvils by remember(chunks) { mutableStateOf(chunks.map { it.toAnvilLocation() }.toSet().toList().sortedBy { "${it.x}.${it.z}" }) }
+
+    val surroundings by remember(anvil, anvils) { mutableStateOf(
+        AnvilLocationSurroundings(
+            base = anvil,
+            left = AnvilLocation(anvil.x, anvil.z - 1).validate(anvils),
+            right = AnvilLocation(anvil.x, anvil.z + 1).validate(anvils),
+            above = AnvilLocation(anvil.x + 1, anvil.z).validate(anvils),
+            below = AnvilLocation(anvil.x - 1, anvil.z).validate(anvils),
+        )
+    ) }
 
     val isChunkValid = {
         val xInt = state.chunkXValue.text.toIntOrNull()
@@ -302,13 +313,21 @@ fun ColumnScope.ChunkSelector(
     }
 
     val isRegionExists: (AnvilLocation) -> Boolean = { location ->
-        regions.contains(location)
+        anvils.contains(location)
     }
 
     val isBlockValid = {
         val xInt = state.blockXValue.text.toIntOrNull()
         val zInt = state.blockZValue.text.toIntOrNull()
         Pair(xInt, zInt)
+    }
+
+    val resetChunk = {
+        state.selectedChunk = null
+        state.chunkXValue = TextFieldValue("-")
+        state.chunkZValue = TextFieldValue("-")
+        state.blockXValue = TextFieldValue("-")
+        state.blockZValue = TextFieldValue("-")
     }
 
     val transformBlockCoordinate: (AnnotatedString) -> TransformedText = { annotated ->
@@ -378,11 +397,14 @@ fun ColumnScope.ChunkSelector(
 
     var popup by remember { mutableStateOf<String?>(null) }
 
+    val previewerYLimit = remember(dimension) { mutableStateOf(if (dimension == WorldDimension.OVERWORLD) 319 else 89) }
+
     Row(
         modifier = Modifier
             .background(ThemedColor.SelectorArea)
             .height(60.dp)
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .zIndex(10f),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Spacer(modifier = Modifier.width(10.dp))
@@ -433,7 +455,7 @@ fun ColumnScope.ChunkSelector(
         ChunkSelectorDropdown(
             "region:",
             onClick =
-                if (regions.size != 1) {
+                if (anvils.size != 1) {
                     regionDropdown@ {
                         popup =
                             if (popup == "region") null
@@ -520,27 +542,32 @@ fun ColumnScope.ChunkSelector(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        RegionPreview(
-            tree[dimension],
-            dimension,
-            state.selectedChunk,
-            { chunks.contains(it) },
-            forceAnvilLocation = if (mcaInfo.request is GlobalAnvilUpdateRequest) mcaInfo.location else null
-        ) {
-            state.chunkXValue = TextFieldValue(it.x.toString())
-            state.chunkZValue = TextFieldValue(it.z.toString())
-            state.blockXValue = TextFieldValue("-")
-            state.blockZValue = TextFieldValue("-")
-            state.selectedChunk = it
-        }
-
-        val resetChunk = {
-            state.selectedChunk = null
-            state.chunkXValue = TextFieldValue("-")
-            state.chunkZValue = TextFieldValue("-")
-            state.blockXValue = TextFieldValue("-")
-            state.blockZValue = TextFieldValue("-")
+    Box(
+        modifier = Modifier.fillMaxSize().zIndex(3f)
+    ) {
+        ChunkSelectorProperties(
+            visible = true,
+            yLimit = previewerYLimit,
+            surroundings = surroundings,
+            onMoveSurroundings = {
+                resetChunk()
+                onUpdateRequest(GlobalAnvilUpdateRequest(region = it))
+            }
+        ) { loadState ->
+            RegionPreview(
+                tree[dimension],
+                previewerYLimit.value,
+                state.selectedChunk,
+                { chunks.contains(it) },
+                loadStateChanged = { loadState.value = it },
+                forceAnvilLocation = if (mcaInfo.request is GlobalAnvilUpdateRequest) mcaInfo.location else null
+            ) {
+                state.chunkXValue = TextFieldValue(it.x.toString())
+                state.chunkZValue = TextFieldValue(it.z.toString())
+                state.blockXValue = TextFieldValue("-")
+                state.blockZValue = TextFieldValue("-")
+                state.selectedChunk = it
+            }
         }
 
         PopupBackground(
@@ -550,7 +577,7 @@ fun ColumnScope.ChunkSelector(
 
         SelectorDropdown(
             ident = "region",
-            items = regions.toMutableList().apply {
+            items = anvils.toMutableList().apply {
                 remove(state.selectedChunk?.toAnvilLocation() ?: mcaInfo.location)
             },
             indent = 3,
@@ -590,6 +617,117 @@ fun ColumnScope.ChunkSelector(
         }
     }
 
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun BoxScope.ChunkSelectorProperties(
+    visible: Boolean,
+    yLimit: MutableState<Int>,
+    surroundings: AnvilLocationSurroundings,
+    onMoveSurroundings: (AnvilLocation) -> Unit,
+    content: @Composable BoxScope.(MutableState<Boolean>) -> Unit
+) {
+
+    val alignment = Alignment.TopStart
+
+    val loadState = remember { mutableStateOf(false) }
+
+    Box(modifier = Modifier.wrapContentSize().requiredSizeIn(minWidth = 600.dp, minHeight = 600.dp).align(Alignment.Center)) {
+        content(loadState)
+
+        AnimatedVisibility(
+            visible = visible,
+            enter = fadeIn(tween(150, easing = LinearEasing)),
+            exit = fadeOut(tween(150, easing = LinearEasing)),
+            modifier = Modifier.align(alignment).fillMaxHeight().aspectRatio(1f)
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
+                Box(
+                    modifier = Modifier.align(alignment).requiredSize(600.dp)
+                ) {
+                    Box(
+                        modifier = Modifier.fillMaxSize().scale(scaleX = 1f, scaleY = 0.5f)
+                            .absoluteOffset(y = (-300).dp)
+                            .background(
+                                Brush.radialGradient(
+                                    listOf(Color.Black, Color.Transparent),
+                                    Offset.Zero,
+                                    radius = 600f
+                                )
+                            )
+                            .align(alignment)
+                    )
+                    Column(
+                        modifier = Modifier
+                            .width(350.dp)
+                            .align(alignment)
+                            .padding(top = 10.dp, start = 20.dp)
+                    ) {
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            ChunkInvestButton("above", surroundings.above, onMoveSurroundings)
+                            ChunkInvestButton("left", surroundings.left, onMoveSurroundings)
+                        }
+                        Row(modifier = Modifier.fillMaxWidth()) {
+                            ChunkInvestButton("below", surroundings.below, onMoveSurroundings)
+                            ChunkInvestButton("right", surroundings.right, onMoveSurroundings)
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("yLimit = ", color = ThemedColor.ChunkSelectorPropertyKey, fontFamily = JetBrainsMono)
+                            Box(
+                                modifier = Modifier
+                                    .onPointerEvent(PointerEventType.Scroll) {
+                                        yLimit.value = yLimit.value + this.currentEvent.changes[0].scrollDelta.y.toInt()
+                                    }
+                                    .padding(top = 3.dp, bottom = 3.dp)
+                            ) {
+                                val text = "${yLimit.value}".padStart(3, '_')
+                                Text(
+                                    AnnotatedString(
+                                        text,
+                                        listOf(
+                                            AnnotatedString.Range(
+                                                SpanStyle(
+                                                    color = ThemedColor.from(ThemedColor.Editor.Tag.General, alpha = 75)
+                                                ),
+                                                start = 0,
+                                                end = 3 - "${yLimit.value}".length
+                                            )
+                                        )
+                                    ),
+                                    color = ThemedColor.Editor.Tag.General,
+                                    fontFamily = JetBrainsMono
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun RowScope.ChunkInvestButton(direction: String, dest: AnvilLocation? = null, move: (AnvilLocation) -> Unit) {
+    Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+        Text("$direction = ", color = ThemedColor.ChunkSelectorPropertyKey, fontFamily = JetBrainsMono, fontSize = 18.sp)
+        if (dest == null) {
+            Text("null", color = ThemedColor.Editor.Tag.List, fontFamily = JetBrainsMono, fontSize = 18.sp)
+        } else {
+            Box(
+                modifier = Modifier
+                    .wrapContentSize()
+                    .background(Color(88, 88, 88, 125), shape = RoundedCornerShape(2.dp))
+                    .padding(start = 5.dp, end = 5.dp)
+                    .mouseClickable { move(dest) }
+            ) {
+                Text("Go", color = ThemedColor.Editor.Tag.General, fontFamily = JetBrainsMono, fontSize = 16.sp)
+            }
+        }
+        Spacer(modifier = Modifier.width(20.dp))
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)

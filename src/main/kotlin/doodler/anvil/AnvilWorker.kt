@@ -13,7 +13,9 @@ data class BlockLocation(val x: Int, val z: Int) {
         return ChunkLocation(floor(this.x / 16.0).toInt(), floor(this.z / 16.0).toInt())
     }
 }
-data class AnvilLocation(val x: Int, val z: Int)
+data class AnvilLocation(val x: Int, val z: Int) {
+    fun validate(where: List<AnvilLocation>) = if (where.contains(this)) this else null
+}
 data class ChunkLocation(val x: Int, val z: Int) {
     fun normalize(anvilLocation: AnvilLocation): ChunkLocation {
         return ChunkLocation(x - 32 * anvilLocation.x, z - 32 * anvilLocation.z)
@@ -23,6 +25,14 @@ data class ChunkLocation(val x: Int, val z: Int) {
     }
     fun toStringPair(): Pair<String, String> = Pair("$x", "$z")
 }
+
+data class AnvilLocationSurroundings(
+    val base: AnvilLocation,
+    val left: AnvilLocation?,
+    val right: AnvilLocation?,
+    val above: AnvilLocation?,
+    val below: AnvilLocation?
+)
 
 fun Byte.u(): Int {
     return this.toUByte().toInt()

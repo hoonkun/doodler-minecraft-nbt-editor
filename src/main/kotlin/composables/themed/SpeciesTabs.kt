@@ -14,6 +14,7 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import composables.states.editor.world.EditorItem
 import composables.themed.ThemedColor.Companion.selectable
 
@@ -25,7 +26,7 @@ fun ColumnScope.SpeciesTabGroup(
 ) {
     val scrollState = rememberScrollState()
 
-    Box (modifier = Modifier.background(ThemedColor.TabBar).fillMaxWidth().wrapContentHeight()) {
+    Box (modifier = Modifier.background(ThemedColor.TabBar).fillMaxWidth().wrapContentHeight().zIndex(10f)) {
         Row(modifier = Modifier.wrapContentWidth().horizontalScroll(scrollState)) {
             for (data in tabs) {
                 SpeciesTab(data, onSelectEditable, onCloseEditable)

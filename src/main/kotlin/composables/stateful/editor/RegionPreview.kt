@@ -15,7 +15,7 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import doodler.anvil.*
-import doodler.file.WorldDimension
+import doodler.file.CachedTerrainInfo
 import doodler.file.WorldDimensionTree
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -27,20 +27,29 @@ import org.jetbrains.skiko.toBufferedImage
 @Composable
 fun BoxScope.RegionPreview(
     tree: WorldDimensionTree,
-    dimension: WorldDimension,
+    yLimit: Int,
     selected: ChunkLocation?,
     hasNbt: (ChunkLocation) -> Boolean,
+    loadStateChanged: (Boolean) -> Unit,
     forceAnvilLocation: AnvilLocation? = null,
     onSelect: (ChunkLocation) -> Unit
 ) {
     val (location, setLocation) = remember { mutableStateOf(selected?.toAnvilLocation()) }
 
+    if (location == null) return
+
+    val terrainInfo = CachedTerrainInfo(yLimit, location)
+
+    val loaded by remember(tree.cachedTerrains[terrainInfo]) {
+        val newState = tree.cachedTerrains[terrainInfo] != null
+        loadStateChanged(newState)
+        mutableStateOf(newState)
+    }
+
     if (selected != null || forceAnvilLocation != null) {
         val newLoc = forceAnvilLocation ?: selected?.toAnvilLocation()
         if (newLoc != null) setLocation(newLoc)
     }
-
-    if (location == null) return
 
     val nSelected = selected?.normalize(forceAnvilLocation ?: selected.toAnvilLocation())
 
@@ -50,7 +59,6 @@ fun BoxScope.RegionPreview(
         val subChunks = AnvilWorker.loadChunksWith(bytes) { chunkLoc, tag ->
             Pair(chunkLoc, SurfaceWorker.createSubChunk(tag))
         }
-        val yLimit = if (dimension == WorldDimension.NETHER) 89 else 319
         val pixels = ByteArray(512 * 512 * 4)
         val heights = ShortArray(512 * 512)
         subChunks.forEach { (loc, chunks) ->
@@ -87,7 +95,7 @@ fun BoxScope.RegionPreview(
                 }
             }
         }
-        tree.cachedTerrains[location] = Bitmap()
+        tree.cachedTerrains[terrainInfo] = Bitmap()
             .apply {
                 allocPixels(ImageInfo(512, 512, ColorType.N32, ColorAlphaType.OPAQUE))
                 installPixels(pixels)
@@ -96,15 +104,15 @@ fun BoxScope.RegionPreview(
             .toComposeImageBitmap()
     }
 
-    LaunchedEffect(tree.cachedTerrains, location) {
-        if (tree.cachedTerrains[location] != null) return@LaunchedEffect
+    LaunchedEffect(yLimit, tree.cachedTerrains, location) {
+        if (tree.cachedTerrains[terrainInfo] != null) return@LaunchedEffect
 
         withContext(Dispatchers.IO) {
             load()
         }
     }
 
-    if (tree.cachedTerrains[location] == null) return
+    if (!loaded) return
 
     var focused by remember { mutableStateOf(Pair(-1, -1)) }
 
@@ -117,7 +125,7 @@ fun BoxScope.RegionPreview(
             .zIndex(0f)
     ) {
         Image(
-            tree.cachedTerrains[location]!!,
+            tree.cachedTerrains[terrainInfo]!!,
             null,
             filterQuality = androidx.compose.ui.graphics.FilterQuality.None,
             modifier = Modifier.fillMaxSize()
