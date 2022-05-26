@@ -112,6 +112,7 @@ class WorldDimensionTree (
 ) {
 
     val cachedTerrains: SnapshotStateMap<CachedTerrainInfo, ImageBitmap> = mutableStateMapOf()
+    val cachedValidY: MutableMap<AnvilLocation, List<IntRange>> = mutableMapOf()
 
     operator fun get(key: String): List<File> {
         return when (key) {

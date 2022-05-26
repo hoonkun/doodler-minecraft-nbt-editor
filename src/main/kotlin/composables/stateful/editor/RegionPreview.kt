@@ -14,6 +14,7 @@ import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import composables.states.editor.world.extensions.toReversedRange
 import doodler.anvil.*
 import doodler.file.CachedTerrainInfo
 import doodler.file.WorldDimensionTree
@@ -62,10 +63,17 @@ fun BoxScope.RegionPreview(
         }
         val pixels = ByteArray(512 * 512 * 4)
         val heights = ShortArray(512 * 512)
+
+        val createY = tree.cachedValidY[terrainInfo.location] == null
+        val validY = mutableSetOf<Short>()
         subChunks.forEach { (loc, chunks) ->
             val baseX = loc.x * 16
             val baseZ = loc.z * 16
-            val blocks = SurfaceWorker.createSurface(loc, chunks, yLimit).blocks
+            val surface = SurfaceWorker.createSurface(loc, chunks, yLimit, createY)
+            val blocks = surface.blocks
+
+            if (createY) validY.addAll(surface.validY)
+
             blocks.forEachIndexed { index, block ->
                 val x = 511 - (baseX + (index / 16))
                 val z = baseZ + (index % 16)
@@ -96,13 +104,27 @@ fun BoxScope.RegionPreview(
                 }
             }
         }
-        tree.cachedTerrains[terrainInfo] = Bitmap()
+
+        if (createY) tree.cachedValidY[terrainInfo.location] = validY.map { it.toInt() }.toReversedRange(319)
+
+        val newBitmap = Bitmap()
             .apply {
                 allocPixels(ImageInfo(512, 512, ColorType.N32, ColorAlphaType.OPAQUE))
                 installPixels(pixels)
             }
             .toBufferedImage()
             .toComposeImageBitmap()
+
+        val y = tree.cachedValidY[terrainInfo.location]?.find { it.contains(yLimit) }
+        if (y != null) {
+            y.asIterable().forEach { limit ->
+                val alreadyInfo = terrainInfo.copy(yLimit = limit.toShort(), location = terrainInfo.location)
+                val already = tree.cachedTerrains[alreadyInfo]
+                if (already == null) tree.cachedTerrains[alreadyInfo] = newBitmap
+            }
+        } else {
+            tree.cachedTerrains[terrainInfo] = newBitmap
+        }
     }
 
     LaunchedEffect(tree.cachedTerrains, terrainInfo) {

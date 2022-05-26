@@ -11,7 +11,7 @@ class SurfaceWorker {
             SurfaceWorker::class.java.getResource("/minecraft/block_colors/blocks.json")!!.readText()
                 .replace(Regex("[{}\"#]"), "")
                 .split(",\n")
-                .associate { it.split(":").let { pair -> pair[1] to pair[2].trim() } }
+                .associate { it.split(":").let { pair -> "${pair[0].trim()}:${pair[1]}" to pair[2].trim() } }
 
         fun createSubChunk(tag: CompoundTag): List<SubChunk> {
             val sections = tag["sections"]?.getAs<ListTag>()?.value ?: return listOf()
@@ -25,28 +25,29 @@ class SurfaceWorker {
             }.reversed()
         }
 
-        fun createSurface(location: ChunkLocation, input: List<SubChunk>, yLimit: Short = 319): Surface {
+        fun createSurface(location: ChunkLocation, input: List<SubChunk>, yLimit: Short, createValidY: Boolean = false): Surface {
             val resultBlocks = arrayOfNulls<SurfaceBlock>(256)
+            val validYList = mutableSetOf<Short>()
 
             run {
                 input.forEach { subChunk ->
-                    if (subChunk.palette.size == 1 && subChunk.palette[0] == "minecraft:air") {
-                        return@forEach
-                    }
+                    if (subChunk.palette.size == 1 && subChunk.palette[0] == "minecraft:air") return@forEach
 
                     val blocks = subChunk.data.unpack(subChunk.palette.size).reversed()
 
                     blocks.forEachIndexed { index, block ->
                         val (x, y, z) = coordinate(index, subChunk.y)
 
+                        val blockName = subChunk.palette[block.toInt()]
+                        val containsBlock = blockColors.containsKey(blockName)
+                        if (containsBlock && createValidY) validYList.add(y)
                         if (y > yLimit) return@forEachIndexed
 
                         val indexInArray = (15 - x) + (15 - z) * 16
                         val already = resultBlocks[indexInArray]
                         if (already != null && (!already.isWater || already.depth.toInt() != -99)) return@forEachIndexed
 
-                        val blockName = subChunk.palette[block.toInt()].replace("minecraft:", "")
-                        if (blockColors.containsKey(blockName)) {
+                        if (containsBlock) {
                             if (already == null) {
                                 resultBlocks[indexInArray] = SurfaceBlock(
                                     blockColors
@@ -75,7 +76,7 @@ class SurfaceWorker {
                 }
             }
 
-            return Surface(location, list.filterNotNull().toTypedArray())
+            return Surface(location, list.filterNotNull().toList(), validYList)
         }
 
         private fun coordinate(blockIndex: Int, y: Byte): Triple<Byte, Short, Byte> {
@@ -116,26 +117,9 @@ data class SubChunk(
 
 data class Surface(
     val position: ChunkLocation,
-    val blocks: Array<SurfaceBlock>
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as Surface
-
-        if (position != other.position) return false
-        if (!blocks.contentEquals(other.blocks)) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = position.hashCode()
-        result = 31 * result + blocks.contentHashCode()
-        return result
-    }
-}
+    val blocks: List<SurfaceBlock>,
+    val validY: Set<Short>
+)
 
 data class SurfaceBlock(
     val color: ByteArray,

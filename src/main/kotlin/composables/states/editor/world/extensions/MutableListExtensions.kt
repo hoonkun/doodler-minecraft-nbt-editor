@@ -28,6 +28,27 @@ fun List<Int>.toRanges(): List<IntRange> {
     return result
 }
 
+fun List<Int>.toReversedRange(max: Int): List<IntRange> {
+    val sorted = sorted()
+    val result = mutableListOf<IntRange>()
+
+    if (isEmpty()) return result
+
+    var current = sorted[0]
+    sorted.slice(1 until size).forEach {
+        if (it == current + 1) {
+            current = it
+            return@forEach
+        }
+        result.add(current until it)
+        current = it
+    }
+
+    if (current < max) result.add(current..max)
+
+    return result
+}
+
 fun <T>MutableList<T>.removeRange(range: IntRange): List<T> {
     val size = range.last - range.first
     val position = range.first
