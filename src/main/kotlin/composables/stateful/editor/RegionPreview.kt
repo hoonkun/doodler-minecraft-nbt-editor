@@ -30,21 +30,23 @@ fun BoxScope.RegionPreview(
     dimension: WorldDimension,
     selected: ChunkLocation?,
     hasNbt: (ChunkLocation) -> Boolean,
+    forceAnvilLocation: AnvilLocation? = null,
     onSelect: (ChunkLocation) -> Unit
 ) {
     val (location, setLocation) = remember { mutableStateOf(selected?.toAnvilLocation()) }
 
-    if (selected != null) {
-        setLocation(selected.toAnvilLocation())
+    if (selected != null || forceAnvilLocation != null) {
+        val newLoc = forceAnvilLocation ?: selected?.toAnvilLocation()
+        if (newLoc != null) setLocation(newLoc)
     }
 
     if (location == null) return
 
-    val nSelected = selected?.normalize(selected.toAnvilLocation())
+    val nSelected = selected?.normalize(forceAnvilLocation ?: selected.toAnvilLocation())
 
     val load = load@ {
-        val bytes = tree.region.find { it.name == "r.${location.x}.${location.z}.mca" }?.readBytes()
-            ?: return@load
+        val bytes = tree[WorldDimensionTree.McaType.TERRAIN.pathName]
+            .find { it.name == "r.${location.x}.${location.z}.mca" }?.readBytes() ?: return@load
         val subChunks = AnvilWorker.loadChunksWith(bytes) { chunkLoc, tag ->
             Pair(chunkLoc, SurfaceWorker.createSubChunk(tag))
         }
@@ -124,7 +126,7 @@ fun BoxScope.RegionPreview(
             for (x in 0 until 32) {
                 Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
                     for (z in 0 until 32) {
-                        val loc = ChunkLocation(x + 32 * location.x, z + 32 * location.z)
+                        val loc = ChunkLocation(31 - x + 32 * location.x, z + 32 * location.z)
                         Box(
                             modifier = Modifier.weight(1f).fillMaxHeight()
                                 .background(
@@ -136,10 +138,10 @@ fun BoxScope.RegionPreview(
                                     focused = Pair(x, z)
                                 }
                                 .onPointerEvent(PointerEventType.Press) {
-                                    onSelect(loc)
+                                    if (hasNbt(loc)) onSelect(loc)
                                 }
                                 .let {
-                                    if (nSelected?.x == x && nSelected.z == z)
+                                    if (nSelected?.x == 31 - x && nSelected.z == z)
                                         it.border(2.dp, Color.White)
                                     else it
                                 }

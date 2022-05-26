@@ -24,6 +24,12 @@ class ThemedColor {
 
         val Copyright = Color(255, 255, 255, 180)
 
+        val TreeViewSelected = Color(0xFF49544A)
+        val MapViewButton = Color(0xFF404A41)
+        val MapViewButtonHover = Color(0xFF464F47)
+        val MapViewButtonN = Color(0xFF49544A)
+        val MapViewButtonHoverN = Color(0xFF4F5B50)
+
         val DocumentationDescription = Color(255, 255, 255, 145)
 
         fun from(base: Color, red: Int? = null, green: Int? = null, blue: Int? = null, alpha: Int? = null) =
@@ -42,7 +48,7 @@ class ThemedColor {
             )
 
         fun selectable(selected: Boolean, pressed: Boolean, focused: Boolean) =
-            if (selected) Color(255, 255, 255, 30)
+            if (selected) Color(255, 255, 255, 20)
             else if (pressed) Color(0, 0, 0, 80)
             else if (focused) Color(0, 0, 0, 40)
             else Color.Transparent
@@ -52,6 +58,17 @@ class ThemedColor {
             else if (focused) Color(255, 255, 255, 30)
             else Color.Transparent
 
+    }
+
+    class Aside {
+        companion object {
+
+            val DAT = Color(0x3642a5f5)
+            val MCA = Color(0x36689f38)
+            val PNG = Color(0x36ef6c00)
+            val JSON = Color(0x36bdbdbd)
+
+        }
     }
 
     class Editor {
@@ -78,7 +95,7 @@ class ThemedColor {
             private val FocusedDepthLine = offset(DepthLine, 40)
 
             private val FocusedTabCloseButtonBackground = Color(255, 255, 255, 75)
-            private val FocusedTabButtonIcon = Color(0, 0, 0, 200)
+            private val FocusedTabButtonIcon = Color(25, 25, 25, 200)
             private val TabButtonIcon = Color(255, 255, 255, 100)
 
             fun tabCloseButtonBackground(focused: Boolean) =
@@ -144,10 +161,12 @@ class ThemedColor {
                 private val ValidAccent = Color(50, 54, 47)
                 private val InvalidAccent = Color(64, 55, 52)
                 private val Default = Color(42, 42, 42)
+                private val DefaultHover = Color(50, 50, 50)
 
-                fun background(accent: Boolean, valid: Boolean) =
+                fun background(accent: Boolean, valid: Boolean, hover: Boolean) =
                     if (accent && valid) ValidAccent
                     else if (accent) InvalidAccent
+                    else if (hover) DefaultHover
                     else Default
 
             }

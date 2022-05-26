@@ -1,5 +1,8 @@
 package composables.stateful.editor
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -12,12 +15,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -38,6 +44,7 @@ import doodler.anvil.ChunkLocation
 import doodler.file.WorldTree
 import doodler.file.IOUtils
 import doodler.file.WorldDimension
+import doodler.file.WorldDimensionTree
 import keys
 import kotlinx.coroutines.launch
 import doodler.nbt.TagType
@@ -45,23 +52,22 @@ import doodler.nbt.tag.CompoundTag
 import doodler.nbt.tag.DoubleTag
 import doodler.nbt.tag.ListTag
 import doodler.nbt.tag.StringTag
+import kotlinx.coroutines.delay
+import java.io.File
 
 @Composable
 fun WorldEditor(
     worldPath: String
 ) {
-    val scrollState = rememberScrollState()
-
     val states = rememberWorldEditorState()
 
     if (states.worldSpec.tree == null)
         states.worldSpec.tree = IOUtils.load(worldPath)
 
-    val levelInfo = IOUtils.readLevel(states.worldSpec.requireTree.level.readBytes())["Data"]
+    val levelInfo = IOUtils.readLevel(states.worldSpec.requireTree.level.readBytes())["Data"]?.getAs<CompoundTag>()
 
     if (states.worldSpec.name == null)
-        states.worldSpec.name = levelInfo
-            ?.getAs<CompoundTag>()!!["LevelName"]
+        states.worldSpec.name = levelInfo!!["LevelName"]
             ?.getAs<StringTag>()
             ?.value
 
@@ -73,36 +79,32 @@ fun WorldEditor(
     val tree = states.worldSpec.requireTree
     val name = states.worldSpec.requireName
 
-    val onCategoryItemClick: (PhylumCategoryItemData) -> Unit = lambda@ { data ->
-        states.phylum.list.find { it.ident == data.key }?.let {
-            states.phylum.species = it
-            return@lambda
-        }
-
-        val newHolder =
-            if (data.holderType == SpeciesHolder.Type.Single) {
-                SingleSpeciesHolder(
-                    data.key, data.format, data.contentType,
-                    NbtSpecies("", mutableStateOf(NbtState.new(IOUtils.readLevel(tree.level.readBytes()))))
-                )
-            } else {
-                val player = levelInfo?.getAs<CompoundTag>()?.get("Player")?.getAs<CompoundTag>()
-                val dimension = player?.get("Dimension")?.getAs<StringTag>()?.value
-                val extras = data.extras.toMutableMap()
-                if (dimension != null && dimension == (extras["dimension"] as? WorldDimension?)?.namespaceId) {
-                    val pos = player["Pos"]?.getAs<ListTag>()
-                    val x = pos?.get(0)?.getAs<DoubleTag>()?.value?.toInt()
-                    val z = pos?.get(2)?.getAs<DoubleTag>()?.value?.toInt()
-                    if (x != null && z != null) extras["playerpos"] = BlockLocation(x, z)
+    val onOpenRequest: (OpenRequest) -> Unit = handleRequest@ { request ->
+        when (request) {
+            is NbtOpenRequest -> {
+                if (states.editor.hasItem(request.target.ident)) {
+                    states.editor.select(request.target)
+                } else {
+                    states.editor.open(request.target)
                 }
-                MultipleSpeciesHolder(data.key, data.format, data.contentType, extra = extras)
             }
+            is AnvilOpenRequest -> {
+                if (!states.editor.hasItem("ANVIL_SELECTOR")) {
+                    states.editor.open(SelectorItem().apply { from = request })
+                } else {
+                    val selector = states.editor["ANVIL_SELECTOR"] ?: return@handleRequest
+                    if (selector !is SelectorItem) return@handleRequest
 
-        states.phylum.list.add(newHolder)
-        states.phylum.species = newHolder
+                    if (request is GlobalAnvilInitRequest && selector.baseGlobalMcaInfo != null)
+                        selector.from = GlobalAnvilUpdateRequest()
+                    else
+                        selector.from = request
+
+                    states.editor.select(selector)
+                }
+            }
+        }
     }
-
-    val categories = createCategories(tree)
 
     MaterialTheme {
         MainColumn {
@@ -110,28 +112,13 @@ fun WorldEditor(
 
             MainArea {
                 MainFiles {
-                    FileCategoryListScrollable(scrollState) {
-                        for (category in categories) {
-                            PhylumCategory(category) {
-                                PhylumCategoryItems(
-                                    category,
-                                    states.phylum.species?.ident ?: "",
-                                    onCategoryItemClick
-                                )
-                            }
-                        }
-                        CategoriesBottomMargin()
-                    }
-                    FileCategoryListScrollbar(scrollState)
+                    WorldTreeView(name, tree, onOpenRequest)
                 }
                 MainContents {
-                    if (states.phylum.list.size == 0) {
+                    if (states.editor.items.size == 0) {
                         NoFileSelected(name)
                     } else {
-                        val phylum = states.phylum.list.find { states.phylum.species?.ident == it.ident }
-                            ?: return@MainContents
-
-                        Editor(tree, phylum, true)
+                        Editor(levelInfo, tree, states.editor)
                     }
                 }
             }
@@ -146,108 +133,176 @@ fun WorldEditor(
 
 @Composable
 fun BoxScope.Editor(
+    levelInfo: CompoundTag?,
     tree: WorldTree,
-    holder: SpeciesHolder,
-    selected: Boolean
+    editor: Editor,
 ) {
-    if (!selected) return
-
     EditorRoot {
-        if (holder is MultipleSpeciesHolder) {
-            SpeciesTabGroup(
-                holder.species.map { TabData(holder.selected == it, it) },
-                { holder.select(it) },
-                { holder.remove(it) }
-            )
-            Editables {
-                for (species in holder.species) {
-                    if (species is SelectorSpecies && holder.selected == species) {
-                        Selector(tree, holder)
-                    } else if (species is NbtSpecies && holder.selected == species) {
-                        EditableField(species)
+        SpeciesTabGroup(
+            editor.items.map { TabData(editor.selected == it, it) },
+            { editor.select(it) },
+            { editor.close(it) }
+        )
+        Editables {
+            val selected = editor.selected
+            if (selected is NbtItem) EditableField(selected)
+            else if (selected is SelectorItem) {
+                McaMap(
+                    levelInfo, selected, tree,
+                    open@ { location, file ->
+                        if (editor.hasItem("${file.absolutePath}/c.${location.x}.${location.z}")) return@open
+
+                        val root = AnvilWorker.loadChunk(location, file.readBytes()) ?: return@open
+                        editor.open(AnvilNbtItem(NbtState.new(root), file, location))
+                    },
+                    update@ {
+                        val selector = editor["ANVIL_SELECTOR"] ?: return@update
+                        if (selector !is SelectorItem) return@update
+
+                        selector.from = it
                     }
-                }
+                )
             }
-        } else if (holder is SingleSpeciesHolder) {
-            Editables { EditableField(holder.species) }
         }
     }
 }
 
 @Composable
-fun BoxScope.Selector(
+fun BoxScope.McaMap(
+    levelInfo: CompoundTag?,
+    selector: SelectorItem,
     tree: WorldTree,
-    holder: MultipleSpeciesHolder
+    onOpenRequest: (ChunkLocation, File) -> Unit,
+    onUpdateRequest: (GlobalAnvilUpdateRequest) -> Unit
 ) {
+    val request = selector.from
 
-    val dimension = holder.extra["dimension"] as WorldDimension? ?: return
+    val data by remember(request) { mutableStateOf(
+        when (request) {
+            is McaAnvilRequest -> {
+                val file = request.file
+                val location = request.location
 
-    val worldDimension = tree[dimension]
+                val dimension = WorldDimension[file.parentFile.parentFile.name]
 
-    val anvils by remember(holder) { mutableStateOf(
-        when(holder.contentType) {
-            Species.ContentType.TERRAIN -> worldDimension.region
-            Species.ContentType.POI -> worldDimension.poi
-            Species.ContentType.ENTITY -> worldDimension.entities
-            else -> listOf()
+                val type = WorldDimensionTree.McaType[file.parentFile.name]
+
+                val chunks = AnvilWorker.loadChunkList(location, file.readBytes())
+
+                Pair(chunks, McaInfo(request, dimension, type, location, file))
+            }
+            is GlobalAnvilInitRequest -> {
+                val player = levelInfo?.get("Player")?.getAs<CompoundTag>()
+                val dimensionId = player?.get("Dimension")?.getAs<StringTag>()?.value
+
+                val pos = player?.get("Pos")?.getAs<ListTag>()
+                val x = pos?.get(0)?.getAs<DoubleTag>()?.value?.toInt()
+                val z = pos?.get(2)?.getAs<DoubleTag>()?.value?.toInt()
+
+                if (player == null || dimensionId == null || x == null || z == null)
+                    throw DoodleException("Internal Error", null, "Could not find dimension data of Player.")
+
+                val dimension = WorldDimension.namespace(dimensionId)
+                val type = WorldDimensionTree.McaType.TERRAIN
+                val initial = BlockLocation(x, z)
+                val location = initial.toChunkLocation().toAnvilLocation()
+                val file = tree[dimension][WorldDimensionTree.McaType.TERRAIN.pathName]
+                    .find { it.name == "r.${location.x}.${location.z}.mca" }
+                    ?: throw DoodleException("Internal Error", null, "Could not find terrain region file which player exists.")
+
+                val chunks = tree[dimension][WorldDimensionTree.McaType.TERRAIN.pathName].map {
+                    val segments = it.name.split(".")
+                    val itLocation = AnvilLocation(segments[1].toInt(), segments[2].toInt())
+                    AnvilWorker.loadChunkList(itLocation, it.readBytes())
+                }.toList().flatten()
+
+                val mcaInfo = McaInfo(request, dimension, type, location, file, initial)
+                selector.baseGlobalMcaInfo = mcaInfo
+
+                Pair(chunks, mcaInfo)
+            }
+            is GlobalAnvilUpdateRequest -> {
+                val base = selector.baseGlobalMcaInfo ?: throw DoodleException("Internal Error", null, "Failed to update null McaInfo")
+
+                val newMcaInfo = McaInfo.from(
+                    base,
+                    request = request,
+                    dimension = request.dimension,
+                    type = request.type,
+                    location = request.region,
+                    file = tree[request.dimension ?: base.dimension][(request.type ?: base.type).pathName].find {
+                        val reg = request.region
+                        if (reg != null) it.name == "r.${reg.x}.${reg.z}.mca" else false
+                    },
+                    initial = null
+                )
+
+                selector.baseGlobalMcaInfo = newMcaInfo
+
+                val chunks = tree[request.dimension ?: newMcaInfo.dimension][(request.type ?: newMcaInfo.type).pathName].map {
+                    val segments = it.name.split(".")
+                    val itLocation = AnvilLocation(segments[1].toInt(), segments[2].toInt())
+                    AnvilWorker.loadChunkList(itLocation, it.readBytes())
+                }.toList().flatten()
+
+                Pair(chunks, newMcaInfo)
+            }
+            else -> {
+                throw DoodleException("Internal Error", null, "Cannot initialize McaInfo.")
+            }
         }
     ) }
 
-    val chunks by remember(holder, anvils) { mutableStateOf(
-        anvils.map {
-            val segments = it.name.split(".")
-            val location = AnvilLocation(segments[1].toInt(), segments[2].toInt())
-            AnvilWorker.loadChunkList(location, it.readBytes())
-        }.toList().flatten()
-    ) }
-
-    val onSelectChunk: (ChunkLocation) -> Unit = select@ { chunk ->
-        val file = anvils
-            .find { anvil -> anvil.name == chunk.toAnvilLocation().let { "r.${it.x}.${it.z}.mca" } } ?: return@select
-
-        val newIdent = "[${chunk.x}, ${chunk.z}]"
-        if (holder.hasSpecies(newIdent)) return@select
-
-        val root = AnvilWorker.loadChunk(chunk, file.readBytes()) ?: return@select
-
-        holder.add(NbtSpecies(newIdent, mutableStateOf(NbtState.new(root))))
-    }
+    val (chunks, mcaInfo) = data
 
     Column(modifier = Modifier.fillMaxSize()) {
-        if (holder.format == Species.Format.MCA) AnvilSelector(chunks, tree, holder, onSelectChunk)
+        ChunkSelector(
+            chunks, tree, selector,
+            mcaInfo,
+            onOpenRequest,
+            onUpdateRequest
+        )
     }
 }
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-fun ColumnScope.AnvilSelector(
+fun ColumnScope.ChunkSelector(
     chunks: List<ChunkLocation>,
     tree: WorldTree,
-    holder: MultipleSpeciesHolder,
-    onSelectChunk: (ChunkLocation) -> Unit
+    selector: SelectorItem,
+    mcaInfo: McaInfo,
+    onSelectChunk: (ChunkLocation, File) -> Unit,
+    onUpdateRequest: (GlobalAnvilUpdateRequest) -> Unit
 ) {
 
-    val dimension = holder.extra["dimension"] as WorldDimension? ?: return
+    val dimension = mcaInfo.dimension
+    val type = mcaInfo.type
 
-    val selector = holder.species.find { it is SelectorSpecies } as SelectorSpecies
-    val state = selector.state
-
-    if (state.initialComposition && chunks.isNotEmpty() && (state.selectedChunk == null || !chunks.contains(state.selectedChunk))) {
-        state.selectedChunk = chunks[0]
-        state.chunkXValue = TextFieldValue(chunks[0].x.toString())
-        state.chunkZValue = TextFieldValue(chunks[0].z.toString())
-        state.blockXValue = TextFieldValue("-")
-        state.blockZValue = TextFieldValue("-")
-    }
-    state.initialComposition = false
+    val state by remember(mcaInfo) { mutableStateOf(
+        when (mcaInfo.request) {
+            is McaAnvilRequest -> selector.mcaState[mcaInfo]
+                ?: SelectorState.new(chunks.firstOrNull { it.toAnvilLocation() == mcaInfo.location }).also { newState -> selector.mcaState[mcaInfo] = newState }
+            is GlobalAnvilInitRequest -> selector.globalState[mcaInfo.dimension]
+                ?: SelectorState.new(mcaInfo.initial).also { newState -> selector.globalState[mcaInfo.dimension] = newState }
+            is GlobalAnvilUpdateRequest -> selector.globalState[mcaInfo.dimension]
+                ?: SelectorState.new(initialChunk = null).also { newState -> selector.globalState[mcaInfo.dimension] = newState }
+        }
+    ) }
 
     val validChunkX = chunks.map { chunk -> chunk.x }
     val validChunkZ = chunks.map { chunk -> chunk.z }
+
+    val regions by remember(chunks) { mutableStateOf(chunks.map { it.toAnvilLocation() }.toSet().toList().sortedBy { "${it.x}.${it.z}" }) }
 
     val isChunkValid = {
         val xInt = state.chunkXValue.text.toIntOrNull()
         val zInt = state.chunkZValue.text.toIntOrNull()
         Triple(xInt, zInt, validChunkX.contains(xInt) && validChunkZ.contains(zInt))
+    }
+
+    val isRegionExists: (AnvilLocation) -> Boolean = { location ->
+        regions.contains(location)
     }
 
     val isBlockValid = {
@@ -317,82 +372,118 @@ fun ColumnScope.AnvilSelector(
     var openPressed by remember { mutableStateOf(false) }
     var openFocused by remember { mutableStateOf(false) }
 
-    var drawerPressed by remember { mutableStateOf(false) }
-    var drawerFocused by remember { mutableStateOf(false) }
+    var regionPopupPos by remember { mutableStateOf(Offset.Zero) }
+    var typePopupPos by remember { mutableStateOf(Offset.Zero) }
+    var dimensionPopupPos by remember { mutableStateOf(Offset.Zero) }
 
-    Row (
+    var popup by remember { mutableStateOf<String?>(null) }
+
+    Row(
         modifier = Modifier
             .background(ThemedColor.SelectorArea)
             .height(60.dp)
             .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .background(
-                    if (state.selectedChunk == null) Color.Transparent
-                    else ThemedColor.clickable(drawerPressed, drawerFocused)
-                )
-                .height(60.dp)
-                .onPointerEvent(PointerEventType.Release) { drawerPressed = false }
-                .onPointerEvent(PointerEventType.Press) { drawerPressed = true }
-                .onPointerEvent(PointerEventType.Enter) { drawerFocused = true }
-                .onPointerEvent(PointerEventType.Exit) { drawerFocused = false }
-        ) {
-            Spacer(modifier = Modifier.width(20.dp))
-            Text(
-                "≡",
-                fontFamily = JetBrainsMono,
-                fontSize = 30.sp,
-                color = Color.White,
-                modifier = Modifier.scale(1.8f, 1f)
-            )
-            Spacer(modifier = Modifier.width(20.dp))
-        }
         Spacer(modifier = Modifier.width(10.dp))
-        AnvilSelectorDropdown("block:") {
+        ChunkSelectorDropdown(
+            "block:",
+            disabled = popup != null
+        ) { disabled ->
             CoordinateText("[")
             CoordinateInput(
                 state.blockXValue,
                 { state.blockXValue = it; updateFromBlock() },
-                transformBlockCoordinate
+                transformBlockCoordinate,
+                disabled
             )
             CoordinateText(", ")
             CoordinateInput(
                 state.blockZValue,
                 { state.blockZValue = it; updateFromBlock() },
-                transformBlockCoordinate
+                transformBlockCoordinate,
+                disabled
             )
             CoordinateText("]")
         }
         Spacer(modifier = Modifier.width(10.dp))
-        AnvilSelectorDropdown("chunk:", true, state.selectedChunk != null) {
+        ChunkSelectorDropdown(
+            "chunk:",
+            accent = true,
+            valid = state.selectedChunk != null,
+            disabled = popup != null
+        ) { disabled ->
             CoordinateText("[")
             CoordinateInput(
                 state.chunkXValue,
                 { state.chunkXValue = it; invalidateBlockCoordinate(); updateFromChunk() },
-                { transformChunkCoordinate(it, validChunkX) }
+                { transformChunkCoordinate(it, validChunkX) },
+                disabled
             )
             CoordinateText(", ")
             CoordinateInput(
                 state.chunkZValue,
                 { state.chunkZValue = it; invalidateBlockCoordinate(); updateFromChunk() },
-                { transformChunkCoordinate(it, validChunkZ) }
+                { transformChunkCoordinate(it, validChunkZ) },
+                disabled
             )
             CoordinateText("]")
         }
         Spacer(modifier = Modifier.width(10.dp))
-        AnvilSelectorDropdown("region:") {
+        ChunkSelectorDropdown(
+            "region:",
+            onClick =
+                if (regions.size != 1) {
+                    regionDropdown@ {
+                        popup =
+                            if (popup == "region") null
+                            else "region"
+                    }
+                } else null,
+            modifier = Modifier.onGloballyPositioned {
+                regionPopupPos = it.positionInParent()
+            }
+        ) {
             val (_, _, isValid) = isChunkValid()
+            val regionExists = isRegionExists(state.selectedChunk?.toAnvilLocation() ?: mcaInfo.location)
             CoordinateText("r.")
-            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.x ?: "-"}", !isValid)
+            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.x ?: mcaInfo.location.x}", !isValid && !regionExists)
             CoordinateText(".")
-            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.z ?: "-"}", !isValid)
+            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.z ?: mcaInfo.location.z}", !isValid && !regionExists)
             CoordinateText(".mca")
         }
+        if (mcaInfo.request !is McaAnvilRequest) {
+            Spacer(modifier = Modifier.width(10.dp))
+            ChunkSelectorDropdown(
+                "type:",
+                onClick = {
+                    popup =
+                        if (popup == "type") null
+                        else "type"
+                },
+                modifier = Modifier.onGloballyPositioned {
+                    typePopupPos = it.positionInParent()
+                }
+            ) {
+                CoordinateText(type.name)
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+            ChunkSelectorDropdown(
+                "dim:",
+                onClick = {
+                    popup =
+                        if (popup == "dimension") null
+                        else "dimension"
+                },
+                modifier = Modifier.onGloballyPositioned {
+                    dimensionPopupPos = it.positionInParent()
+                }
+            ) {
+                CoordinateText(dimension.name)
+            }
+        }
         Spacer(modifier = Modifier.weight(1f))
-        Row (
+        Row(
             modifier = Modifier
                 .background(
                     if (state.selectedChunk == null) Color.Transparent
@@ -407,8 +498,12 @@ fun ColumnScope.AnvilSelector(
                 .alpha(if (state.selectedChunk == null) 0.5f else 1f)
                 .mouseClickable {
                     val chunk = state.selectedChunk
-                    if (chunk != null) {
-                        onSelectChunk(chunk)
+                    val file =
+                        if (chunk != null)
+                            tree[dimension][type.pathName].find { it.name == "r.${chunk.toAnvilLocation().x}.${chunk.toAnvilLocation().z}.mca" }
+                        else null
+                    if (chunk != null && file != null) {
+                        onSelectChunk(chunk, file)
                     }
                 }
                 .height(45.dp),
@@ -430,7 +525,8 @@ fun ColumnScope.AnvilSelector(
             tree[dimension],
             dimension,
             state.selectedChunk,
-            { chunks.contains(it) }
+            { chunks.contains(it) },
+            forceAnvilLocation = if (mcaInfo.request is GlobalAnvilUpdateRequest) mcaInfo.location else null
         ) {
             state.chunkXValue = TextFieldValue(it.x.toString())
             state.chunkZValue = TextFieldValue(it.z.toString())
@@ -438,13 +534,150 @@ fun ColumnScope.AnvilSelector(
             state.blockZValue = TextFieldValue("-")
             state.selectedChunk = it
         }
+
+        val resetChunk = {
+            state.selectedChunk = null
+            state.chunkXValue = TextFieldValue("-")
+            state.chunkZValue = TextFieldValue("-")
+            state.blockXValue = TextFieldValue("-")
+            state.blockZValue = TextFieldValue("-")
+        }
+
+        PopupBackground(
+            current = popup,
+            onCloseRequest = { popup = null }
+        )
+
+        SelectorDropdown(
+            ident = "region",
+            items = regions.toMutableList().apply {
+                remove(state.selectedChunk?.toAnvilLocation() ?: mcaInfo.location)
+            },
+            indent = 3,
+            current = popup,
+            onCloseRequest = { popup = null },
+            valueMapper = { "r.${it.x}.${it.z}.mca" },
+            anchor = regionPopupPos,
+        ) {
+            resetChunk()
+            onUpdateRequest(GlobalAnvilUpdateRequest(region = it))
+        }
+
+        SelectorDropdown(
+            ident = "type",
+            items = WorldDimensionTree.McaType.values().toMutableList().apply { remove(type) },
+            indent = 1,
+            current = popup,
+            onCloseRequest = { popup = null },
+            valueMapper = { it.name },
+            anchor = typePopupPos,
+        ) {
+            resetChunk()
+            onUpdateRequest(GlobalAnvilUpdateRequest(type = it))
+        }
+
+        SelectorDropdown(
+            ident = "dimension",
+            items = WorldDimension.values().toMutableList().apply { remove(dimension) },
+            indent = 0,
+            current = popup,
+            onCloseRequest = { popup = null },
+            valueMapper = { it.name },
+            anchor = dimensionPopupPos,
+        ) {
+            resetChunk()
+            onUpdateRequest(GlobalAnvilUpdateRequest(dimension = it))
+        }
+    }
+
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun PopupBackground(
+    current: String?,
+    onCloseRequest: MouseClickScope.() -> Unit,
+) {
+    var state by remember { mutableStateOf(-1) }
+    val alpha by animateFloatAsState(if (state == 1) 1f else 0f, tween(75, easing = LinearEasing))
+
+    LaunchedEffect(current) {
+        if (current != null) state = 1
+        else if (state != -1) {
+            state = 0
+            delay(125)
+            state = -1
+        }
+    }
+
+    if (state == -1) return
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ThemedColor.from(Color.Black, alpha = (alpha * 150).toInt()))
+            .mouseClickable(onClick = onCloseRequest)
+    )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun <T>SelectorDropdown(
+    ident: String,
+    items: List<T>,
+    indent: Int,
+    current: String?,
+    onCloseRequest: MouseClickScope.() -> Unit,
+    valueMapper: (T) -> String,
+    anchor: Offset,
+    onClick: (T) -> Unit
+) {
+    var state by remember { mutableStateOf(-1) }
+    val alpha by animateFloatAsState(if (state == 1) 1f else 0f, tween(75, easing = LinearEasing))
+
+    LaunchedEffect(ident, current) {
+        if (ident == current) state = 1
+        else if (state != -1) {
+            state = 0
+            delay(125)
+            state = -1
+        }
+    }
+
+    var width by remember { mutableStateOf<Int?>(null) }
+
+    val s = rememberScrollState()
+
+    if (state == -1) return
+
+    Box (modifier = Modifier.fillMaxSize().alpha(alpha).padding(top = 7.dp)) {
+        Column(
+            modifier = Modifier
+                .absoluteOffset(x = anchor.x.dp)
+                .padding(start = (8.7f * (indent + 4)).dp)
+                .verticalScroll(s)
+                .onGloballyPositioned { width = it.size.width }
+        ) {
+            for (item in items) {
+                ChunkSelectorDropdown(
+                    "",
+                    onClick = { onClick(item); onCloseRequest() },
+                    modifier = Modifier.shadow(7.dp)
+                        .let { modifier -> width.let { if (it == null) modifier else modifier.width(it.dp) } }
+                ) {
+                    CoordinateText(valueMapper(item))
+                    Spacer(modifier = Modifier.width(5.dp))
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+        }
     }
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.EditableField(
-    species: NbtSpecies,
+    species: NbtItem,
 ) {
     val coroutineScope = rememberCoroutineScope()
 
@@ -581,10 +814,10 @@ fun ColumnScope.UndoRedoActionColumn(
             .padding(5.dp)
     ) {
         NbtActionButton(disabled = !actions.history.canBeUndo, onClick = { actions.withLog { history.undo() } }) {
-            NbtText("UND", ThemedColor.Editor.Tag.General)
+            NbtText("UND", ThemedColor.Editor.Tag.General, 16.sp)
         }
         NbtActionButton(disabled = !actions.history.canBeRedo, onClick = { actions.withLog { history.redo() } }) {
-            NbtText("RED", ThemedColor.Editor.Tag.General)
+            NbtText("RED", ThemedColor.Editor.Tag.General, 16.sp)
         }
     }
 }
@@ -613,13 +846,13 @@ fun ColumnScope.IndexChangeActionColumn(
             disabled = !(available && canMoveUp),
             onClick = { state.actions.elevator.moveUp(state.ui.selected) }
         ) {
-            NbtText("<- ", ThemedColor.Editor.Tag.General, rotate = 90f, multiplier = 1)
+            NbtText("<- ", ThemedColor.Editor.Tag.General, 16.sp, rotate = 90f, multiplier = 1)
         }
         NbtActionButton(
             disabled = !(available && canMoveDown),
             onClick = { state.actions.elevator.moveDown(state.ui.selected) }
         ) {
-            NbtText(" ->", ThemedColor.Editor.Tag.General, rotate = 90f, multiplier = -1)
+            NbtText(" ->", ThemedColor.Editor.Tag.General, 16.sp, rotate = 90f, multiplier = -1)
         }
     }
 }

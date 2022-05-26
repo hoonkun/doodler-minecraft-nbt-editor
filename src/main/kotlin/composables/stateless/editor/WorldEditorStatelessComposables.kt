@@ -9,13 +9,20 @@ import androidx.compose.material.BottomAppBar
 import androidx.compose.material.Text
 import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
@@ -69,35 +76,7 @@ fun ColumnScope.MainArea(content: @Composable RowScope.() -> Unit) {
 
 @Composable
 fun RowScope.MainFiles(content: @Composable BoxScope.() -> Unit) {
-    Box (modifier = Modifier.fillMaxHeight().weight(0.3f), content = content)
-}
-
-
-@Composable
-fun BoxScope.FileCategoryListScrollable(scrollState: ScrollState, content: @Composable ColumnScope.() -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxHeight()
-            .background(ThemedColor.TaskArea)
-            .verticalScroll(scrollState),
-        content = content
-    )
-}
-
-@Composable
-fun BoxScope.FileCategoryListScrollbar(scrollState: ScrollState) {
-    VerticalScrollbar(
-        ScrollbarAdapter(scrollState),
-        style = ScrollbarStyle(
-            100.dp,
-            15.dp,
-            RectangleShape,
-            250,
-            ThemedColor.ScrollBarNormal,
-            ThemedColor.ScrollBarHover
-        ),
-        modifier = Modifier.align(Alignment.TopEnd)
-    )
+    Box (modifier = Modifier.fillMaxHeight().requiredWidth(400.dp).background(ThemedColor.TaskArea), content = content)
 }
 
 @Composable
@@ -134,22 +113,6 @@ fun RowScope.BottomBarText(text: String) {
 }
 
 @Composable
-fun ColumnScope.PhylumCategoryItems(
-    parent: PhylumCategoryData,
-    selected: String,
-    onClick: (PhylumCategoryItemData) -> Unit
-) {
-    for (item in parent.items) {
-        PhylumCategoryItem(item, selected, onClick)
-    }
-}
-
-@Composable
-fun ColumnScope.CategoriesBottomMargin() {
-    Spacer(modifier = Modifier.height(25.dp))
-}
-
-@Composable
 fun BoxScope.EditorRoot(content: @Composable ColumnScope.() -> Unit) {
     Column (
         modifier = Modifier
@@ -173,8 +136,8 @@ fun ColumnScope.Editables(content: @Composable BoxScope.() -> Unit) {
 fun RowScope.CoordinateText(text: String, invalid: Boolean = false) {
     Text(
         text,
-        fontSize = 21.sp,
-        color = if (invalid) ThemedColor.Editor.Selector.Malformed else ThemedColor.Editor.Tag.General,
+        fontSize = 16.sp,
+        color = if (invalid) ThemedColor.Editor.Selector.Invalid else ThemedColor.Editor.Tag.General,
         fontFamily = JetBrainsMono,
         modifier = Modifier.focusable(false)
     )
@@ -184,13 +147,14 @@ fun RowScope.CoordinateText(text: String, invalid: Boolean = false) {
 fun RowScope.CoordinateInput(
     value: TextFieldValue,
     onValueChange: (TextFieldValue) -> Unit,
-    transformer: (AnnotatedString) -> TransformedText = { TransformedText(it, OffsetMapping.Identity) }
+    transformer: (AnnotatedString) -> TransformedText = { TransformedText(it, OffsetMapping.Identity) },
+    disabled: Boolean = false
 ) {
     BasicTextField(
         value,
         onValueChange,
         textStyle = TextStyle(
-            fontSize = 21.sp,
+            fontSize = 16.sp,
             color = ThemedColor.Editor.Tag.General,
             fontFamily = JetBrainsMono
         ),
@@ -198,8 +162,9 @@ fun RowScope.CoordinateInput(
         singleLine = true,
         cursorBrush = SolidColor(ThemedColor.Editor.Tag.General),
         visualTransformation = transformer,
+        enabled = !disabled,
         modifier = Modifier
-            .width((value.text.length.coerceAtLeast(1) * 12.75).dp)
+            .width((value.text.length.coerceAtLeast(1) * 9.75).dp)
             .focusable(false)
             .onFocusChanged {
                 if (!it.isFocused && value.text.isEmpty()) onValueChange(TextFieldValue("-"))
@@ -207,29 +172,50 @@ fun RowScope.CoordinateInput(
     )
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
-fun RowScope.AnvilSelectorDropdown(prefix: String, accent: Boolean = false, valid: Boolean = true, content: @Composable RowScope.() -> Unit) {
+fun ChunkSelectorDropdown(
+    prefix: String,
+    accent: Boolean = false,
+    valid: Boolean = true,
+    modifier: Modifier = Modifier,
+    disabled: Boolean = false,
+    onClick: (MouseClickScope.() -> Unit)? = null,
+    content: @Composable RowScope.(Boolean) -> Unit
+) {
+    var hover by remember { mutableStateOf(false) }
+
     Row (
-        modifier = Modifier
+        modifier = Modifier.then(modifier)
             .background(
-                ThemedColor.Editor.Selector.background(accent, valid),
+                ThemedColor.from(
+                    ThemedColor.Editor.Selector.background(accent, valid, onClick != null && hover),
+                    alpha = if (disabled) (255 * 0.6f).toInt() else 255
+                ),
                 RoundedCornerShape(4.dp)
             )
-            .wrapContentWidth()
-            .height(45.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .height(40.dp)
+            .alpha(if (disabled) 0.6f else 1f)
+            .let {
+                if (onClick != null)
+                    it.mouseClickable(onClick = onClick)
+                        .onPointerEvent(PointerEventType.Enter) { hover = true }
+                        .onPointerEvent(PointerEventType.Exit) { hover = false }
+                else it
+            },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Start
     ) {
-        Spacer(modifier = Modifier.width(17.dp))
+        Spacer(modifier = Modifier.width(12.dp))
         Text(
             prefix,
-            fontSize = 18.sp,
+            fontSize = 14.sp,
             color = ThemedColor.Editor.Selector.Normal,
             fontFamily = JetBrainsMono
         )
-        Spacer(modifier = Modifier.width(10.dp))
-        content()
-        Spacer(modifier = Modifier.width(17.dp))
+        Spacer(modifier = Modifier.width(8.dp))
+        content(disabled)
+        Spacer(modifier = Modifier.width(12.dp))
     }
 }
 
