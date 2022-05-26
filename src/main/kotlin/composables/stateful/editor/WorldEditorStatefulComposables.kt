@@ -546,19 +546,19 @@ fun ColumnScope.ChunkSelector(
         modifier = Modifier.fillMaxSize().zIndex(3f)
     ) {
         ChunkSelectorProperties(
-            visible = true,
             yLimit = previewerYLimit,
             surroundings = surroundings,
             onMoveSurroundings = {
                 resetChunk()
                 onUpdateRequest(GlobalAnvilUpdateRequest(region = it))
             }
-        ) { loadState ->
+        ) { visibleState, loadState ->
             RegionPreview(
                 tree[dimension],
                 previewerYLimit.value,
                 state.selectedChunk,
                 { chunks.contains(it) },
+                rightClick = { visibleState.value = !visibleState.value },
                 loadStateChanged = { loadState.value = it },
                 forceAnvilLocation = if (mcaInfo.request is GlobalAnvilUpdateRequest) mcaInfo.location else null
             ) {
@@ -622,22 +622,22 @@ fun ColumnScope.ChunkSelector(
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.ChunkSelectorProperties(
-    visible: Boolean,
     yLimit: MutableState<Int>,
     surroundings: AnvilLocationSurroundings,
     onMoveSurroundings: (AnvilLocation) -> Unit,
-    content: @Composable BoxScope.(MutableState<Boolean>) -> Unit
+    content: @Composable BoxScope.(MutableState<Boolean>, MutableState<Boolean>) -> Unit
 ) {
 
     val alignment = Alignment.TopStart
 
+    val visibleState = remember { mutableStateOf(false) }
     val loadState = remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.wrapContentSize().requiredSizeIn(minWidth = 600.dp, minHeight = 600.dp).align(Alignment.Center)) {
-        content(loadState)
+        content(visibleState, loadState)
 
         AnimatedVisibility(
-            visible = visible,
+            visible = visibleState.value,
             enter = fadeIn(tween(150, easing = LinearEasing)),
             exit = fadeOut(tween(150, easing = LinearEasing)),
             modifier = Modifier.align(alignment).fillMaxHeight().aspectRatio(1f)

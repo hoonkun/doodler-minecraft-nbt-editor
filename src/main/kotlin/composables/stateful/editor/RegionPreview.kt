@@ -1,8 +1,6 @@
 package composables.stateful.editor
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -11,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isPrimaryPressed
+import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -30,6 +30,7 @@ fun BoxScope.RegionPreview(
     yLimit: Int,
     selected: ChunkLocation?,
     hasNbt: (ChunkLocation) -> Boolean,
+    rightClick: () -> Unit,
     loadStateChanged: (Boolean) -> Unit,
     forceAnvilLocation: AnvilLocation? = null,
     onSelect: (ChunkLocation) -> Unit
@@ -146,7 +147,11 @@ fun BoxScope.RegionPreview(
                                     focused = Pair(x, z)
                                 }
                                 .onPointerEvent(PointerEventType.Press) {
-                                    if (hasNbt(loc)) onSelect(loc)
+                                    if (this.currentEvent.buttons.isPrimaryPressed) {
+                                        if (hasNbt(loc)) onSelect(loc)
+                                    } else if (this.currentEvent.buttons.isSecondaryPressed) {
+                                        rightClick()
+                                    }
                                 }
                                 .let {
                                     if (nSelected?.x == 31 - x && nSelected.z == z)
