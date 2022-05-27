@@ -75,4 +75,6 @@ outTmp/
 kotlin-ide/
 .idea/
 
+*.log
+
 src/test/kotlin/Workspace.kt
