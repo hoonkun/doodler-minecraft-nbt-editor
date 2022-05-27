@@ -67,11 +67,12 @@ class WorldDimensionHierarchy (
 
 enum class WorldDimension(
     val ident: String,
-    val namespaceId: String
+    val namespaceId: String,
+    val displayName: String
 ) {
-    OVERWORLD("", "minecraft:overworld"),
-    NETHER("DIM-1", "minecraft:the_nether"),
-    THE_END("DIM1", "minecraft:the_end");
+    OVERWORLD("", "minecraft:overworld", "overworld"),
+    NETHER("DIM-1", "minecraft:the_nether", "nether"),
+    THE_END("DIM1", "minecraft:the_end", "the_end");
 
     companion object {
         operator fun get(pathName: String): WorldDimension = values().find { it.ident == pathName } ?: OVERWORLD

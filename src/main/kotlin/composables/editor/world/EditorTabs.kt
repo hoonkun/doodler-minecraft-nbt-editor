@@ -19,6 +19,7 @@ import composables.global.JetBrainsMono
 import composables.global.ThemedColor
 import doodler.editor.Editor
 import composables.global.ThemedColor.Companion.selectable
+import doodler.editor.AnvilNbtEditor
 
 @Composable
 fun ColumnScope.EditorTabs(
@@ -63,6 +64,16 @@ fun EditorTab(
             Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Spacer(modifier = Modifier.width(15.dp))
+                if (data.item is AnvilNbtEditor) {
+                    Text(
+                        data.item.path,
+                        color = ThemedColor.ChunkSelectorPropertyHint,
+                        fontSize = 12.sp,
+                        fontFamily = JetBrainsMono,
+                        modifier = Modifier.align(Alignment.Bottom).padding(bottom = 2.dp)
+                    )
+                    Spacer(modifier = Modifier.width(5.dp))
+                }
                 Text(
                     data.item.name,
                     color = ThemedColor.Editor.Tag.General,

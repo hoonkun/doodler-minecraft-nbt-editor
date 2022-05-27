@@ -127,5 +127,6 @@ class AnvilNbtEditor(
     private val location: ChunkLocation
 ): NbtEditor(state) {
     override val ident: String get() = "${anvil.absolutePath}/c.${location.x}.${location.z}"
-    override val name: String get() = "[] c.${location.x}.${location.z}"
+    override val name: String get() = "c.${location.x}.${location.z}"
+    val path: String get() = "${WorldDimension[anvil.parentFile.parentFile.name].displayName}/${anvil.parentFile.name}/"
 }
