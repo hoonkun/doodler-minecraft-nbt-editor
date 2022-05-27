@@ -145,6 +145,8 @@ fun BoxScope.NbtEditor(
                 .wrapContentSize()
                 .padding(start = 20.dp)
         ) {
+            SaveActionColumn(state)
+            Spacer(modifier = Modifier.height(20.dp))
             NormalActionColumn(state, onToolBarMove)
             Spacer(modifier = Modifier.height(20.dp))
             CreateActionColumn(state, uiState.selected.firstOrNull() as? NbtDoodle, onToolBarMove)
@@ -241,6 +243,27 @@ fun ColumnScope.CreateActionColumn(
         TagCreationButton(tag, TagType.TAG_STRING, actions)
         TagCreationButton(tag, TagType.TAG_LIST, actions)
         TagCreationButton(tag, TagType.TAG_COMPOUND, actions)
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ColumnScope.SaveActionColumn(
+    state: NbtState,
+) {
+    Column(
+        modifier = Modifier
+            .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
+            .wrapContentSize()
+            .padding(5.dp)
+    ) actionColumn@{
+        NbtActionButton(
+            disabled = state.actions.history.lastActionUid == state.lastSaveUid,
+            onClick = { state.actions.withLog { state.save() } },
+            onRightClick = { state.actions.withLog { state.save() } }
+        ) {
+            NbtText("SAV", ThemedColor.Editor.Action.Save, 16.sp)
+        }
     }
 }
 

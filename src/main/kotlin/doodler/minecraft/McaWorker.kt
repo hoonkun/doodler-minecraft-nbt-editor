@@ -6,7 +6,10 @@ import doodler.nbt.Tag
 import doodler.nbt.TagType
 import doodler.nbt.extensions.byte
 import doodler.nbt.tag.CompoundTag
+import java.io.ByteArrayOutputStream
+import java.io.File
 import java.nio.ByteBuffer
+import kotlin.math.ceil
 
 private fun Byte.u(): Int {
     return this.toUByte().toInt()
@@ -77,6 +80,75 @@ class McaWorker {
             }
 
             return result
+        }
+
+        fun writeChunk(file: File, root: CompoundTag, location: ChunkLocation) {
+            val mcaLocation = location.toAnvilLocation()
+            val normalized = location.normalize(mcaLocation)
+
+            val originalFileBytes = file.readBytes()
+
+            val newCompressedBytes = compressChunk(root)
+
+            val locationHeaderBuffer = ByteBuffer.allocate(4096)
+            val dataStream = ByteArrayOutputStream()
+            var allocatedSectors = 2
+
+            for (m in 0 until 32 * 32) {
+                val x = m % 32
+                val z = m / 32
+
+                val (offset, sectors) = parseHeader(parseIndex(x, z), originalFileBytes)
+
+                val data =
+                    if (normalized.x == x && normalized.z == z) newCompressedBytes
+                    else originalFileBytes.slice(offset until offset + sectors).toByteArray()
+
+                dataStream.writeBytes(data)
+
+                val newOffset = allocatedSectors
+                val newSectors = ceil(data.size / 4096f).toInt()
+                allocatedSectors += newSectors
+
+                val locationHeaderValue = (newOffset shl Byte.SIZE_BITS) or (newSectors and 0b11111111)
+                locationHeaderBuffer.putInt(locationHeaderValue)
+            }
+
+            val locationHeader = locationHeaderBuffer.array()
+            val timestampHeader = originalFileBytes.slice(4096 until 8192).toByteArray()
+
+            val fileBytes = ByteArrayOutputStream().apply {
+                writeBytes(locationHeader)
+                writeBytes(timestampHeader)
+                writeBytes(dataStream.toByteArray())
+            }.toByteArray()
+
+            file.writeBytes(fileBytes)
+        }
+
+
+        private fun compressChunk(tag: CompoundTag): ByteArray {
+            val buffer = ByteBuffer.allocate(Byte.SIZE_BYTES + Short.SIZE_BYTES + tag.sizeInBytes)
+            tag.ensureName(null).getAs<CompoundTag>().writeAsRoot(buffer)
+
+            val compressedData = CompressUtils.Zlib.compress(buffer.array())
+            val compressionScheme = 2
+
+            val length = compressedData.size + 1
+
+            val result = ByteBuffer.allocate(padding(4 + length))
+            result.putInt(length)
+            result.put(compressionScheme.toByte())
+            result.put(compressedData)
+
+            return result.array()
+        }
+
+        private fun padding(size: Int): Int {
+            var index = 0
+            while (size > index * 4096) index++
+
+            return index * 4096
         }
 
         private fun getChunkBuffer(bytes: ByteArray, offset: Int, sectors: Int): ByteBuffer {

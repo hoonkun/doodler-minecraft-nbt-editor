@@ -59,7 +59,12 @@ private fun TagTypeIndicatorWrapper(selected: Boolean, content: @Composable BoxS
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-private fun NbtActionButtonWrapper(disabled: Boolean, onClick: MouseClickScope.() -> Unit, content: @Composable BoxScope.() -> Unit) {
+private fun NbtActionButtonWrapper(
+    disabled: Boolean,
+    onClick: MouseClickScope.() -> Unit,
+    onRightClick: MouseClickScope.() -> Unit = { },
+    content: @Composable BoxScope.() -> Unit
+) {
     var hover by remember { mutableStateOf(false) }
 
     Box (
@@ -67,7 +72,10 @@ private fun NbtActionButtonWrapper(disabled: Boolean, onClick: MouseClickScope.(
             .wrapContentSize()
             .onPointerEvent(PointerEventType.Enter) { if (!disabled) hover = true }
             .onPointerEvent(PointerEventType.Exit) { if (!disabled) hover = false }
-            .mouseClickable(onClick = if (disabled) ({ }) else onClick)
+            .mouseClickable {
+                if (buttons.isPrimaryPressed && !disabled) onClick()
+                else if (buttons.isSecondaryPressed) onRightClick()
+            }
             .padding(top = 5.dp, bottom = 5.dp)
             .background(
                 if (hover) ThemedColor.from(Color.Black, alpha = 30)
@@ -164,9 +172,10 @@ fun TagCreationButton(holderTag: AnyTag?, type: TagType, actions: NbtState.Actio
 fun NbtActionButton(
     disabled: Boolean,
     onClick: MouseClickScope.() -> Unit = { },
+    onRightClick: MouseClickScope.() -> Unit = { },
     content: @Composable () -> Unit
 ) {
-    NbtActionButtonWrapper (disabled, onClick) {
+    NbtActionButtonWrapper (disabled, onClick, onRightClick) {
         content()
     }
 }
@@ -473,7 +482,7 @@ fun RowScope.DoodleCreationContent(actions: NbtState.Actions, doodle: VirtualDoo
 
 private val nameTransformer: (AnnotatedString) -> Pair<Boolean, TransformedText> = { string ->
     val text = string.text
-    val checker = Regex("[^a-zA-Z0-9_]")
+    val checker = Regex("\\W")
     val invalids = checker.findAll(text).map {
         AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Selector.Invalid), it.range.first, it.range.last + 1)
     }.toList()

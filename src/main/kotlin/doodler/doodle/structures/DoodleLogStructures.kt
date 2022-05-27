@@ -3,11 +3,12 @@ package doodler.doodle.structures
 import androidx.compose.ui.graphics.Color
 
 enum class DoodleLogLevel {
-    FATAL;
+    FATAL, SUCCESS;
 
     fun backgroundColor(): Color {
         return when (this) {
             FATAL -> Color(87, 63, 53)
+            SUCCESS -> Color(53, 71, 87)
         }
     }
 

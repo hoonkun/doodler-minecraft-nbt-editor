@@ -76,7 +76,7 @@ fun EditorTab(
                 }
                 Text(
                     data.item.name,
-                    color = ThemedColor.Editor.Tag.General,
+                    color = if (!data.hasChanges) ThemedColor.Editor.Tag.General else ThemedColor.Editor.HasChanges,
                     fontSize = 19.sp,
                     fontFamily = JetBrainsMono
                 )
@@ -126,5 +126,6 @@ private fun RowScope.CloseButton(onCloseEditable: () -> Unit) {
 
 class TabData(
     val selected: Boolean,
-    val item: Editor
+    val item: Editor,
+    val hasChanges: Boolean
 )

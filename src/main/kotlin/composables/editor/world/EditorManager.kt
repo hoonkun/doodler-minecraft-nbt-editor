@@ -11,6 +11,7 @@ import doodler.editor.McaEditor
 import doodler.editor.NbtEditor
 import doodler.editor.states.NbtState
 import doodler.minecraft.McaWorker
+import doodler.minecraft.structures.McaFileType
 import doodler.minecraft.structures.WorldHierarchy
 import doodler.nbt.tag.CompoundTag
 
@@ -22,7 +23,11 @@ fun BoxScope.EditorManager(
 ) {
     EditorManagerRoot {
         EditorTabs(
-            manager.editors.map { TabData(manager.selected == it, it) },
+            manager.editors.map { TabData(
+                manager.selected == it,
+                it,
+                if (it is NbtEditor) it.state.actions.history.lastActionUid != it.state.lastSaveUid else false
+            ) },
             { manager.select(it) },
             { manager.close(it) }
         )
@@ -36,7 +41,7 @@ fun BoxScope.EditorManager(
                         if (manager.hasItem("${file.absolutePath}/c.${location.x}.${location.z}")) return@open
 
                         val root = McaWorker.loadChunk(location, file.readBytes()) ?: return@open
-                        manager.open(AnvilNbtEditor(NbtState.new(root), file, location))
+                        manager.open(AnvilNbtEditor(NbtState.new(root, file, McaFileType(location)), file, location))
                     },
                     update@ {
                         val selector = manager["ANVIL_SELECTOR"] ?: return@update
