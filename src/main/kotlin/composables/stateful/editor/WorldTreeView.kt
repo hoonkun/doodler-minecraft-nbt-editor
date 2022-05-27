@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isPrimaryPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -45,12 +46,12 @@ val EXTENSION_ALIAS = mapOf(
     "json" to "JSN"
 )
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun GlobalMapViewerButton(
     hoverState: MutableState<Boolean>,
     selected: Boolean,
-    onClick: (MouseClickScope.() -> Unit)? = null
+    onClick: (() -> Unit)? = null
 ) {
     var hover by hoverState
 
@@ -60,6 +61,9 @@ fun GlobalMapViewerButton(
             if (onClick != null)
                 it.onPointerEvent(PointerEventType.Enter) { hover = true }
                     .onPointerEvent(PointerEventType.Exit) { hover = false }
+                    .onPointerEvent(PointerEventType.Press) {
+                        if (this.currentEvent.buttons.isPrimaryPressed) onClick()
+                    }
             else it
         }
     ) {
@@ -74,11 +78,6 @@ fun GlobalMapViewerButton(
                     shape = RoundedCornerShape(4.dp)
                 )
                 .padding(top = 3.dp, bottom = 3.dp, start = 8.dp, end = 8.dp)
-                .let {
-                    if (onClick != null)
-                        it.mouseClickable(onClick = onClick)
-                    else it
-                }
         ) {
             TreeViewText("map viewer", fontSize = 15.sp)
         }
