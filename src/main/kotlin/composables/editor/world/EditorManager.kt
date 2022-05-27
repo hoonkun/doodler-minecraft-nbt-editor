@@ -23,7 +23,11 @@ fun BoxScope.EditorManager(
 ) {
     EditorManagerRoot {
         EditorTabs(
-            manager.editors.map { TabData(manager.selected == it, it) },
+            manager.editors.map { TabData(
+                manager.selected == it,
+                it,
+                if (it is NbtEditor) it.state.actions.history.lastActionUid != it.state.lastSaveUid else false
+            ) },
             { manager.select(it) },
             { manager.close(it) }
         )

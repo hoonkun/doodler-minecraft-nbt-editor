@@ -77,7 +77,7 @@ class ThemedColor {
     class Editor {
         companion object {
 
-            val HasChanges = Color(255, 160, 0)
+            val HasChanges = Color(0xFF70b8ff)
             val TreeBorder = Color(100, 100, 100)
 
             val Creation = Color(66, 107, 173, 50)
