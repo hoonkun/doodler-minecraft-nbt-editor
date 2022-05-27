@@ -364,10 +364,11 @@ fun ColumnScope.ChunkSelector(
             }
         ) { visibleState, loadState ->
             ChunksPreview(
-                tree[dimension],
-                previewerYLimit.value,
-                state.selectedChunk,
-                { chunks.contains(it) },
+                tree = tree[dimension],
+                yRange = minYLimit until maxYLimit,
+                yLimit = previewerYLimit.value,
+                selected = state.selectedChunk,
+                hasNbt = { chunks.contains(it) },
                 rightClick = { visibleState.value = !visibleState.value },
                 loadStateChanged = { loadState.value = it },
                 forceAnvilLocation = if (payload.request is GlobalAnvilUpdateRequest) payload.location else null

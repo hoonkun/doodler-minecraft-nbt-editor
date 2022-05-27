@@ -27,6 +27,7 @@ import org.jetbrains.skiko.toBufferedImage
 @Composable
 fun BoxScope.ChunksPreview(
     tree: WorldDimensionHierarchy,
+    yRange: IntRange,
     yLimit: Short,
     selected: ChunkLocation?,
     hasNbt: (ChunkLocation) -> Boolean,
@@ -104,7 +105,7 @@ fun BoxScope.ChunksPreview(
             }
         }
 
-        if (createY) tree.cachedValidY[terrainInfo.location] = validY.map { it.toInt() }.toReversedRange(319)
+        if (createY) tree.cachedValidY[terrainInfo.location] = validY.map { it.toInt() }.toReversedRange(yRange.first, yRange.last)
 
         val newBitmap = Bitmap()
             .apply {

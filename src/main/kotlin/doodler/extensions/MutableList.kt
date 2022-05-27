@@ -28,13 +28,13 @@ fun List<Int>.toRanges(): List<IntRange> {
     return result
 }
 
-fun List<Int>.toReversedRange(max: Int): List<IntRange> {
+fun List<Int>.toReversedRange(min: Int, max: Int): List<IntRange> {
     val sorted = sorted()
     val result = mutableListOf<IntRange>()
 
     if (isEmpty()) return result
 
-    var current = sorted[0]
+    var current = min
     sorted.slice(1 until size).forEach {
         if (it == current + 1) {
             current = it
