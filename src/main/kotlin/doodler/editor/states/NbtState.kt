@@ -74,7 +74,11 @@ class NbtState (
 
     }
 
-    inner class HistoryAction {
+    open inner class Action {
+        fun uid(): Long = System.currentTimeMillis()
+    }
+
+    inner class HistoryAction: Action() {
 
         private val undoStack: MutableList<DoodleAction> = mutableStateListOf()
         private val redoStack: MutableList<DoodleAction> = mutableStateListOf()
@@ -173,20 +177,20 @@ class NbtState (
 
     }
 
-    inner class MoveAction {
+    inner class MoveAction: Action() {
 
         val internal = Internal()
 
         fun moveUp(targets: List<ActualDoodle>) {
             internal.moveUp(targets)
 
-            actions.history.newAction(MoveDoodleAction(MoveDoodleAction.DoodleMoveDirection.UP, targets))
+            actions.history.newAction(MoveDoodleAction(uid(), MoveDoodleAction.DoodleMoveDirection.UP, targets))
         }
 
         fun moveDown(targets: List<ActualDoodle>) {
             internal.moveDown(targets)
 
-            actions.history.newAction(MoveDoodleAction(MoveDoodleAction.DoodleMoveDirection.DOWN, targets))
+            actions.history.newAction(MoveDoodleAction(uid(), MoveDoodleAction.DoodleMoveDirection.DOWN, targets))
         }
 
         inner class Internal {
@@ -264,7 +268,7 @@ class NbtState (
 
     }
 
-    inner class ClipboardAction {
+    inner class ClipboardAction: Action() {
 
         val stack: SnapshotStateList<Pair<PasteTarget, List<ActualDoodle>>> = mutableStateListOf()
         val pasteTarget: PasteTarget get() = checkPasteTarget()
@@ -383,12 +387,12 @@ class NbtState (
             ui.selected.clear()
             ui.selected.addAll(created)
 
-            actions.history.newAction(PasteDoodleAction(created))
+            actions.history.newAction(PasteDoodleAction(uid(), created))
         }
 
     }
 
-    inner class CreateAction {
+    inner class CreateAction: Action() {
 
         val internal = Internal()
 
@@ -436,7 +440,7 @@ class NbtState (
             ui.selected.clear()
             ui.selected.add(new)
 
-            actions.history.newAction(CreateDoodleAction(new))
+            actions.history.newAction(CreateDoodleAction(uid(), new))
         }
 
         inner class Internal {
@@ -460,7 +464,7 @@ class NbtState (
 
     }
 
-    inner class EditAction {
+    inner class EditAction: Action() {
 
         val internal = Internal()
 
@@ -485,7 +489,7 @@ class NbtState (
         fun edit(oldActual: ActualDoodle, newActual: ActualDoodle) {
             internal.edit(oldActual, newActual)
 
-            actions.history.newAction(EditDoodleAction(oldActual, newActual))
+            actions.history.newAction(EditDoodleAction(uid(), oldActual, newActual))
         }
 
         inner class Internal {
@@ -511,7 +515,7 @@ class NbtState (
 
     }
 
-    inner class DeleteAction {
+    inner class DeleteAction: Action() {
 
         val internal = Internal()
 
@@ -523,7 +527,7 @@ class NbtState (
 
             ui.selected.clear()
 
-            actions.history.newAction(DeleteDoodleAction(deleted))
+            actions.history.newAction(DeleteDoodleAction(uid(), deleted))
         }
 
         inner class Internal {
