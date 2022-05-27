@@ -20,7 +20,7 @@ class NbtState (
     val rootDoodle: NbtDoodle,
     ui: MutableState<DoodleUi>,
     val lazyState: LazyListState,
-    val logs: SnapshotStateList<DoodleLog>,
+    private val logs: SnapshotStateList<DoodleLog>,
     private val file: File,
     private val fileType: WorldFileType
 ) {
@@ -63,6 +63,21 @@ class NbtState (
         }
 
         lastSaveUid = actions.history.lastActionUid
+
+        newLog(
+            DoodleLog(
+                DoodleLogLevel.SUCCESS,
+                "Success!",
+                "File Saved",
+                "Successfully saved nbt into file '${file.name}'"
+            )
+        )
+    }
+
+    fun newLog(new: DoodleLog) {
+        if (logs.size > 10) logs.removeFirst()
+        logs.add(new)
+        currentLog = new
     }
 
     inner class Actions {
@@ -82,10 +97,7 @@ class NbtState (
         fun withLog(action: Actions.() -> Unit) {
             try { action() }
             catch (exception: DoodleException) {
-                val newLog = DoodleLog(DoodleLogLevel.FATAL, exception.title, exception.summary, exception.description)
-                if (logs.size > 10) logs.removeFirst()
-                logs.add(newLog)
-                currentLog = newLog
+                newLog(DoodleLog(DoodleLogLevel.FATAL, exception.title, exception.summary, exception.description))
                 exception.printStackTrace()
             }
             catch (exception: Exception) {
