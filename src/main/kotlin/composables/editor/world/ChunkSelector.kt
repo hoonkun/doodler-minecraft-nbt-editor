@@ -195,7 +195,7 @@ fun ColumnScope.ChunkSelector(
 
     var popup by remember { mutableStateOf<String?>(null) }
 
-    val maxYLimit = (if (dimension == WorldDimension.OVERWORLD) 319 else 124).toShort()
+    val maxYLimit = (if (dimension == WorldDimension.OVERWORLD) 319 else 128).toShort()
     val minYLimit = (if (dimension == WorldDimension.OVERWORLD) -64 else 0).toShort()
 
     val defaultYLimit = (if (dimension == WorldDimension.OVERWORLD) 319 else 89).toShort()
