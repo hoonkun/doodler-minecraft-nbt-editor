@@ -1,4 +1,4 @@
-package composables.global
+package composables.editor.world
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -15,6 +15,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import composables.global.JetBrainsMono
+import composables.global.ThemedColor
 import doodler.editor.Editor
 import composables.global.ThemedColor.Companion.selectable
 

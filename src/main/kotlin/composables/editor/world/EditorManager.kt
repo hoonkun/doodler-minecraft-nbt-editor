@@ -5,8 +5,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
 import composables.editor.NbtEditor
-import composables.global.EditorTabs
-import composables.global.TabData
 import doodler.editor.AnvilNbtEditor
 import doodler.editor.EditorManager
 import doodler.editor.McaEditor
