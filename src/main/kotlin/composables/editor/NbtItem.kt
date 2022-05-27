@@ -59,7 +59,12 @@ private fun TagTypeIndicatorWrapper(selected: Boolean, content: @Composable BoxS
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
-private fun NbtActionButtonWrapper(disabled: Boolean, onClick: MouseClickScope.() -> Unit, content: @Composable BoxScope.() -> Unit) {
+private fun NbtActionButtonWrapper(
+    disabled: Boolean,
+    onClick: MouseClickScope.() -> Unit,
+    onRightClick: MouseClickScope.() -> Unit = { },
+    content: @Composable BoxScope.() -> Unit
+) {
     var hover by remember { mutableStateOf(false) }
 
     Box (
@@ -67,7 +72,10 @@ private fun NbtActionButtonWrapper(disabled: Boolean, onClick: MouseClickScope.(
             .wrapContentSize()
             .onPointerEvent(PointerEventType.Enter) { if (!disabled) hover = true }
             .onPointerEvent(PointerEventType.Exit) { if (!disabled) hover = false }
-            .mouseClickable(onClick = if (disabled) ({ }) else onClick)
+            .mouseClickable {
+                if (buttons.isPrimaryPressed && !disabled) onClick()
+                else if (buttons.isSecondaryPressed) onRightClick()
+            }
             .padding(top = 5.dp, bottom = 5.dp)
             .background(
                 if (hover) ThemedColor.from(Color.Black, alpha = 30)
@@ -164,9 +172,10 @@ fun TagCreationButton(holderTag: AnyTag?, type: TagType, actions: NbtState.Actio
 fun NbtActionButton(
     disabled: Boolean,
     onClick: MouseClickScope.() -> Unit = { },
+    onRightClick: MouseClickScope.() -> Unit = { },
     content: @Composable () -> Unit
 ) {
-    NbtActionButtonWrapper (disabled, onClick) {
+    NbtActionButtonWrapper (disabled, onClick, onRightClick) {
         content()
     }
 }

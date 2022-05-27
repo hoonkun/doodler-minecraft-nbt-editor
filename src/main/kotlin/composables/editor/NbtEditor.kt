@@ -259,7 +259,8 @@ fun ColumnScope.SaveActionColumn(
     ) actionColumn@{
         NbtActionButton(
             disabled = state.actions.history.lastActionUid == state.lastSaveUid,
-            onClick = { state.actions.withLog { state.save() } }
+            onClick = { state.actions.withLog { state.save() } },
+            onRightClick = { state.actions.withLog { state.save() } }
         ) {
             NbtText("SAV", ThemedColor.Editor.Action.Save, 16.sp)
         }
