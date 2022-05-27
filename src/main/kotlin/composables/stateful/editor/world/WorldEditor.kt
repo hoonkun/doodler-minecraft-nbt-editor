@@ -1,10 +1,21 @@
 package composables.stateful.editor.world
 
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
+import androidx.compose.material.BottomAppBar
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
+import androidx.compose.material.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
 import composables.stateless.editor.*
+import composables.themed.ThemedColor
+import composables.themed.border
 import doodler.editor.McaEditor
 import doodler.editor.StandaloneNbtEditor
 import doodler.editor.states.rememberWorldEditorState
@@ -86,4 +97,78 @@ fun WorldEditor(
             }
         }
     }
+}
+
+@Composable
+fun MainColumn(content: @Composable ColumnScope.() -> Unit) {
+    Column(modifier = Modifier.fillMaxSize(), content = content)
+}
+
+@Composable
+fun ColumnScope.TopBar(content: @Composable RowScope.() -> Unit) {
+    TopAppBar(
+        elevation = 0.dp,
+        backgroundColor = ThemedColor.ActionBar,
+        contentPadding = PaddingValues(start = 25.dp, top = 10.dp, bottom = 10.dp),
+        modifier = Modifier
+            .height(60.dp)
+            .zIndex(1f)
+            .drawBehind(border(bottom = Pair(1f, ThemedColor.TopBar))),
+        content = content
+    )
+}
+
+@Composable
+fun RowScope.TopBarText(text: String) {
+    Text(text, color = Color.White, fontSize = 25.sp)
+}
+
+@Composable
+fun ColumnScope.MainArea(content: @Composable RowScope.() -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f)
+            .background(ThemedColor.EditorArea)
+            .zIndex(0f),
+        content = content
+    )
+}
+
+@Composable
+fun RowScope.MainFiles(content: @Composable BoxScope.() -> Unit) {
+    Box(modifier = Modifier.fillMaxHeight().requiredWidth(400.dp).background(ThemedColor.TaskArea), content = content)
+}
+
+@Composable
+fun RowScope.MainContents(content: @Composable BoxScope.() -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxHeight()
+            .weight(0.7f),
+        content = content
+    )
+}
+
+@Composable
+fun ColumnScope.BottomBar(content: @Composable RowScope.() -> Unit) {
+    BottomAppBar(
+        elevation = 0.dp,
+        backgroundColor = ThemedColor.TaskArea,
+        contentPadding = PaddingValues(top = 0.dp, bottom = 0.dp, start = 25.dp, end = 25.dp),
+        modifier = Modifier
+            .height(40.dp)
+            .zIndex(1f)
+            .drawBehind(border(top = Pair(1f, ThemedColor.TopBarBorder))),
+        content = content
+    )
+}
+
+@Composable
+fun RowScope.BottomBarText(text: String) {
+    Text(
+        text,
+        color = ThemedColor.Copyright,
+        fontSize = 14.sp
+    )
 }
