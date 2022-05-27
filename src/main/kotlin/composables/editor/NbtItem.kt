@@ -482,7 +482,7 @@ fun RowScope.DoodleCreationContent(actions: NbtState.Actions, doodle: VirtualDoo
 
 private val nameTransformer: (AnnotatedString) -> Pair<Boolean, TransformedText> = { string ->
     val text = string.text
-    val checker = Regex("[^a-zA-Z0-9_]")
+    val checker = Regex("\\W")
     val invalids = checker.findAll(text).map {
         AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Selector.Invalid), it.range.first, it.range.last + 1)
     }.toList()
