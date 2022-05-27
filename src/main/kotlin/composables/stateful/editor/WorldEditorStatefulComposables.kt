@@ -82,10 +82,10 @@ fun WorldEditor(
     val onOpenRequest: (OpenRequest) -> Unit = handleRequest@ { request ->
         when (request) {
             is NbtOpenRequest -> {
-                if (states.editor.hasItem(request.target.ident)) {
-                    states.editor.select(request.target)
+                if (states.editor.hasItem(request.ident)) {
+                    states.editor.select(states.editor[request.ident]!!)
                 } else {
-                    states.editor.open(request.target)
+                    states.editor.open(StandaloneNbtItem.fromFile(request.file))
                 }
             }
             is AnvilOpenRequest -> {

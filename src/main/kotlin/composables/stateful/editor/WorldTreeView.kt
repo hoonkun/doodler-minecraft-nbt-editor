@@ -22,8 +22,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import composables.states.editor.world.EditorItem
-import composables.states.editor.world.StandaloneNbtItem
 import composables.themed.JetBrainsMono
 import composables.themed.ThemedColor
 import doodler.anvil.AnvilLocation
@@ -210,7 +208,7 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequ
                     selected = item
                     if (item !is FileItem) return@mouseClickable
                     when (item.file.extension) {
-                        "dat" -> onOpen(NbtOpenRequest(StandaloneNbtItem.fromFile(item.file)))
+                        "dat" -> onOpen(NbtOpenRequest(item.file))
                         "mca" -> onOpen(McaAnvilRequest(item.file.name.split(".").let { AnvilLocation(it[1].toInt(), it[2].toInt()) }, item.file))
                     }
                 }.height(height).fillMaxWidth()) {
@@ -379,8 +377,11 @@ class DirectoryItem(
 sealed class OpenRequest
 
 class NbtOpenRequest(
-    val target: EditorItem
-): OpenRequest()
+    val file: File
+): OpenRequest() {
+    val ident: String get() = file.absolutePath
+    val name: String get() = file.name
+}
 
 sealed class AnvilOpenRequest: OpenRequest()
 
