@@ -119,10 +119,11 @@ class NbtState (
         fun undo() {
             if (!canBeUndo) return
 
-            redoStack.add(undoStack.removeLast())
+            val action = undoStack.removeLast()
+            redoStack.add(action)
             updateFlags()
 
-            when (val action = redoStack.last()) {
+            when (action) {
                 is DeleteDoodleAction -> undoDelete(action)
                 is PasteDoodleAction -> undoPaste(action)
                 is CreateDoodleAction -> undoCreate(action)
@@ -134,10 +135,12 @@ class NbtState (
         fun redo() {
             if (!canBeRedo) return
 
-            undoStack.add(redoStack.removeLast())
+            val action = redoStack.removeLast()
+
+            undoStack.add(action)
             updateFlags()
 
-            when (val action = undoStack.last()) {
+            when (action) {
                 is DeleteDoodleAction -> redoDelete(action)
                 is PasteDoodleAction -> redoPaste(action)
                 is CreateDoodleAction -> redoCreate(action)
@@ -149,6 +152,8 @@ class NbtState (
         private fun updateFlags() {
             canBeUndo = undoStack.isNotEmpty()
             canBeRedo = redoStack.isNotEmpty()
+
+            lastActionUid = undoStack.lastOrNull()?.uid ?: 0L
         }
 
         private fun undoPaste(action: PasteDoodleAction) {
