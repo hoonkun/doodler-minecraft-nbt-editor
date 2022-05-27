@@ -490,7 +490,7 @@ fun BoxScope.ChunkSelectorProperties(
                             Box(
                                 modifier = Modifier
                                     .onPointerEvent(PointerEventType.Scroll) {
-                                        yLimit.value = (yLimit.value + this.currentEvent.changes[0].scrollDelta.y.toInt()).coerceIn(yRange).toShort()
+                                        yLimit.value = (yLimit.value - this.currentEvent.changes[0].scrollDelta.y.toInt()).coerceIn(yRange).toShort()
                                     }
                                     .padding(top = 3.dp, bottom = 3.dp)
                             ) {
