@@ -3,13 +3,8 @@ package doodler.minecraft
 import doodler.minecraft.structures.WorldDimension
 import doodler.minecraft.structures.WorldDimensionHierarchy
 import doodler.minecraft.structures.WorldHierarchy
-import doodler.nbt.Tag
-import doodler.nbt.TagType
-import doodler.nbt.extensions.byte
-import doodler.nbt.tag.CompoundTag
 import java.io.File
 import java.io.FileNotFoundException
-import java.nio.ByteBuffer
 
 class WorldUtils {
 
@@ -50,11 +45,6 @@ class WorldUtils {
                     )
                 )
             )
-        }
-
-        fun readLevel(bytes: ByteArray): CompoundTag {
-            val uncompressed = CompressUtils.GZip.decompress(bytes)
-            return Tag.read(TagType.TAG_COMPOUND, ByteBuffer.wrap(uncompressed).apply { byte; short; }, null, null).getAs()
         }
 
         private fun File.listIfExists(): List<File> {

@@ -20,6 +20,7 @@ import composables.global.border
 import doodler.editor.McaEditor
 import doodler.editor.StandaloneNbtEditor
 import doodler.editor.states.rememberWorldEditorState
+import doodler.minecraft.DatWorker
 import doodler.minecraft.WorldUtils
 import doodler.nbt.tag.CompoundTag
 import doodler.nbt.tag.StringTag
@@ -36,7 +37,7 @@ fun WorldEditor(
     if (states.worldSpec.tree == null)
         states.worldSpec.tree = WorldUtils.load(worldPath)
 
-    val levelInfo = WorldUtils.readLevel(states.worldSpec.requireTree.level.readBytes())["Data"]?.getAs<CompoundTag>()
+    val levelInfo = DatWorker.read(states.worldSpec.requireTree.level.readBytes())["Data"]?.getAs<CompoundTag>()
 
     if (states.worldSpec.name == null)
         states.worldSpec.name = levelInfo!!["LevelName"]

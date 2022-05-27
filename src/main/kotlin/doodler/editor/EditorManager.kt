@@ -5,7 +5,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateMap
 import composables.editor.world.AnvilOpenRequest
 import doodler.editor.states.NbtState
 import doodler.editor.states.SelectorState
-import doodler.minecraft.WorldUtils
+import doodler.minecraft.DatWorker
 import doodler.minecraft.structures.*
 import java.io.File
 
@@ -117,7 +117,7 @@ class StandaloneNbtEditor(
 
     companion object {
         fun fromFile(file: File): StandaloneNbtEditor =
-            StandaloneNbtEditor(NbtState.new(WorldUtils.readLevel(file.readBytes())), file)
+            StandaloneNbtEditor(NbtState.new(DatWorker.read(file.readBytes()), file, DatFileType), file)
     }
 }
 
