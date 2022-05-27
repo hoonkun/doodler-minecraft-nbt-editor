@@ -382,10 +382,11 @@ fun ColumnScope.ChunkSelector(
 
         val chunk = BlockLocation(x!!, z!!).toChunkLocation()
         val (chunkX, chunkZ) = chunk.toStringPair()
+        val chunkExists = chunks.contains(chunk)
 
         if (state.chunkXValue.text != chunkX) state.chunkXValue = TextFieldValue(chunkX)
         if (state.chunkZValue.text != chunkZ) state.chunkZValue = TextFieldValue(chunkZ)
-        if (state.selectedChunk != chunk) state.selectedChunk = chunk
+        if (state.selectedChunk != chunk && chunkExists) state.selectedChunk = chunk
     }
 
     var openPressed by remember { mutableStateOf(false) }
