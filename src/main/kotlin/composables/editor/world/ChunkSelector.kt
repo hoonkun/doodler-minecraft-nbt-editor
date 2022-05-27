@@ -511,6 +511,7 @@ fun BoxScope.ChunkSelectorProperties(
                                     fontFamily = JetBrainsMono
                                 )
                             }
+                            Text(" //scroll it!", color = ThemedColor.ChunkSelectorPropertyHint, fontFamily = JetBrainsMono)
                         }
                     }
                 }

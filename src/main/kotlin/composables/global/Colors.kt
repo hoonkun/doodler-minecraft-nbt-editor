@@ -33,6 +33,7 @@ class ThemedColor {
         val DocumentationDescription = Color(255, 255, 255, 145)
 
         val ChunkSelectorPropertyKey = Color(0xFF467CDA)
+        val ChunkSelectorPropertyHint = Color(0xFF808080)
 
         fun from(base: Color, red: Int? = null, green: Int? = null, blue: Int? = null, alpha: Int? = null) =
             Color(
