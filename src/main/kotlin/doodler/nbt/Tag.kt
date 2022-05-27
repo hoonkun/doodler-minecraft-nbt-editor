@@ -1,6 +1,6 @@
 package doodler.nbt
 
-import composables.states.editor.world.InternalAssertionException
+import doodler.doodle.InternalAssertionException
 import doodler.nbt.tag.*
 import doodler.nbt.TagType.*
 

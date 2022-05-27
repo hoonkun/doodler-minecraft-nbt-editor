@@ -1,4 +1,4 @@
-package composables.states.editor.world
+package doodler.doodle
 
 class DoodleManager(private val root: NbtDoodle) {
 

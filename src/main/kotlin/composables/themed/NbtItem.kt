@@ -24,11 +24,12 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import composables.states.editor.world.*
-import composables.states.editor.world.extensions.color
-import composables.states.editor.world.extensions.creationHint
-import composables.states.editor.world.extensions.shorten
-import composables.states.editor.world.extensions.transformer
+import doodler.doodle.extensions.color
+import doodler.doodle.extensions.creationHint
+import doodler.doodle.extensions.shorten
+import doodler.doodle.extensions.transformer
+import doodler.doodle.*
+import doodler.editor.states.NbtState
 import doodler.nbt.AnyTag
 import doodler.nbt.TagType
 

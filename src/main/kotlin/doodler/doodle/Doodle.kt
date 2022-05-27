@@ -1,10 +1,10 @@
-package composables.states.editor.world
+package doodler.doodle
 
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import composables.states.editor.world.extensions.displayName
-import composables.states.editor.world.extensions.doodle
-import composables.states.editor.world.extensions.replaceAt
+import doodler.doodle.extensions.displayName
+import doodler.doodle.extensions.doodle
+import doodler.extensions.replaceAt
 import doodler.nbt.AnyTag
 import doodler.nbt.TagType
 import doodler.nbt.tag.*

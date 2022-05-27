@@ -1,44 +1,18 @@
-package doodler.anvil
+package doodler.minecraft
 
-import doodler.anvil.Zlib.Companion.decompress
+import doodler.minecraft.structures.AnvilLocation
+import doodler.minecraft.structures.ChunkLocation
 import doodler.nbt.Tag
 import doodler.nbt.TagType
 import doodler.nbt.extensions.byte
 import doodler.nbt.tag.CompoundTag
 import java.nio.ByteBuffer
-import kotlin.math.floor
 
-data class BlockLocation(val x: Int, val z: Int) {
-    fun toChunkLocation(): ChunkLocation {
-        return ChunkLocation(floor(this.x / 16.0).toInt(), floor(this.z / 16.0).toInt())
-    }
-}
-data class AnvilLocation(val x: Int, val z: Int) {
-    fun validate(where: List<AnvilLocation>) = if (where.contains(this)) this else null
-}
-data class ChunkLocation(val x: Int, val z: Int) {
-    fun normalize(anvilLocation: AnvilLocation): ChunkLocation {
-        return ChunkLocation(x - 32 * anvilLocation.x, z - 32 * anvilLocation.z)
-    }
-    fun toAnvilLocation(): AnvilLocation {
-        return AnvilLocation(floor(this.x / 32.0).toInt(), floor(this.z / 32.0).toInt())
-    }
-    fun toStringPair(): Pair<String, String> = Pair("$x", "$z")
-}
-
-data class AnvilLocationSurroundings(
-    val base: AnvilLocation,
-    val left: AnvilLocation?,
-    val right: AnvilLocation?,
-    val above: AnvilLocation?,
-    val below: AnvilLocation?
-)
-
-fun Byte.u(): Int {
+private fun Byte.u(): Int {
     return this.toUByte().toInt()
 }
 
-class AnvilWorker {
+class McaWorker {
 
     companion object {
 
@@ -114,7 +88,7 @@ class AnvilWorker {
 
             if (compressionType.toInt() != 2) throw Exception("unsupported compression type '$compressionType'")
 
-            val chunkBuffer = ByteBuffer.wrap(decompress(compressed))
+            val chunkBuffer = ByteBuffer.wrap(CompressUtils.Zlib.decompress(compressed))
             chunkBuffer.byte
             chunkBuffer.short
 

@@ -14,10 +14,9 @@ import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import composables.states.editor.world.extensions.toReversedRange
-import doodler.anvil.*
-import doodler.file.CachedTerrainInfo
-import doodler.file.WorldDimensionTree
+import doodler.extensions.toReversedRange
+import doodler.minecraft.*
+import doodler.minecraft.structures.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.skia.*
@@ -27,7 +26,7 @@ import org.jetbrains.skiko.toBufferedImage
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.RegionPreview(
-    tree: WorldDimensionTree,
+    tree: WorldDimensionHierarchy,
     yLimit: Short,
     selected: ChunkLocation?,
     hasNbt: (ChunkLocation) -> Boolean,
@@ -56,9 +55,9 @@ fun BoxScope.RegionPreview(
     val nSelected = selected?.normalize(forceAnvilLocation ?: selected.toAnvilLocation())
 
     val load = load@ {
-        val bytes = tree[WorldDimensionTree.McaType.TERRAIN.pathName]
+        val bytes = tree[McaType.TERRAIN.pathName]
             .find { it.name == "r.${location.x}.${location.z}.mca" }?.readBytes() ?: return@load
-        val subChunks = AnvilWorker.loadChunksWith(bytes) { chunkLoc, tag ->
+        val subChunks = McaWorker.loadChunksWith(bytes) { chunkLoc, tag ->
             Pair(chunkLoc, SurfaceWorker.createSubChunk(tag))
         }
         val pixels = ByteArray(512 * 512 * 4)

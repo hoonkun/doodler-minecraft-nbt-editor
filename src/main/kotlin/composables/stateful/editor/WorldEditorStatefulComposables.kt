@@ -38,13 +38,20 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import composables.stateless.editor.*
 import composables.states.editor.world.*
-import composables.states.editor.world.extensions.toRanges
+import doodler.extensions.toRanges
 import composables.themed.*
-import doodler.anvil.*
-import doodler.file.WorldTree
-import doodler.file.IOUtils
-import doodler.file.WorldDimension
-import doodler.file.WorldDimensionTree
+import doodler.doodle.ActualDoodle
+import doodler.doodle.DoodleException
+import doodler.doodle.NbtDoodle
+import doodler.doodle.VirtualDoodle
+import doodler.doodle.structures.CannotBePasted
+import doodler.editor.*
+import doodler.editor.states.NbtState
+import doodler.editor.states.SelectorState
+import doodler.editor.states.rememberWorldEditorState
+import doodler.minecraft.*
+import doodler.minecraft.WorldUtils
+import doodler.minecraft.structures.*
 import keys
 import kotlinx.coroutines.launch
 import doodler.nbt.TagType
@@ -62,9 +69,9 @@ fun WorldEditor(
     val states = rememberWorldEditorState()
 
     if (states.worldSpec.tree == null)
-        states.worldSpec.tree = IOUtils.load(worldPath)
+        states.worldSpec.tree = WorldUtils.load(worldPath)
 
-    val levelInfo = IOUtils.readLevel(states.worldSpec.requireTree.level.readBytes())["Data"]?.getAs<CompoundTag>()
+    val levelInfo = WorldUtils.readLevel(states.worldSpec.requireTree.level.readBytes())["Data"]?.getAs<CompoundTag>()
 
     if (states.worldSpec.name == null)
         states.worldSpec.name = levelInfo!!["LevelName"]
@@ -82,25 +89,25 @@ fun WorldEditor(
     val onOpenRequest: (OpenRequest) -> Unit = handleRequest@ { request ->
         when (request) {
             is NbtOpenRequest -> {
-                if (states.editor.hasItem(request.ident)) {
-                    states.editor.select(states.editor[request.ident]!!)
+                if (states.manager.hasItem(request.ident)) {
+                    states.manager.select(states.manager[request.ident]!!)
                 } else {
-                    states.editor.open(StandaloneNbtItem.fromFile(request.file))
+                    states.manager.open(StandaloneNbtEditor.fromFile(request.file))
                 }
             }
             is AnvilOpenRequest -> {
-                if (!states.editor.hasItem("ANVIL_SELECTOR")) {
-                    states.editor.open(SelectorItem().apply { from = request })
+                if (!states.manager.hasItem("ANVIL_SELECTOR")) {
+                    states.manager.open(McaEditor().apply { from = request })
                 } else {
-                    val selector = states.editor["ANVIL_SELECTOR"] ?: return@handleRequest
-                    if (selector !is SelectorItem) return@handleRequest
+                    val selector = states.manager["ANVIL_SELECTOR"] ?: return@handleRequest
+                    if (selector !is McaEditor) return@handleRequest
 
-                    if (request is GlobalAnvilInitRequest && selector.baseGlobalMcaInfo != null)
+                    if (request is GlobalAnvilInitRequest && selector.globalMcaPayload != null)
                         selector.from = GlobalAnvilUpdateRequest()
                     else
                         selector.from = request
 
-                    states.editor.select(selector)
+                    states.manager.select(selector)
                 }
             }
         }
@@ -115,10 +122,10 @@ fun WorldEditor(
                     WorldTreeView(name, tree, onOpenRequest)
                 }
                 MainContents {
-                    if (states.editor.items.size == 0) {
+                    if (states.manager.editors.size == 0) {
                         NoFileSelected(name)
                     } else {
-                        Editor(levelInfo, tree, states.editor)
+                        Editor(levelInfo, tree, states.manager)
                     }
                 }
             }
@@ -134,30 +141,30 @@ fun WorldEditor(
 @Composable
 fun BoxScope.Editor(
     levelInfo: CompoundTag?,
-    tree: WorldTree,
-    editor: Editor,
+    tree: WorldHierarchy,
+    manager: EditorManager,
 ) {
     EditorRoot {
         SpeciesTabGroup(
-            editor.items.map { TabData(editor.selected == it, it) },
-            { editor.select(it) },
-            { editor.close(it) }
+            manager.editors.map { TabData(manager.selected == it, it) },
+            { manager.select(it) },
+            { manager.close(it) }
         )
         Editables {
-            val selected = editor.selected
-            if (selected is NbtItem) EditableField(selected)
-            else if (selected is SelectorItem) {
+            val selected = manager.selected
+            if (selected is NbtEditor) EditableField(selected)
+            else if (selected is McaEditor) {
                 McaMap(
                     levelInfo, selected, tree,
                     open@ { location, file ->
-                        if (editor.hasItem("${file.absolutePath}/c.${location.x}.${location.z}")) return@open
+                        if (manager.hasItem("${file.absolutePath}/c.${location.x}.${location.z}")) return@open
 
-                        val root = AnvilWorker.loadChunk(location, file.readBytes()) ?: return@open
-                        editor.open(AnvilNbtItem(NbtState.new(root), file, location))
+                        val root = McaWorker.loadChunk(location, file.readBytes()) ?: return@open
+                        manager.open(AnvilNbtEditor(NbtState.new(root), file, location))
                     },
                     update@ {
-                        val selector = editor["ANVIL_SELECTOR"] ?: return@update
-                        if (selector !is SelectorItem) return@update
+                        val selector = manager["ANVIL_SELECTOR"] ?: return@update
+                        if (selector !is McaEditor) return@update
 
                         selector.from = it
                     }
@@ -170,8 +177,8 @@ fun BoxScope.Editor(
 @Composable
 fun BoxScope.McaMap(
     levelInfo: CompoundTag?,
-    selector: SelectorItem,
-    tree: WorldTree,
+    selector: McaEditor,
+    tree: WorldHierarchy,
     onOpenRequest: (ChunkLocation, File) -> Unit,
     onUpdateRequest: (GlobalAnvilUpdateRequest) -> Unit
 ) {
@@ -185,11 +192,11 @@ fun BoxScope.McaMap(
 
                 val dimension = WorldDimension[file.parentFile.parentFile.name]
 
-                val type = WorldDimensionTree.McaType[file.parentFile.name]
+                val type = McaType[file.parentFile.name]
 
-                val chunks = AnvilWorker.loadChunkList(location, file.readBytes())
+                val chunks = McaWorker.loadChunkList(location, file.readBytes())
 
-                Pair(chunks, McaInfo(request, dimension, type, location, file))
+                Pair(chunks, McaPayload(request, dimension, type, location, file))
             }
             is GlobalAnvilInitRequest -> {
                 val player = levelInfo?.get("Player")?.getAs<CompoundTag>()
@@ -203,28 +210,28 @@ fun BoxScope.McaMap(
                     throw DoodleException("Internal Error", null, "Could not find dimension data of Player.")
 
                 val dimension = WorldDimension.namespace(dimensionId)
-                val type = WorldDimensionTree.McaType.TERRAIN
+                val type = McaType.TERRAIN
                 val initial = BlockLocation(x, z)
                 val location = initial.toChunkLocation().toAnvilLocation()
-                val file = tree[dimension][WorldDimensionTree.McaType.TERRAIN.pathName]
+                val file = tree[dimension][McaType.TERRAIN.pathName]
                     .find { it.name == "r.${location.x}.${location.z}.mca" }
                     ?: throw DoodleException("Internal Error", null, "Could not find terrain region file which player exists.")
 
-                val chunks = tree[dimension][WorldDimensionTree.McaType.TERRAIN.pathName].map {
+                val chunks = tree[dimension][McaType.TERRAIN.pathName].map {
                     val segments = it.name.split(".")
                     val itLocation = AnvilLocation(segments[1].toInt(), segments[2].toInt())
-                    AnvilWorker.loadChunkList(itLocation, it.readBytes())
+                    McaWorker.loadChunkList(itLocation, it.readBytes())
                 }.toList().flatten()
 
-                val mcaInfo = McaInfo(request, dimension, type, location, file, initial)
-                selector.baseGlobalMcaInfo = mcaInfo
+                val payload = McaPayload(request, dimension, type, location, file, initial)
+                selector.globalMcaPayload = payload
 
-                Pair(chunks, mcaInfo)
+                Pair(chunks, payload)
             }
             is GlobalAnvilUpdateRequest -> {
-                val base = selector.baseGlobalMcaInfo ?: throw DoodleException("Internal Error", null, "Failed to update null McaInfo")
+                val base = selector.globalMcaPayload ?: throw DoodleException("Internal Error", null, "Failed to update null McaInfo")
 
-                val newMcaInfo = McaInfo.from(
+                val newMcaInfo = McaPayload.from(
                     base,
                     request = request,
                     dimension = request.dimension,
@@ -237,12 +244,12 @@ fun BoxScope.McaMap(
                     initial = null
                 )
 
-                selector.baseGlobalMcaInfo = newMcaInfo
+                selector.globalMcaPayload = newMcaInfo
 
                 val chunks = tree[request.dimension ?: newMcaInfo.dimension][(request.type ?: newMcaInfo.type).pathName].map {
                     val segments = it.name.split(".")
                     val itLocation = AnvilLocation(segments[1].toInt(), segments[2].toInt())
-                    AnvilWorker.loadChunkList(itLocation, it.readBytes())
+                    McaWorker.loadChunkList(itLocation, it.readBytes())
                 }.toList().flatten()
 
                 Pair(chunks, newMcaInfo)
@@ -253,15 +260,10 @@ fun BoxScope.McaMap(
         }
     ) }
 
-    val (chunks, mcaInfo) = data
+    val (chunks, payload) = data
 
     Column(modifier = Modifier.fillMaxSize()) {
-        ChunkSelector(
-            chunks, tree, selector,
-            mcaInfo,
-            onOpenRequest,
-            onUpdateRequest
-        )
+        ChunkSelector(chunks, tree, selector, payload, onOpenRequest, onUpdateRequest)
     }
 }
 
@@ -269,31 +271,31 @@ fun BoxScope.McaMap(
 @Composable
 fun ColumnScope.ChunkSelector(
     chunks: List<ChunkLocation>,
-    tree: WorldTree,
-    selector: SelectorItem,
-    mcaInfo: McaInfo,
+    tree: WorldHierarchy,
+    selector: McaEditor,
+    payload: McaPayload,
     onSelectChunk: (ChunkLocation, File) -> Unit,
     onUpdateRequest: (GlobalAnvilUpdateRequest) -> Unit
 ) {
 
-    val dimension = mcaInfo.dimension
-    val type = mcaInfo.type
+    val dimension = payload.dimension
+    val type = payload.type
 
-    val state by remember(mcaInfo) { mutableStateOf(
-        when (mcaInfo.request) {
-            is McaAnvilRequest -> selector.mcaState[mcaInfo]
-                ?: SelectorState.new(chunks.firstOrNull { it.toAnvilLocation() == mcaInfo.location }).also { newState -> selector.mcaState[mcaInfo] = newState }
-            is GlobalAnvilInitRequest -> selector.globalState[mcaInfo.dimension]
-                ?: SelectorState.new(mcaInfo.initial).also { newState -> selector.globalState[mcaInfo.dimension] = newState }
-            is GlobalAnvilUpdateRequest -> selector.globalState[mcaInfo.dimension]
-                ?: SelectorState.new(initialChunk = null).also { newState -> selector.globalState[mcaInfo.dimension] = newState }
+    val state by remember(payload) { mutableStateOf(
+        when (payload.request) {
+            is McaAnvilRequest -> selector.mcaState[payload]
+                ?: SelectorState.new(chunks.firstOrNull { it.toAnvilLocation() == payload.location }).also { newState -> selector.mcaState[payload] = newState }
+            is GlobalAnvilInitRequest -> selector.globalState[payload.dimension]
+                ?: SelectorState.new(payload.initial).also { newState -> selector.globalState[payload.dimension] = newState }
+            is GlobalAnvilUpdateRequest -> selector.globalState[payload.dimension]
+                ?: SelectorState.new(initialChunk = null).also { newState -> selector.globalState[payload.dimension] = newState }
         }
     ) }
 
     val validChunkX = chunks.map { chunk -> chunk.x }
     val validChunkZ = chunks.map { chunk -> chunk.z }
 
-    val anvil by remember(state.selectedChunk, mcaInfo.location) { mutableStateOf(state.selectedChunk?.toAnvilLocation() ?: mcaInfo.location) }
+    val anvil by remember(state.selectedChunk, payload.location) { mutableStateOf(state.selectedChunk?.toAnvilLocation() ?: payload.location) }
     val anvils by remember(chunks) { mutableStateOf(chunks.map { it.toAnvilLocation() }.toSet().toList().sortedBy { "${it.x}.${it.z}" }) }
 
     val surroundings by remember(anvil, anvils) { mutableStateOf(
@@ -473,14 +475,14 @@ fun ColumnScope.ChunkSelector(
             }
         ) {
             val (_, _, isValid) = isChunkValid()
-            val regionExists = isRegionExists(state.selectedChunk?.toAnvilLocation() ?: mcaInfo.location)
+            val regionExists = isRegionExists(state.selectedChunk?.toAnvilLocation() ?: payload.location)
             CoordinateText("r.")
-            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.x ?: mcaInfo.location.x}", !isValid && !regionExists)
+            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.x ?: payload.location.x}", !isValid && !regionExists)
             CoordinateText(".")
-            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.z ?: mcaInfo.location.z}", !isValid && !regionExists)
+            CoordinateText("${state.selectedChunk?.toAnvilLocation()?.z ?: payload.location.z}", !isValid && !regionExists)
             CoordinateText(".mca")
         }
-        if (mcaInfo.request !is McaAnvilRequest) {
+        if (payload.request !is McaAnvilRequest) {
             Spacer(modifier = Modifier.width(10.dp))
             ChunkSelectorDropdown(
                 "type:",
@@ -567,7 +569,7 @@ fun ColumnScope.ChunkSelector(
                 { chunks.contains(it) },
                 rightClick = { visibleState.value = !visibleState.value },
                 loadStateChanged = { loadState.value = it },
-                forceAnvilLocation = if (mcaInfo.request is GlobalAnvilUpdateRequest) mcaInfo.location else null
+                forceAnvilLocation = if (payload.request is GlobalAnvilUpdateRequest) payload.location else null
             ) {
                 state.chunkXValue = TextFieldValue(it.x.toString())
                 state.chunkZValue = TextFieldValue(it.z.toString())
@@ -585,7 +587,7 @@ fun ColumnScope.ChunkSelector(
         SelectorDropdown(
             ident = "region",
             items = anvils.toMutableList().apply {
-                remove(state.selectedChunk?.toAnvilLocation() ?: mcaInfo.location)
+                remove(state.selectedChunk?.toAnvilLocation() ?: payload.location)
             },
             indent = 3,
             current = popup,
@@ -599,7 +601,7 @@ fun ColumnScope.ChunkSelector(
 
         SelectorDropdown(
             ident = "type",
-            items = WorldDimensionTree.McaType.values().toMutableList().apply { remove(type) },
+            items = McaType.values().toMutableList().apply { remove(type) },
             indent = 1,
             current = popup,
             onCloseRequest = { popup = null },
@@ -823,7 +825,7 @@ fun <T>SelectorDropdown(
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.EditableField(
-    species: NbtItem,
+    species: NbtEditor,
 ) {
     val coroutineScope = rememberCoroutineScope()
 

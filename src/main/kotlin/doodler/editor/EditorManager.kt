@@ -1,50 +1,48 @@
-package composables.states.editor.world
+package doodler.editor
 
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import composables.stateful.editor.AnvilOpenRequest
-import doodler.anvil.AnvilLocation
-import doodler.anvil.BlockLocation
-import doodler.anvil.ChunkLocation
-import doodler.file.IOUtils
-import doodler.file.WorldDimension
-import doodler.file.WorldDimensionTree
+import doodler.editor.states.NbtState
+import doodler.editor.states.SelectorState
+import doodler.minecraft.WorldUtils
+import doodler.minecraft.structures.*
 import java.io.File
 
-class Editor {
-    val items = mutableStateListOf<EditorItem>()
-    var selected by mutableStateOf<EditorItem?>(null)
+class EditorManager {
+    val editors = mutableStateListOf<Editor>()
+    var selected by mutableStateOf<Editor?>(null)
 
-    fun hasItem(ident: String) = items.find { it.ident == ident } != null
+    fun hasItem(ident: String) = editors.find { it.ident == ident } != null
 
-    operator fun get(ident: String): EditorItem? = items.find { it.ident == ident }
+    operator fun get(ident: String): Editor? = editors.find { it.ident == ident }
 
-    fun select(item: EditorItem) {
-        if (!items.any { item.ident == it.ident }) return
+    fun select(item: Editor) {
+        if (!editors.any { item.ident == it.ident }) return
         selected = item
     }
 
-    fun open(item: EditorItem) {
-        if (items.any { item.ident == it.ident }) return
-        items.add(item)
+    fun open(item: Editor) {
+        if (editors.any { item.ident == it.ident }) return
+        editors.add(item)
         selected = item
     }
 
-    fun close(item: EditorItem) {
-        if (item == selected) selected = items.getOrNull(items.indexOf(item) - 1)
-        items.remove(item)
+    fun close(item: Editor) {
+        if (item == selected) selected = editors.getOrNull(editors.indexOf(item) - 1)
+        editors.remove(item)
     }
 }
 
-abstract class EditorItem {
+abstract class Editor {
     abstract val ident: String
     abstract val name: String
 }
 
-data class McaInfo(
+data class McaPayload(
     val request: AnvilOpenRequest,
     val dimension: WorldDimension,
-    val type: WorldDimensionTree.McaType,
+    val type: McaType,
     val location: AnvilLocation,
     val file: File,
     val initial: BlockLocation? = null
@@ -53,7 +51,7 @@ data class McaInfo(
         if (this === other) return true
         if (javaClass != other?.javaClass) return false
 
-        other as McaInfo
+        other as McaPayload
 
         if (dimension != other.dimension) return false
         if (type != other.type) return false
@@ -75,14 +73,14 @@ data class McaInfo(
 
     companion object {
         fun from(
-            from: McaInfo,
+            from: McaPayload,
             request: AnvilOpenRequest,
             dimension: WorldDimension? = null,
-            type: WorldDimensionTree.McaType ? = null,
+            type: McaType? = null,
             location: AnvilLocation? = null,
             file: File? = null,
             initial: BlockLocation? = null
-        ) = McaInfo(
+        ) = McaPayload(
             request,
             dimension = dimension ?: from.dimension,
             type = type ?: from.type,
@@ -93,41 +91,41 @@ data class McaInfo(
     }
 }
 
-class SelectorItem(
+class McaEditor(
     val globalState: SnapshotStateMap<WorldDimension?, SelectorState> = mutableStateMapOf(),
-    val mcaState: SnapshotStateMap<McaInfo?, SelectorState> = mutableStateMapOf(),
+    val mcaState: SnapshotStateMap<McaPayload?, SelectorState> = mutableStateMapOf(),
     from: MutableState<AnvilOpenRequest?> = mutableStateOf(null)
-): EditorItem() {
+): Editor() {
     override val ident: String get() = "ANVIL_SELECTOR"
     override val name: String get() = "MAP"
 
     var from by from
 
-    var baseGlobalMcaInfo: McaInfo? = null
+    var globalMcaPayload: McaPayload? = null
 }
 
-abstract class NbtItem(
+abstract class NbtEditor(
     val state: NbtState
-): EditorItem()
+): Editor()
 
-class StandaloneNbtItem(
+class StandaloneNbtEditor(
     state: NbtState,
-    val file: File
-): NbtItem(state) {
+    private val file: File
+): NbtEditor(state) {
     override val ident: String get() = file.absolutePath
     override val name: String get() = file.name
 
     companion object {
-        fun fromFile(file: File): StandaloneNbtItem =
-            StandaloneNbtItem(NbtState.new(IOUtils.readLevel(file.readBytes())), file)
+        fun fromFile(file: File): StandaloneNbtEditor =
+            StandaloneNbtEditor(NbtState.new(WorldUtils.readLevel(file.readBytes())), file)
     }
 }
 
-class AnvilNbtItem(
+class AnvilNbtEditor(
     state: NbtState,
-    val anvil: File,
+    private val anvil: File,
     private val location: ChunkLocation
-): NbtItem(state) {
+): NbtEditor(state) {
     override val ident: String get() = "${anvil.absolutePath}/c.${location.x}.${location.z}"
     override val name: String get() = "[] c.${location.x}.${location.z}"
 }

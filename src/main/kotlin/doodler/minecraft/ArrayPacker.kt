@@ -1,15 +1,12 @@
-package doodler.anvil
+package doodler.minecraft
 
 import kotlin.math.pow
-
-typealias PackedBlocks = LongArray
-typealias Blocks = List<Short>
 
 class ArrayPacker {
 
     companion object {
 
-        fun PackedBlocks.unpack(paletteSize: Int): Blocks {
+        fun LongArray.unpack(paletteSize: Int): List<Short> {
             val bitsPerBlock = size(paletteSize)
             val bitMask = (2.0).pow(bitsPerBlock).toLong() - 1L
 

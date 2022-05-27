@@ -1,4 +1,4 @@
-package composables.states.editor.world.extensions
+package doodler.extensions
 
 fun <T>MutableList<T>.replaceAt(index: Int, to: T) {
     removeAt(index)

@@ -1,47 +1,14 @@
-package composables.states.editor.world
+package doodler.editor.states
 
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import androidx.compose.ui.text.input.TextFieldValue
-import composables.states.editor.world.extensions.removeRange
-import composables.states.editor.world.extensions.toRanges
-import doodler.anvil.BlockLocation
-import doodler.anvil.ChunkLocation
+import doodler.doodle.*
+import doodler.doodle.structures.*
+import doodler.extensions.removeRange
+import doodler.extensions.toRanges
 import doodler.nbt.TagType
 import doodler.nbt.tag.*
-
-class SelectorState (
-    selectedChunk: MutableState<ChunkLocation?> = mutableStateOf(null),
-    chunkXValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("")),
-    chunkZValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("")),
-    blockXValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("-")),
-    blockZValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("-")),
-) {
-    var selectedChunk by selectedChunk
-    var chunkXValue by chunkXValue
-    var chunkZValue by chunkZValue
-    var blockXValue by blockXValue
-    var blockZValue by blockZValue
-
-    companion object {
-        fun new(initialPos: BlockLocation?) =
-            SelectorState(
-                blockXValue = mutableStateOf(TextFieldValue(initialPos?.x?.toString() ?: "-")),
-                blockZValue = mutableStateOf(TextFieldValue(initialPos?.z?.toString() ?: "-")),
-                chunkXValue = mutableStateOf(TextFieldValue(initialPos?.toChunkLocation()?.x?.toString() ?: "-")),
-                chunkZValue = mutableStateOf(TextFieldValue(initialPos?.toChunkLocation()?.z?.toString() ?: "-")),
-                selectedChunk = mutableStateOf(initialPos?.toChunkLocation()),
-            )
-
-        fun new(initialChunk: ChunkLocation?) =
-            SelectorState(
-                chunkXValue = mutableStateOf(TextFieldValue(initialChunk?.x?.toString() ?: "-")),
-                chunkZValue = mutableStateOf(TextFieldValue(initialChunk?.z?.toString() ?: "-")),
-                selectedChunk = mutableStateOf(initialChunk),
-            )
-    }
-}
 
 class NbtState (
     val rootDoodle: NbtDoodle,
@@ -574,48 +541,9 @@ class NbtState (
 
     }
 
-}
-
-
-private enum class TagAttribute {
-    NAMED, UNNAMED, VALUE
-}
-
-sealed class PasteTarget
-
-object CannotBePasted: PasteTarget()
-
-object CanBePastedIntoCompound: PasteTarget()
-
-data class CanBePastedIntoList(val elementsType: TagType): PasteTarget()
-
-data class CanBePastedIntoArray(val arrayTagType: TagType): PasteTarget()
-
-
-abstract class DoodleAction
-
-class DeleteDoodleAction(
-    val deleted: List<ActualDoodle>
-): DoodleAction()
-
-class PasteDoodleAction(
-    val created: List<ActualDoodle>
-): DoodleAction()
-
-class CreateDoodleAction(
-    val created: ActualDoodle
-): DoodleAction()
-
-class EditDoodleAction(
-    val old: ActualDoodle,
-    val new: ActualDoodle
-): DoodleAction()
-
-class MoveDoodleAction(
-    val direction: DoodleMoveDirection,
-    val moved: List<ActualDoodle>
-): DoodleAction() {
-    enum class DoodleMoveDirection {
-        UP, DOWN
+    private enum class TagAttribute {
+        NAMED, UNNAMED, VALUE
     }
+
 }
+

@@ -20,25 +20,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import composables.themed.JetBrainsMono
 import composables.themed.ThemedColor
+import doodler.doodle.structures.DoodleLog
 import kotlinx.coroutines.delay
-
-enum class DoodleLogLevel {
-    FATAL;
-
-    fun backgroundColor(): Color {
-        return when (this) {
-            FATAL -> Color(87, 63, 53)
-        }
-    }
-
-}
-
-class DoodleLog(
-    val level: DoodleLogLevel,
-    val title: String,
-    val summary: String?,
-    val description: String?
-)
 
 @Composable
 fun LogText(text: String, alpha: Float, fontSize: TextUnit = 19.sp) {

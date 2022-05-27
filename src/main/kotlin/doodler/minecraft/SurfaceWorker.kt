@@ -1,6 +1,10 @@
-package doodler.anvil
+package doodler.minecraft
 
-import doodler.anvil.ArrayPacker.Companion.unpack
+import doodler.minecraft.ArrayPacker.Companion.unpack
+import doodler.minecraft.structures.ChunkLocation
+import doodler.minecraft.structures.SurfaceSubChunk
+import doodler.minecraft.structures.Surface
+import doodler.minecraft.structures.SurfaceBlock
 import doodler.nbt.tag.*
 
 class SurfaceWorker {
@@ -13,7 +17,7 @@ class SurfaceWorker {
                 .split(",\n")
                 .associate { it.split(":").let { pair -> "${pair[0].trim()}:${pair[1]}" to pair[2].trim() } }
 
-        fun createSubChunk(tag: CompoundTag): List<SubChunk> {
+        fun createSubChunk(tag: CompoundTag): List<SurfaceSubChunk> {
             val sections = tag["sections"]?.getAs<ListTag>()?.value ?: return listOf()
             return sections.map {
                 val blockStates = it.getAs<CompoundTag>()["block_states"]?.getAs<CompoundTag>() ?: return listOf()
@@ -21,11 +25,11 @@ class SurfaceWorker {
                 val palette = blockStates["palette"]?.getAs<ListTag>()?.value?.map { paletteEach ->
                     paletteEach.getAs<CompoundTag>()["Name"]?.getAs<StringTag>()?.value ?: return listOf()
                 } ?: throw Exception("Cannot create palette")
-                SubChunk(data, palette, it.getAs<CompoundTag>()["Y"]?.getAs<ByteTag>()?.value ?: return listOf())
+                SurfaceSubChunk(data, palette, it.getAs<CompoundTag>()["Y"]?.getAs<ByteTag>()?.value ?: return listOf())
             }.reversed()
         }
 
-        fun createSurface(location: ChunkLocation, input: List<SubChunk>, yLimit: Short, createValidY: Boolean = false): Surface {
+        fun createSurface(location: ChunkLocation, input: List<SurfaceSubChunk>, yLimit: Short, createValidY: Boolean = false): Surface {
             val resultBlocks = arrayOfNulls<SurfaceBlock>(256)
             val validYList = mutableSetOf<Short>()
 
@@ -97,59 +101,4 @@ class SurfaceWorker {
 
     }
 
-}
-
-data class SubChunk(
-    val data: LongArray,
-    val palette: List<String>,
-    val y: Byte
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as SubChunk
-
-        if (!data.contentEquals(other.data)) return false
-        if (palette != other.palette) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = data.contentHashCode()
-        result = 31 * result + palette.hashCode()
-        return result
-    }
-}
-
-data class Surface(
-    val position: ChunkLocation,
-    val blocks: List<SurfaceBlock>,
-    val validY: Set<Short>
-)
-
-data class SurfaceBlock(
-    val color: ByteArray,
-    val y: Short,
-    val isWater: Boolean = false,
-    var depth: Short = -99
-) {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (javaClass != other?.javaClass) return false
-
-        other as SurfaceBlock
-
-        if (!color.contentEquals(other.color)) return false
-        if (y != other.y) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        var result = color.contentHashCode()
-        result = 31 * result + y
-        return result
-    }
 }

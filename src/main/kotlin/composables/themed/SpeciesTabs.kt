@@ -15,14 +15,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import composables.states.editor.world.EditorItem
+import doodler.editor.Editor
 import composables.themed.ThemedColor.Companion.selectable
 
 @Composable
 fun ColumnScope.SpeciesTabGroup(
     tabs: List<TabData>,
-    onSelectEditable: (EditorItem) -> Unit,
-    onCloseEditable: (EditorItem) -> Unit
+    onSelectEditable: (Editor) -> Unit,
+    onCloseEditable: (Editor) -> Unit
 ) {
     val scrollState = rememberScrollState()
 
@@ -39,8 +39,8 @@ fun ColumnScope.SpeciesTabGroup(
 @Composable
 fun SpeciesTab(
     data: TabData,
-    onSelectEditable: (EditorItem) -> Unit,
-    onCloseEditable: (EditorItem) -> Unit
+    onSelectEditable: (Editor) -> Unit,
+    onCloseEditable: (Editor) -> Unit
 ) {
     var hover by remember { mutableStateOf(false) }
     var press by remember { mutableStateOf(false) }
@@ -113,5 +113,5 @@ private fun RowScope.CloseButton(onCloseEditable: () -> Unit) {
 
 class TabData(
     val selected: Boolean,
-    val item: EditorItem
+    val item: Editor
 )

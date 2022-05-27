@@ -1,14 +1,14 @@
-package composables.states.editor.world.extensions
+package doodler.doodle.extensions
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
-import composables.states.editor.world.ActualDoodle
-import composables.states.editor.world.InternalAssertionException
-import composables.states.editor.world.NbtDoodle
-import composables.states.editor.world.ValueDoodle
+import doodler.doodle.ActualDoodle
+import doodler.doodle.InternalAssertionException
+import doodler.doodle.NbtDoodle
+import doodler.doodle.ValueDoodle
 import composables.themed.ThemedColor
 import doodler.nbt.TagType
 import doodler.nbt.tag.*

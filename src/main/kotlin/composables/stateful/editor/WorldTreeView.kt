@@ -24,10 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import composables.themed.JetBrainsMono
 import composables.themed.ThemedColor
-import doodler.anvil.AnvilLocation
-import doodler.file.WorldDimension
-import doodler.file.WorldDimensionTree
-import doodler.file.WorldTree
+import doodler.minecraft.structures.*
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.ColorAlphaType
 import org.jetbrains.skia.ColorType
@@ -84,7 +81,7 @@ fun GlobalMapViewerButton(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun BoxScope.WorldTreeView(worldName: String, tree: WorldTree, onOpen: (OpenRequest) -> Unit) {
+fun BoxScope.WorldTreeView(worldName: String, tree: WorldHierarchy, onOpen: (OpenRequest) -> Unit) {
 
     val width = 400.dp
     val height = 45.dp
@@ -295,7 +292,7 @@ fun loadImageFile(file: File): ImageBitmap {
     return bitmap.toBufferedImage().toComposeImageBitmap()
 }
 
-fun createWorldTreeItems(tree: WorldTree): List<WorldTreeItem> {
+fun createWorldTreeItems(tree: WorldHierarchy): List<WorldTreeItem> {
     val result = mutableListOf<WorldTreeItem>()
     val rootDepth = 0
     val depth = 1
@@ -389,7 +386,7 @@ object GlobalAnvilInitRequest: AnvilOpenRequest()
 
 class GlobalAnvilUpdateRequest(
     val dimension: WorldDimension? = null,
-    val type: WorldDimensionTree.McaType? = null,
+    val type: McaType? = null,
     val region: AnvilLocation? = null
 ): AnvilOpenRequest()
 
