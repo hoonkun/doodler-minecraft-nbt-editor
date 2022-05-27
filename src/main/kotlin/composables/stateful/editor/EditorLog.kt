@@ -1,4 +1,4 @@
-package composables.states.editor.world
+package composables.stateful.editor
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -22,17 +22,6 @@ import composables.themed.JetBrainsMono
 import composables.themed.ThemedColor
 import doodler.doodle.structures.DoodleLog
 import kotlinx.coroutines.delay
-
-@Composable
-fun LogText(text: String, alpha: Float, fontSize: TextUnit = 19.sp) {
-    Text(
-        text,
-        color = Color.White,
-        fontFamily = JetBrainsMono,
-        fontSize = fontSize,
-        modifier = Modifier.alpha(alpha)
-    )
-}
 
 // TODO:
 //  이거 나중에, 에러가 연속해서 발생할 경우 이전 에러가 위쪽으로 살짝 올라가고 크기가 작아지는 모션같은거 넣어보자.
@@ -101,3 +90,15 @@ fun ColumnScope.Log(
         }
     }
 }
+
+@Composable
+fun LogText(text: String, alpha: Float, fontSize: TextUnit = 19.sp) {
+    Text(
+        text,
+        color = Color.White,
+        fontFamily = JetBrainsMono,
+        fontSize = fontSize,
+        modifier = Modifier.alpha(alpha)
+    )
+}
+

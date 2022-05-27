@@ -17,7 +17,6 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import composables.states.editor.world.*
 import doodler.extensions.toRanges
 import composables.themed.*
 import doodler.doodle.ActualDoodle
