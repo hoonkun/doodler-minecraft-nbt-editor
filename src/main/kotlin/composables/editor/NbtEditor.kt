@@ -1,4 +1,4 @@
-package composables.stateful.editor
+package composables.editor
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import doodler.extensions.toRanges
-import composables.themed.*
+import composables.global.*
 import doodler.doodle.ActualDoodle
 import doodler.doodle.NbtDoodle
 import doodler.doodle.VirtualDoodle

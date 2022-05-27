@@ -1,4 +1,4 @@
-package composables.stateful.main
+package composables.main
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.input.key.KeyEventType
@@ -8,8 +8,8 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
-import composables.stateful.editor.SingleEditor
-import composables.stateful.editor.world.WorldEditor
+import composables.editor.SingleEditor
+import composables.editor.world.WorldEditor
 import doodler.application.states.DoodlerApplicationState
 import doodler.application.structures.DoodlerWindow
 import keys

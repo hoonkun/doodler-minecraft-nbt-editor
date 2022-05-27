@@ -1,4 +1,4 @@
-package composables.stateful.editor.world
+package composables.editor.world
 
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column

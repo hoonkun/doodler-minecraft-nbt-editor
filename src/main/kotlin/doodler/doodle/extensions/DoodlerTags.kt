@@ -9,7 +9,7 @@ import doodler.doodle.ActualDoodle
 import doodler.doodle.InternalAssertionException
 import doodler.doodle.NbtDoodle
 import doodler.doodle.ValueDoodle
-import composables.themed.ThemedColor
+import composables.global.ThemedColor
 import doodler.nbt.TagType
 import doodler.nbt.tag.*
 

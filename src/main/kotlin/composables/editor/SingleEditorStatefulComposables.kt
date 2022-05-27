@@ -1,4 +1,4 @@
-package composables.stateful.editor
+package composables.editor
 
 import androidx.compose.runtime.Composable
 

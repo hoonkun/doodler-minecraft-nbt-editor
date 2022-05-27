@@ -1,4 +1,4 @@
-package composables.stateful.editor.world
+package composables.editor.world
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -22,8 +22,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import composables.themed.JetBrainsMono
-import composables.themed.ThemedColor
+import composables.global.JetBrainsMono
+import composables.global.ThemedColor
 import doodler.minecraft.structures.*
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.ColorAlphaType

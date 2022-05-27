@@ -1,4 +1,4 @@
-package composables.stateful.editor.world
+package composables.editor.world
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -14,9 +14,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import composables.themed.LinkText
-import composables.themed.ThemedColor
-import composables.themed.border
+import composables.global.LinkText
+import composables.global.ThemedColor
+import composables.global.border
 import doodler.editor.McaEditor
 import doodler.editor.StandaloneNbtEditor
 import doodler.editor.states.rememberWorldEditorState

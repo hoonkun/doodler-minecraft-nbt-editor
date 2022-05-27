@@ -1,4 +1,4 @@
-package composables.stateful.editor
+package composables.editor
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -18,8 +18,8 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import composables.themed.JetBrainsMono
-import composables.themed.ThemedColor
+import composables.global.JetBrainsMono
+import composables.global.ThemedColor
 import doodler.doodle.structures.DoodleLog
 import kotlinx.coroutines.delay
 

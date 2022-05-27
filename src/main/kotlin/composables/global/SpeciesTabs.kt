@@ -1,4 +1,4 @@
-package composables.themed
+package composables.global
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import doodler.editor.Editor
-import composables.themed.ThemedColor.Companion.selectable
+import composables.global.ThemedColor.Companion.selectable
 
 @Composable
 fun ColumnScope.EditorTabs(

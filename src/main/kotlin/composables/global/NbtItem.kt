@@ -1,4 +1,4 @@
-package composables.themed
+package composables.global
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*

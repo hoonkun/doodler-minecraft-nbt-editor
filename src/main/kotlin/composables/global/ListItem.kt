@@ -1,4 +1,4 @@
-package composables.themed
+package composables.global
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
-import composables.themed.ThemedColor.Companion.selectable
+import composables.global.ThemedColor.Companion.selectable
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable

@@ -1,4 +1,4 @@
-package composables.stateful.editor.world
+package composables.editor.world
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
@@ -40,8 +40,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import composables.stateful.editor.*
-import composables.themed.JetBrainsMono
-import composables.themed.ThemedColor
+import composables.global.JetBrainsMono
+import composables.global.ThemedColor
 import doodler.editor.McaEditor
 import doodler.editor.McaPayload
 import doodler.editor.states.SelectorState

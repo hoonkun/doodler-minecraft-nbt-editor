@@ -1,4 +1,4 @@
-package composables.themed
+package composables.global
 
 import androidx.compose.ui.text.platform.Font
 import androidx.compose.ui.text.font.FontFamily

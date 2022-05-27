@@ -1,4 +1,4 @@
-package composables.stateful.main
+package composables.main
 
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.background
@@ -11,8 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import composables.themed.LinkText
-import composables.themed.ThemedColor
+import composables.global.LinkText
+import composables.global.ThemedColor
 
 @Composable
 @Preview
