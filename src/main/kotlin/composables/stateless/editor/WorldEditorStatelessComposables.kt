@@ -28,32 +28,11 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import composables.themed.*
 import java.awt.Desktop
 import java.net.URI
 import java.util.*
 
-
-@Composable
-fun BoxScope.EditorManagerRoot(content: @Composable ColumnScope.() -> Unit) {
-    Column (
-        modifier = Modifier
-            .fillMaxSize()
-            .zIndex(100f),
-        content = content
-    )
-}
-
-@Composable
-fun ColumnScope.Editors(content: @Composable BoxScope.() -> Unit) {
-    Box (
-        modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f),
-        content = content
-    )
-}
 
 @Composable
 fun RowScope.CoordinateText(text: String, invalid: Boolean = false) {

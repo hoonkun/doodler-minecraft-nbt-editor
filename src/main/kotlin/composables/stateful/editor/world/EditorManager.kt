@@ -1,10 +1,10 @@
 package composables.stateful.editor.world
 
-import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import composables.stateful.editor.NbtEditor
-import composables.stateless.editor.EditorManagerRoot
-import composables.stateless.editor.Editors
 import composables.themed.EditorTabs
 import composables.themed.TabData
 import doodler.editor.AnvilNbtEditor
@@ -50,4 +50,24 @@ fun BoxScope.EditorManager(
             }
         }
     }
+}
+
+@Composable
+fun BoxScope.EditorManagerRoot(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .zIndex(100f),
+        content = content
+    )
+}
+
+@Composable
+fun ColumnScope.Editors(content: @Composable BoxScope.() -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .weight(1f),
+        content = content
+    )
 }
