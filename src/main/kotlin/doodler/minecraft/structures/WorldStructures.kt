@@ -93,3 +93,9 @@ class WorldSpecification (
     var name by name
     val requireName get() = name!!
 }
+
+sealed class WorldFileType
+
+class McaFileType(val location: ChunkLocation): WorldFileType()
+
+object DatFileType: WorldFileType()

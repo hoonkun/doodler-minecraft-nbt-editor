@@ -146,6 +146,7 @@ class ThemedColor {
 
                 val Delete = Color(227, 93, 48)
                 val Create = Color(64, 143, 227)
+                val Save = Color(0xff689f38)
 
                 val Background = Color(255, 255, 255, 25)
 
