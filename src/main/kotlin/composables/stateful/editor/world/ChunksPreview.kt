@@ -25,7 +25,7 @@ import org.jetbrains.skiko.toBufferedImage
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun BoxScope.RegionPreview(
+fun BoxScope.ChunksPreview(
     tree: WorldDimensionHierarchy,
     yLimit: Short,
     selected: ChunkLocation?,

@@ -19,7 +19,7 @@ import doodler.editor.Editor
 import composables.themed.ThemedColor.Companion.selectable
 
 @Composable
-fun ColumnScope.SpeciesTabGroup(
+fun ColumnScope.EditorTabs(
     tabs: List<TabData>,
     onSelectEditable: (Editor) -> Unit,
     onCloseEditable: (Editor) -> Unit
@@ -29,7 +29,7 @@ fun ColumnScope.SpeciesTabGroup(
     Box (modifier = Modifier.background(ThemedColor.TabBar).fillMaxWidth().wrapContentHeight().zIndex(10f)) {
         Row(modifier = Modifier.wrapContentWidth().horizontalScroll(scrollState)) {
             for (data in tabs) {
-                SpeciesTab(data, onSelectEditable, onCloseEditable)
+                EditorTab(data, onSelectEditable, onCloseEditable)
             }
         }
     }
@@ -37,7 +37,7 @@ fun ColumnScope.SpeciesTabGroup(
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun SpeciesTab(
+fun EditorTab(
     data: TabData,
     onSelectEditable: (Editor) -> Unit,
     onCloseEditable: (Editor) -> Unit

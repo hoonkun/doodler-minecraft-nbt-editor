@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.WindowState
 import composables.stateful.editor.SingleEditor
-import composables.stateful.editor.WorldEditor
+import composables.stateful.editor.world.WorldEditor
 import composables.stateless.main.NoWorldsSelected
 import composables.themed.ThemedColor
 

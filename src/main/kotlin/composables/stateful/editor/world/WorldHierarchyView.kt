@@ -1,4 +1,4 @@
-package composables.stateful.editor
+package composables.stateful.editor.world
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*

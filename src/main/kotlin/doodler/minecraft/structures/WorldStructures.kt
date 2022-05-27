@@ -7,9 +7,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.ImageBitmap
-import composables.stateful.editor.DirectoryItem
-import composables.stateful.editor.FileItem
-import composables.stateful.editor.WorldTreeItem
+import composables.stateful.editor.world.DirectoryItem
+import composables.stateful.editor.world.FileItem
+import composables.stateful.editor.world.WorldTreeItem
 import doodler.doodle.DoodleException
 import java.io.File
 

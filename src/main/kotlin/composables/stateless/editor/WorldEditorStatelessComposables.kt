@@ -113,7 +113,7 @@ fun RowScope.BottomBarText(text: String) {
 }
 
 @Composable
-fun BoxScope.EditorRoot(content: @Composable ColumnScope.() -> Unit) {
+fun BoxScope.EditorManagerRoot(content: @Composable ColumnScope.() -> Unit) {
     Column (
         modifier = Modifier
             .fillMaxSize()
@@ -123,7 +123,7 @@ fun BoxScope.EditorRoot(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-fun ColumnScope.Editables(content: @Composable BoxScope.() -> Unit) {
+fun ColumnScope.Editors(content: @Composable BoxScope.() -> Unit) {
     Box (
         modifier = Modifier
             .fillMaxWidth()

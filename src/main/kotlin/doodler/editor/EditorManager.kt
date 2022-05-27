@@ -2,7 +2,7 @@ package doodler.editor
 
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateMap
-import composables.stateful.editor.AnvilOpenRequest
+import composables.stateful.editor.world.AnvilOpenRequest
 import doodler.editor.states.NbtState
 import doodler.editor.states.SelectorState
 import doodler.minecraft.WorldUtils
