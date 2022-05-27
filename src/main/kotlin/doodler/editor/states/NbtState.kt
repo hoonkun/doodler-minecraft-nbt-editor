@@ -7,23 +7,33 @@ import doodler.doodle.*
 import doodler.doodle.structures.*
 import doodler.extensions.removeRange
 import doodler.extensions.toRanges
+import doodler.minecraft.DatWorker
+import doodler.minecraft.McaWorker
+import doodler.minecraft.structures.DatFileType
+import doodler.minecraft.structures.McaFileType
+import doodler.minecraft.structures.WorldFileType
 import doodler.nbt.TagType
 import doodler.nbt.tag.*
+import java.io.File
 
 class NbtState (
     val rootDoodle: NbtDoodle,
     ui: MutableState<DoodleUi>,
     val lazyState: LazyListState,
-    val logs: SnapshotStateList<DoodleLog>
+    val logs: SnapshotStateList<DoodleLog>,
+    private val file: File,
+    private val fileType: WorldFileType
 ) {
 
     companion object {
         fun new(
             rootTag: CompoundTag,
+            file: File,
+            fileType: WorldFileType,
             ui: MutableState<DoodleUi> = mutableStateOf(DoodleUi.new()),
             lazyState: LazyListState = LazyListState(),
             logs: SnapshotStateList<DoodleLog> = mutableStateListOf()
-        ) = NbtState(NbtDoodle(rootTag, -1, -1), ui, lazyState, logs)
+        ) = NbtState(NbtDoodle(rootTag, -1, -1), ui, lazyState, logs, file, fileType)
     }
 
     var ui by ui
@@ -35,6 +45,8 @@ class NbtState (
     val currentLogState: MutableState<DoodleLog?> = mutableStateOf(null)
     var currentLog by currentLogState
 
+    var lastSaveUid by mutableStateOf(0L)
+
     init {
         rootDoodle.expand()
 
@@ -42,6 +54,15 @@ class NbtState (
             .let { children -> children.size == 1 && children[0].let { it is NbtDoodle && it.tag.canHaveChildren } }
 
         if (hasOnlyChild) (rootDoodle.expandedItems[0] as NbtDoodle).expand()
+    }
+
+    fun save() {
+        when (fileType) {
+            DatFileType -> DatWorker.write(rootDoodle.tag.getAs(), file)
+            is McaFileType -> McaWorker.writeChunk(file, rootDoodle.tag.getAs(), fileType.location)
+        }
+
+        lastSaveUid = actions.history.lastActionUid
     }
 
     inner class Actions {
@@ -86,7 +107,10 @@ class NbtState (
         var canBeUndo: Boolean by mutableStateOf(false)
         var canBeRedo: Boolean by mutableStateOf(false)
 
+        var lastActionUid by mutableStateOf(0L)
+
         fun newAction(action: DoodleAction) {
+            lastActionUid = action.uid
             redoStack.clear()
             undoStack.add(action)
             updateFlags()
