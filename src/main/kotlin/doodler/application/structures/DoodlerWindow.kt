@@ -9,6 +9,10 @@ class DoodlerWindow(
     fun close() = close(this)
 
     enum class Type(val value: String) {
-        MAIN("main"), WORLD_EDITOR("world_editor"), SINGLE_EDITOR("single_editor")
+        MAIN("main"),
+        WORLD_EDITOR("world_editor"),
+        SINGLE_EDITOR("single_editor"),
+        WORLD_SELECTOR("world_selector"),
+        FILE_SELECTOR("file_selector")
     }
 }

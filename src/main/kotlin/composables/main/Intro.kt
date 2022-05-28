@@ -13,21 +13,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import composables.global.LinkText
 import composables.global.ThemedColor
-import doodler.minecraft.DatWorker
-import doodler.nbt.tag.CompoundTag
-import doodler.nbt.tag.StringTag
-import java.io.File
+import doodler.application.structures.DoodlerWindow
 
 @Composable
 @Preview
 fun Intro(
-    addWorld: (String, String) -> Unit,
-    addSingle: (String, String) -> Unit
+    onOpen: (DoodlerWindow.Type) -> Unit
 ) {
 
     MaterialTheme {
         Column(modifier = Modifier.fillMaxSize()) {
-            NoWorldsSelected(addWorld, addSingle)
+            NoWorldsSelected(onOpen)
             BottomAppBar(
                 elevation = 15.dp,
                 backgroundColor = ThemedColor.TaskArea,
@@ -47,8 +43,7 @@ fun Intro(
 
 @Composable
 fun ColumnScope.NoWorldsSelected(
-    onAddWorld: (String, String) -> Unit,
-    onAddSingle: (String, String) -> Unit
+    onOpen: (DoodlerWindow.Type) -> Unit
 ) {
     Column (
         modifier = Modifier
@@ -70,13 +65,7 @@ fun ColumnScope.NoWorldsSelected(
             fontSize = 40.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            val path = "/home/hoonkun/minecraft/data-directory/saves/doodler_test_world"
-            val levelName = DatWorker.read(File("$path/level.dat").readBytes())["Data"]
-                ?.getAs<CompoundTag>()
-                ?.get("LevelName")
-                ?.getAs<StringTag>()
-                ?.value ?: throw Exception("Invalid World Data")
-            onAddWorld(levelName, path)
+            onOpen(DoodlerWindow.Type.WORLD_SELECTOR)
         }
         LinkText(
             "...or single NBT file",
@@ -84,7 +73,7 @@ fun ColumnScope.NoWorldsSelected(
             fontSize = 22.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            onAddSingle("level.dat", "/home/hoonkun/minecraft/data-directory/saves/doodler_test_world/level.dat")
+            onOpen(DoodlerWindow.Type.FILE_SELECTOR)
         }
         Spacer(modifier = Modifier.height(80.dp))
         Text(
