@@ -8,7 +8,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
-import composables.editor.SingleEditor
+import composables.editor.single.SingleEditor
 import composables.editor.world.WorldEditor
 import doodler.application.states.DoodlerApplicationState
 import doodler.application.structures.DoodlerWindow

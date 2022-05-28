@@ -1,4 +1,4 @@
-package composables.editor
+package composables.editor.single
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import composables.editor.NbtEditor
 import composables.global.ThemedColor
 import doodler.editor.StandaloneNbtEditor
 import doodler.editor.states.NbtState
