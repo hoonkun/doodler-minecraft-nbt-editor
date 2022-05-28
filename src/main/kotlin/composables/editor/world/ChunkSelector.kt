@@ -361,6 +361,11 @@ fun ColumnScope.ChunkSelector(
             onMoveSurroundings = {
                 resetChunk()
                 onUpdateRequest(GlobalAnvilUpdateRequest(region = it))
+            },
+            invalidateCache = {
+                tree[dimension].cachedTerrains.filter { it.key.location == anvil }.keys.forEach {
+                    tree[dimension].cachedTerrains.remove(it)
+                }
             }
         ) { visibleState, loadState ->
             ChunksPreview(
@@ -430,13 +435,14 @@ fun ColumnScope.ChunkSelector(
 
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun BoxScope.ChunkSelectorProperties(
     yRange: IntRange,
     yLimit: MutableState<Short>,
     surroundings: AnvilLocationSurroundings,
     onMoveSurroundings: (AnvilLocation) -> Unit,
+    invalidateCache: () -> Unit,
     content: @Composable BoxScope.(MutableState<Boolean>, MutableState<Boolean>) -> Unit
 ) {
 
@@ -445,7 +451,11 @@ fun BoxScope.ChunkSelectorProperties(
     val visibleState = remember { mutableStateOf(false) }
     val loadState = remember { mutableStateOf(false) }
 
-    Box(modifier = Modifier.wrapContentSize().requiredSizeIn(minWidth = 600.dp, minHeight = 600.dp).align(Alignment.Center)) {
+    val size = 700f
+    val scaleY = 0.6f
+    val offset = -1 * size * (1f - scaleY)
+
+    Box(modifier = Modifier.wrapContentSize().requiredSizeIn(minWidth = size.dp, minHeight = size.dp).align(Alignment.Center)) {
         content(visibleState, loadState)
 
         AnimatedVisibility(
@@ -456,16 +466,16 @@ fun BoxScope.ChunkSelectorProperties(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 Box(
-                    modifier = Modifier.align(alignment).requiredSize(600.dp)
+                    modifier = Modifier.align(alignment).requiredSize(size.dp)
                 ) {
                     Box(
-                        modifier = Modifier.fillMaxSize().scale(scaleX = 1f, scaleY = 0.5f)
-                            .absoluteOffset(y = (-300).dp)
+                        modifier = Modifier.fillMaxSize().scale(scaleX = 1f, scaleY = scaleY)
+                            .absoluteOffset(y = offset.dp)
                             .background(
                                 Brush.radialGradient(
                                     listOf(Color.Black, Color.Transparent),
                                     Offset.Zero,
-                                    radius = 600f
+                                    radius = size
                                 )
                             )
                             .align(alignment)
@@ -474,7 +484,7 @@ fun BoxScope.ChunkSelectorProperties(
                         modifier = Modifier
                             .width(350.dp)
                             .align(alignment)
-                            .padding(top = 10.dp, start = 20.dp)
+                            .padding(top = 10.dp, start = 15.dp)
                     ) {
                         Row(modifier = Modifier.fillMaxWidth()) {
                             ChunkInvestButton("above", surroundings.above, onMoveSurroundings)
@@ -486,7 +496,12 @@ fun BoxScope.ChunkSelectorProperties(
                         }
                         Spacer(modifier = Modifier.height(10.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("yLimit = ", color = ThemedColor.ChunkSelectorPropertyKey, fontFamily = JetBrainsMono)
+                            PropertyKeyText("loader = ")
+                            PropertyButton("reload") { invalidateCache() }
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            PropertyKeyText("yLimit = ")
                             Box(
                                 modifier = Modifier
                                     .onPointerEvent(PointerEventType.Scroll) {
@@ -521,23 +536,34 @@ fun BoxScope.ChunkSelectorProperties(
     }
 }
 
+@Composable
+fun PropertyKeyText(text: String) {
+    Text(text, color = ThemedColor.ChunkSelectorPropertyKey, fontFamily = JetBrainsMono, fontSize = 18.sp)
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun PropertyButton(text: String, onClick: MouseClickScope.() -> Unit) {
+    Box(
+        modifier = Modifier
+            .wrapContentSize()
+            .background(Color(88, 88, 88, 125), shape = RoundedCornerShape(2.dp))
+            .padding(start = 5.dp, end = 5.dp)
+            .mouseClickable(onClick = onClick)
+    ) {
+        Text(text, color = ThemedColor.Editor.Tag.General, fontFamily = JetBrainsMono, fontSize = 16.sp)
+    }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RowScope.ChunkInvestButton(direction: String, dest: AnvilLocation? = null, move: (AnvilLocation) -> Unit) {
     Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
-        Text("$direction = ", color = ThemedColor.ChunkSelectorPropertyKey, fontFamily = JetBrainsMono, fontSize = 18.sp)
+        PropertyKeyText("$direction = ")
         if (dest == null) {
             Text("null", color = ThemedColor.Editor.Tag.List, fontFamily = JetBrainsMono, fontSize = 18.sp)
         } else {
-            Box(
-                modifier = Modifier
-                    .wrapContentSize()
-                    .background(Color(88, 88, 88, 125), shape = RoundedCornerShape(2.dp))
-                    .padding(start = 5.dp, end = 5.dp)
-                    .mouseClickable { move(dest) }
-            ) {
-                Text("Go", color = ThemedColor.Editor.Tag.General, fontFamily = JetBrainsMono, fontSize = 16.sp)
-            }
+            PropertyButton("Go") { move(dest) }
         }
         Spacer(modifier = Modifier.width(20.dp))
     }

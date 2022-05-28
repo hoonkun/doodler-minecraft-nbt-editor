@@ -42,7 +42,7 @@ fun BoxScope.ChunksPreview(
 
     val terrainInfo = CachedTerrainInfo(yLimit, location)
 
-    val loaded by remember(tree.cachedTerrains[terrainInfo]) {
+    val loaded by remember(tree.cachedTerrains, terrainInfo, tree.cachedTerrains[terrainInfo]) {
         val newState = tree.cachedTerrains[terrainInfo] != null
         loadStateChanged(newState)
         mutableStateOf(newState)
@@ -127,7 +127,7 @@ fun BoxScope.ChunksPreview(
         }
     }
 
-    LaunchedEffect(tree.cachedTerrains, terrainInfo) {
+    LaunchedEffect(tree.cachedTerrains, terrainInfo, tree.cachedTerrains[terrainInfo]) {
         if (tree.cachedTerrains[terrainInfo] != null) return@LaunchedEffect
 
         withContext(Dispatchers.IO) {
