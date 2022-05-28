@@ -72,6 +72,7 @@ private fun NbtActionButtonWrapper(
     content: @Composable BoxScope.() -> Unit
 ) {
     var hover by remember { mutableStateOf(false) }
+    if (disabled) hover = false
 
     Box (
         modifier = Modifier
