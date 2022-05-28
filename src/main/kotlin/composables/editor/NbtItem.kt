@@ -12,6 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.*
@@ -460,14 +463,14 @@ fun RowScope.DoodleCreationContent(actions: NbtState.Actions, doodle: VirtualDoo
             }
         } else {
             if (doodle.type.isNumber() || doodle.type.isString())
-                ValueField(valueState, valueValidState, doodle.type, true)
+                ValueField(valueState, valueValidState, doodle.type, wide = true, focus = true)
             else
                 ExpandableValue(if (doodle.mode.isEdit()) value else doodle.type.creationHint(), true)
         }
     } else if (doodle is ValueCreationDoodle) {
         Index(intoIndex, true)
         Spacer(modifier = Modifier.width(10.dp))
-        ValueField(valueState, valueValidState, doodle.parent.tag.type.arrayElementType(), false)
+        ValueField(valueState, valueValidState, doodle.parent.tag.type.arrayElementType(), wide = false, focus = true)
     }
     Spacer(modifier = Modifier.weight(1f))
     NbtActionButtonWrapper(false, cancel) {
@@ -504,10 +507,17 @@ fun RowScope.TagField(
     color: Color,
     hint: String,
     transformation: (AnnotatedString) -> Pair<Boolean, TransformedText>,
-    wide: Boolean = true
+    wide: Boolean = true,
+    focus: Boolean = false
 ) {
     val (text, setText) = textState
     val (_, setValid) = validState
+
+    val requester = remember { FocusRequester() }
+
+    SideEffect {
+        if (focus) requester.requestFocus()
+    }
 
     Box(
         modifier = Modifier
@@ -525,7 +535,8 @@ fun RowScope.TagField(
                 val (valid, transformedText) = transformation(it)
                 setValid(valid)
                 transformedText
-            }
+            },
+            modifier = Modifier.let { if (focus) it.focusTarget().focusRequester(requester) else it }
         )
         if (text.isEmpty()) {
             Text(
@@ -546,8 +557,9 @@ fun RowScope.ValueField(
     validState: MutableState<Boolean>,
     type: TagType,
     wide: Boolean = true,
+    focus: Boolean = false
 ) {
-    TagField(textState, validState, type.color(), type.creationHint(), type.transformer(), wide)
+    TagField(textState, validState, type.color(), type.creationHint(), type.transformer(), wide, focus)
 }
 
 @Composable
@@ -556,7 +568,15 @@ fun RowScope.CreationField(
     validState: MutableState<Boolean>,
     content: @Composable RowScope.() -> Unit
 ) {
-    TagField(nameState, validState, ThemedColor.Editor.Tag.General, "Tag Name", nameTransformer, false)
+    TagField(
+        nameState,
+        validState,
+        ThemedColor.Editor.Tag.General,
+        "Tag Name",
+        nameTransformer,
+        wide = false,
+        focus = true
+    )
     Spacer(modifier = Modifier.width(20.dp))
     content()
 }
