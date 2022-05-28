@@ -100,6 +100,14 @@ fun BoxScope.NbtEditor(
         if (target != null) uiState.unFocusDirectly(target)
     }
 
+    if (creation != null) {
+        val index = doodles.indexOf(creation)
+        val firstIndex = lazyColumnState.firstVisibleItemIndex
+        val windowSize = lazyColumnState.layoutInfo.visibleItemsInfo.size
+        val invisible = index < firstIndex || index > firstIndex + windowSize
+        if (invisible) coroutineScope.launch { lazyColumnState.scrollToItem(index) }
+    }
+
     LazyColumn (state = lazyColumnState) {
         items(doodles, key = { item -> item.path }) { item ->
             if (item is ActualDoodle)
