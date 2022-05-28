@@ -11,7 +11,7 @@ class DoodlerApplicationState {
     }
 
     fun openNew(type: DoodlerWindow.Type, name: String, path: String) {
-        windows += createNewState(type, "doodler - $name(${if (type == DoodlerWindow.Type.WORLD_EDITOR) "world" else "single"})", path)
+        windows += createNewState(type, "doodler - $name [${if (type == DoodlerWindow.Type.WORLD_EDITOR) "world" else "single"}]", path)
     }
 
     fun exit() {

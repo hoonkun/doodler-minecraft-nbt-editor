@@ -35,7 +35,7 @@ fun DoodlerWindow(
             addWorld = { displayName, path -> appState.openNew(DoodlerWindow.Type.WORLD_EDITOR, displayName, path) },
             addSingle = { displayName, path -> appState.openNew(DoodlerWindow.Type.SINGLE_EDITOR, displayName, path) }
         )
-        DoodlerWindow.Type.WORLD_EDITOR -> WorldEditor("/home/hoonkun/minecraft/data-directory/saves/doodler_test_world")
+        DoodlerWindow.Type.WORLD_EDITOR -> WorldEditor(windowState.path ?: throw Exception("No path specified!"))
         DoodlerWindow.Type.SINGLE_EDITOR -> SingleEditor(windowState.path ?: throw Exception("No path specified!"))
     }
 }

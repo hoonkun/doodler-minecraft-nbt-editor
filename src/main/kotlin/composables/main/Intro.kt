@@ -13,6 +13,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import composables.global.LinkText
 import composables.global.ThemedColor
+import doodler.minecraft.DatWorker
+import doodler.nbt.tag.CompoundTag
+import doodler.nbt.tag.StringTag
+import java.io.File
 
 @Composable
 @Preview
@@ -66,7 +70,13 @@ fun ColumnScope.NoWorldsSelected(
             fontSize = 40.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            onAddWorld("", "")
+            val path = "/home/hoonkun/minecraft/data-directory/saves/doodler_test_world"
+            val levelName = DatWorker.read(File("$path/level.dat").readBytes())["Data"]
+                ?.getAs<CompoundTag>()
+                ?.get("LevelName")
+                ?.getAs<StringTag>()
+                ?.value ?: throw Exception("Invalid World Data")
+            onAddWorld(levelName, "/home/hoonkun/minecraft/data-directory/saves/doodler_test_world")
         }
         LinkText(
             "...or single NBT file",
