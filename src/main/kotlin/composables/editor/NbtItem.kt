@@ -1,4 +1,4 @@
-package composables.global
+package composables.editor
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
@@ -27,6 +27,9 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import composables.global.JetBrainsMono
+import composables.global.ThemedColor
+import composables.global.border
 import doodler.doodle.extensions.color
 import doodler.doodle.extensions.creationHint
 import doodler.doodle.extensions.shorten
@@ -291,13 +294,15 @@ fun ActualNbtItem(
     ItemRoot(
         modifier = Modifier
             .alpha(if (disabled) 0.4f else 1f)
-            .background(ThemedColor.Editor.item(
+            .background(
+                ThemedColor.Editor.item(
                 selected = selected,
                 pressed = state.pressed == doodle,
                 focused = state.focusedDirectly == doodle || state.focusedTree == doodle,
                 onCreationMode = onCreationMode,
                 alphaMultiplier = if (onCreationMode) 0.6f else 1.0f
-            ))
+            )
+            )
     ) {
         Row (
             verticalAlignment = Alignment.CenterVertically,
@@ -365,12 +370,14 @@ fun VirtualNbtItem(virtual: VirtualDoodle, state: NbtState) {
 
     ItemRoot(
         modifier = Modifier
-            .background(ThemedColor.Editor.item(
+            .background(
+                ThemedColor.Editor.item(
                 selected = true,
                 pressed = false,
                 focused = false,
                 onCreationMode = true
-            ))
+            )
+            )
     ) {
         Row (
             verticalAlignment = Alignment.CenterVertically,
