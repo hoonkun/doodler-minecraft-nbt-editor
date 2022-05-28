@@ -30,7 +30,7 @@ import doodler.nbt.TagType
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.NbtEditor(
-    species: NbtEditor,
+    species: NbtEditor
 ) {
     val coroutineScope = rememberCoroutineScope()
 

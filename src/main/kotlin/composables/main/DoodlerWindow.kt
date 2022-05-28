@@ -26,7 +26,12 @@ fun DoodlerWindow(
     },
     onCloseRequest = if (windowState.type == DoodlerWindow.Type.MAIN) appState::exit else windowState::close,
     state = WindowState(
-        size = if (windowState.type == DoodlerWindow.Type.MAIN) DpSize(700.dp, 650.dp) else DpSize(1400.dp, 1150.dp)
+        size =
+            when (windowState.type) {
+                DoodlerWindow.Type.MAIN -> DpSize(700.dp, 650.dp)
+                DoodlerWindow.Type.SINGLE_EDITOR -> DpSize(1000.dp, 1050.dp)
+                else -> DpSize(1400.dp, 1150.dp)
+            }
     ),
     title = windowState.title
 ) {

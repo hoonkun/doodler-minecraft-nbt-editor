@@ -76,7 +76,7 @@ fun ColumnScope.NoWorldsSelected(
                 ?.get("LevelName")
                 ?.getAs<StringTag>()
                 ?.value ?: throw Exception("Invalid World Data")
-            onAddWorld(levelName, "/home/hoonkun/minecraft/data-directory/saves/doodler_test_world")
+            onAddWorld(levelName, path)
         }
         LinkText(
             "...or single NBT file",
@@ -84,7 +84,7 @@ fun ColumnScope.NoWorldsSelected(
             fontSize = 22.sp,
             modifier = Modifier.align(Alignment.CenterHorizontally)
         ) {
-            onAddSingle("", "")
+            onAddSingle("level.dat", "/home/hoonkun/minecraft/data-directory/saves/doodler_test_world/level.dat")
         }
         Spacer(modifier = Modifier.height(80.dp))
         Text(
