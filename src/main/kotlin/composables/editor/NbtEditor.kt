@@ -10,8 +10,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
-import androidx.compose.ui.input.pointer.AwaitPointerEventScope
-import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
@@ -95,11 +93,6 @@ fun BoxScope.NbtEditor(
         }
     }
 
-    val onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit = {
-        val target = uiState.focusedDirectly
-        if (target != null) uiState.unFocusDirectly(target)
-    }
-
     if (creation != null) {
         val index = doodles.indexOf(creation)
         val firstIndex = lazyColumnState.firstVisibleItemIndex
@@ -144,9 +137,9 @@ fun BoxScope.NbtEditor(
             modifier = Modifier
                 .wrapContentSize()
         ) {
-            UndoRedoActionColumn(state, onToolBarMove)
+            UndoRedoActionColumn(state)
             Spacer(modifier = Modifier.height(20.dp))
-            IndexChangeActionColumn(state, onToolBarMove)
+            IndexChangeActionColumn(state)
         }
         Column(
             modifier = Modifier
@@ -155,19 +148,18 @@ fun BoxScope.NbtEditor(
         ) {
             SaveActionColumn(state)
             Spacer(modifier = Modifier.height(20.dp))
-            NormalActionColumn(state, onToolBarMove)
+            NormalActionColumn(state)
             Spacer(modifier = Modifier.height(20.dp))
-            CreateActionColumn(state, uiState.selected.firstOrNull() as? NbtDoodle, onToolBarMove)
+            CreateActionColumn(state, uiState.selected.firstOrNull() as? NbtDoodle)
         }
     }
 
 }
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ColumnScope.UndoRedoActionColumn(
-    state: NbtState,
-    onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
+    state: NbtState
 ) {
     val actions = state.actions
 
@@ -175,7 +167,6 @@ fun ColumnScope.UndoRedoActionColumn(
         modifier = Modifier
             .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
             .wrapContentSize()
-            .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
             .padding(5.dp)
     ) {
         NbtActionButton(disabled = !actions.history.canBeUndo, onClick = { actions.withLog { history.undo() } }) {
@@ -187,11 +178,10 @@ fun ColumnScope.UndoRedoActionColumn(
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ColumnScope.IndexChangeActionColumn(
-    state: NbtState,
-    onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
+    state: NbtState
 ) {
     val available =
         state.ui.selected.map { it.index }.toRanges().size == 1 &&
@@ -204,7 +194,6 @@ fun ColumnScope.IndexChangeActionColumn(
         modifier = Modifier
             .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
             .wrapContentSize()
-            .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
             .padding(5.dp)
     ) {
         NbtActionButton(
@@ -222,12 +211,10 @@ fun ColumnScope.IndexChangeActionColumn(
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ColumnScope.CreateActionColumn(
     state: NbtState,
-    selected: NbtDoodle?,
-    onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
+    selected: NbtDoodle?
 ) {
     val actions = state.actions
     val tag = selected?.tag ?: state.rootDoodle.tag
@@ -236,7 +223,6 @@ fun ColumnScope.CreateActionColumn(
         modifier = Modifier
             .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
             .wrapContentSize()
-            .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
             .padding(5.dp)
     ) {
         TagCreationButton(tag, TagType.TAG_BYTE, actions)
@@ -275,11 +261,10 @@ fun ColumnScope.SaveActionColumn(
     }
 }
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ColumnScope.NormalActionColumn(
-    state: NbtState,
-    onToolBarMove: AwaitPointerEventScope.(PointerEvent) -> Unit
+    state: NbtState
 ) {
     val actions = state.actions
 
@@ -289,7 +274,6 @@ fun ColumnScope.NormalActionColumn(
         modifier = Modifier
             .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
             .wrapContentSize()
-            .onPointerEvent(PointerEventType.Move, onEvent = onToolBarMove)
             .padding(5.dp)
     ) actionColumn@{
         NbtActionButton(
