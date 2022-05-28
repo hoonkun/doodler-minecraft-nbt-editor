@@ -41,6 +41,13 @@ fun BoxScope.NbtEditor(
     val uiState = state.ui
     val lazyColumnState = state.lazyState
 
+    val firstIndex by remember(lazyColumnState.firstVisibleItemIndex) {
+        mutableStateOf(lazyColumnState.firstVisibleItemIndex)
+    }
+    val windowSize by remember(lazyColumnState.firstVisibleItemIndex) {
+        mutableStateOf(lazyColumnState.layoutInfo.visibleItemsInfo.size)
+    }
+
     val onToggle: (ActualDoodle) -> Unit = click@ { doodle ->
         if (doodle !is NbtDoodle) return@click
         if (!doodle.tag.canHaveChildren) return@click
@@ -95,10 +102,10 @@ fun BoxScope.NbtEditor(
 
     if (creation != null) {
         val index = doodles.indexOf(creation)
-        val firstIndex = lazyColumnState.firstVisibleItemIndex
-        val windowSize = lazyColumnState.layoutInfo.visibleItemsInfo.size
-        val invisible = index < firstIndex || index > firstIndex + windowSize
-        if (invisible) coroutineScope.launch { lazyColumnState.scrollToItem(index) }
+        val invisible = index < firstIndex || index >= firstIndex + windowSize
+        if (invisible) coroutineScope.launch {
+            lazyColumnState.scrollToItem((index - windowSize / 2).coerceAtLeast(0))
+        }
     }
 
     LazyColumn (state = lazyColumnState) {
