@@ -6,4 +6,6 @@ class DoodleManager(private val root: NbtDoodle) {
 
     fun create(): List<Doodle> = root.children(true).also { cached = it }
 
+    fun size(): Int = root.sizeOfChildren(true)
+
 }

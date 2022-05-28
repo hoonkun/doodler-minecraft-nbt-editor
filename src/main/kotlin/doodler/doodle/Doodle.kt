@@ -163,6 +163,14 @@ class NbtDoodle (
         }
     }
 
+    fun sizeOfChildren(root: Boolean = false): Int {
+        var size = 0
+        if (!root) size++
+        size += expandedItems.sumOf { if (it is NbtDoodle) it.sizeOfChildren() else 1 }
+        size += if (creator?.mode == VirtualDoodle.VirtualMode.CREATE) 1 else 0
+        return size
+    }
+
     fun children(root: Boolean = false): List<Doodle> {
         return mutableListOf<Doodle>().apply {
             if (!root) add(this@NbtDoodle)

@@ -36,8 +36,9 @@ fun BoxScope.NbtEditor(
 
     val state = species.state
 
-    val doodles = state.doodles.create()
-    val creation = doodles.find { it is VirtualDoodle } as VirtualDoodle?
+    val doodles by remember(state.doodles.size()) { mutableStateOf(state.doodles.create()) }
+    val creation by remember(doodles) { mutableStateOf(doodles.find { it is VirtualDoodle } as? VirtualDoodle?) }
+
     val uiState = state.ui
     val lazyColumnState = state.lazyState
 
@@ -101,7 +102,7 @@ fun BoxScope.NbtEditor(
     }
 
     if (creation != null) {
-        val index = doodles.indexOf(creation)
+        val index = doodles.indexOf(creation!!)
         val invisible = index < firstIndex || index >= firstIndex + windowSize
         if (invisible) coroutineScope.launch {
             lazyColumnState.scrollToItem((index - windowSize / 2).coerceAtLeast(0))
@@ -116,7 +117,7 @@ fun BoxScope.NbtEditor(
                     uiState,
                     onToggle, onSelect, treeCollapse,
                     creation != null,
-                    creation != null && item != creation.parent
+                    creation != null && item != creation!!.parent
                 )
             else if (item is VirtualDoodle)
                 VirtualNbtItem(item, state)
