@@ -313,14 +313,15 @@ fun ColumnScope.NormalActionColumn(
 
 @Composable
 private fun BoxScope.SelectedInWholeFileIndicator(doodles: List<ActualDoodle>, selected: List<ActualDoodle>, scrollTo: (ActualDoodle) -> Unit) {
-    val fraction = 1f / (doodles.size - 1)
+    val size = 1f / doodles.size
+    val indexed = 1f / (doodles.size - 1)
 
     Box (
         modifier = Modifier.align(Alignment.TopEnd).fillMaxHeight().wrapContentWidth()
     ) {
         for (item in selected) {
-            val top = doodles.indexOf(item) * fraction
-            SelectedEach(item, top, fraction, scrollTo)
+            val top = doodles.indexOf(item) * indexed
+            SelectedEach(item, top, size, scrollTo)
         }
     }
 
@@ -328,12 +329,12 @@ private fun BoxScope.SelectedInWholeFileIndicator(doodles: List<ActualDoodle>, s
         modifier = Modifier.align(Alignment.TopEnd).fillMaxHeight().wrapContentWidth().alpha(0.5f)
     ) {
         for (item in selected) {
-            val top = doodles.indexOf(item) * fraction
+            val top = doodles.indexOf(item) * indexed
             Column (modifier = Modifier.zIndex(1000f).width(20.dp).align(Alignment.TopEnd)) {
                 if (top > 0) Spacer(modifier = Modifier.weight(top))
                 Box(
                     modifier = Modifier
-                        .fillMaxHeight(fraction)
+                        .fillMaxHeight(size)
                         .defaultMinSize(3.dp).fillMaxWidth()
                         .background(ThemedColor.Editor.ScrollIndicatorSelected)
                 ) {}
@@ -364,7 +365,7 @@ private fun BoxScope.SelectedEach(
                 .onPointerEvent(PointerEventType.Enter) { focused = true }
                 .onPointerEvent(PointerEventType.Exit) { focused = false }
                 .mouseClickable(onClick = { scrollTo(item) })
-        ) {}
+        )
         if (top < 1) Spacer(modifier = Modifier.weight(1 - top))
     }
 
