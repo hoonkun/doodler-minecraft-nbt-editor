@@ -52,16 +52,21 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
         )
     }
 
+    var haveToShift by remember { mutableStateOf(false) }
     var completeTargetFile by remember(candidateFiles) {
-        mutableStateOf(if (candidateFiles.size == 1) candidateFiles[0] else null)
+        val newState = if (candidateFiles.size == 1) candidateFiles[0] else null
+        if (newState != null) haveToShift = true
+        mutableStateOf(newState)
     }
-    val completingText by remember(completeTargetFile, value.text) {
-        if (completeTargetFile == null) return@remember mutableStateOf<String?>(null)
+    val completingText by remember(completeTargetFile, value.text, haveToShift) {
+        if (completeTargetFile == null) return@remember mutableStateOf("")
 
         val enteringFileName = value.text.substring(value.text.lastIndexOf('/') + 1, value.text.length)
         val lastFileName = completeTargetFile!!.name
 
-        mutableStateOf<String?>(lastFileName.substring(enteringFileName.length until lastFileName.length))
+        val remainingFileName = lastFileName.substring(enteringFileName.length until lastFileName.length)
+
+        mutableStateOf(remainingFileName)
     }
 
     val adjustedColumns = listOf(0, 0, 1, 0)
@@ -70,8 +75,8 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
         mutableStateOf(File("$basePath${value.text}").let { file -> if (file.exists()) file else null })
     }
 
-    val displayValue by remember(value, completingText) {
-        val newString = "${value.text}${completingText ?: ""}"
+    val displayValue by remember(value, completingText, haveToShift) {
+        val newString = "${value.text}${completingText}"
         mutableStateOf(TextFieldValue(
             AnnotatedString(
                 newString,
@@ -81,15 +86,21 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
                     newString.length
                 ))
             ),
-            selection = TextRange(value.selection.start)
+            selection = if (!haveToShift) value.selection else TextRange(value.selection.start + completingText.length)
         ))
     }
 
     val requester by remember { mutableStateOf(FocusRequester()) }
 
     val remap: (TextFieldValue) -> TextFieldValue = remap@ {
-        val newString = it.text.removeSuffix(completingText ?: "")
-        TextFieldValue(newString, selection = TextRange(it.selection.start.coerceAtMost(newString.length)))
+        val newString = it.text.removeSuffix(completingText)
+        TextFieldValue(
+            newString,
+            selection = TextRange(
+                it.selection.start.coerceAtMost(newString.length),
+                it.selection.end.coerceAtMost(newString.length)
+            )
+        )
     }
 
     val updateCandidateParent = updateCandidateParent@ {
@@ -107,7 +118,7 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
 
     val autoComplete = autoComplete@ {
         if (completeTargetFile == null) return@autoComplete false
-        val newValue = "${value.text}$completingText${if (completeTargetFile!!.isDirectory) "/" else ""}"
+        val newValue = "${value.text}${completingText}${if (completeTargetFile!!.isDirectory) "/" else ""}"
         value = TextFieldValue(
             newValue,
             selection = TextRange(newValue.length)
@@ -136,6 +147,7 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
                         if (noneSelected || firstFile) candidateFiles.last()
                         else candidateFiles[candidateFiles.indexOf(completeTargetFile) - 1]
                     }
+                haveToShift = true
             }
         } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
             if (!autoComplete() && selected != null && ctrl) onSelect(selected!!)
@@ -149,6 +161,7 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
 
     SideEffect {
         requester.requestFocus()
+        if (haveToShift) haveToShift = false
     }
 
     Column(modifier = Modifier.fillMaxSize().padding(top = 31.dp).requiredWidthIn(min = 790.dp)) {
