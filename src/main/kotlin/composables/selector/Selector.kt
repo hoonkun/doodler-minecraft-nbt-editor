@@ -37,6 +37,7 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
     var text by remember { mutableStateOf(TextFieldValue("/", selection = TextRange(1))) }
 
     var ctrl by remember { mutableStateOf(false) }
+    var shift by remember { mutableStateOf(false) }
 
     var candidateParentFile by remember { mutableStateOf(File("$basePath${text.text}")) }
     var candidateFiles by remember {
@@ -102,16 +103,22 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
     val onKeyEvent: (KeyEvent) -> Boolean = onKeyEvent@ {
         if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
             if (completeTargetFile != null && candidateFiles.size == 1) {
+                if (shift) return@onKeyEvent true
                 autoComplete()
             } else {
                 requester.requestFocus()
                 if (candidateFiles.isEmpty()) return@onKeyEvent true
                 val noneSelected = completeTargetFile == null
-                val lastFile =
-                    completeTargetFile?.absolutePath == candidateFiles.last().absolutePath
+                val lastFile = completeTargetFile?.absolutePath == candidateFiles.last().absolutePath
+                val firstFile = completeTargetFile?.absolutePath == candidateFiles.first().absolutePath
                 completeTargetFile =
-                    if (noneSelected || lastFile) candidateFiles[0]
-                    else candidateFiles[candidateFiles.indexOf(completeTargetFile) + 1]
+                    if (!shift) {
+                        if (noneSelected || lastFile) candidateFiles.first()
+                        else candidateFiles[candidateFiles.indexOf(completeTargetFile) + 1]
+                    } else {
+                        if (noneSelected || firstFile) candidateFiles.last()
+                        else candidateFiles[candidateFiles.indexOf(completeTargetFile) - 1]
+                    }
 
                 val enteringFileName = text.text.substring(text.text.lastIndexOf('/') + 1, text.text.length)
                 val lastFileName = completeTargetFile!!.name
@@ -121,6 +128,8 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
             if (!autoComplete() && selected != null && ctrl) onSelect(selected!!)
         } else if (it.key == Key.CtrlLeft || it.key == Key.CtrlRight) {
             ctrl = it.type == KeyEventType.KeyDown
+        } else if (it.key == Key.ShiftLeft || it.key == Key.ShiftRight) {
+            shift = it.type == KeyEventType.KeyDown
         }
         true
     }
