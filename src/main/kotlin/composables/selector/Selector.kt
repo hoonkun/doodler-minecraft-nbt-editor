@@ -192,7 +192,7 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
                     fontSize = 23.sp,
                     fontFamily = JetBrainsMono
                 ),
-                cursorBrush = SolidColor(ThemedColor.Editor.Tag.General),
+                cursorBrush = if (!haveToShift) SolidColor(ThemedColor.Editor.Tag.General) else SolidColor(Color.Transparent),
                 modifier = Modifier.weight(1f)
                     .onKeyEvent(onKeyEvent)
                     .focusRequester(requester),
