@@ -263,7 +263,11 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
                     for (dirsChunked in displayingDirectories) {
                         Row {
                             for (dir in dirsChunked) {
-                                CandidateText(dir.name, color = Color(0xFFFFC66D), dir == completeTargetFile)
+                                CandidateText(
+                                    dir.name,
+                                    color = Color(0xFFFFC66D),
+                                    dir == completeTargetFile && displayingDirectories.size != 1
+                                )
                                 Spacer(modifier = Modifier.width(15.dp))
                             }
                             for (dummy in 0 until adjustedColumns[dirsChunked.size - 1]) {
@@ -285,7 +289,7 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
                                 CandidateText(
                                     fileEach.name,
                                     color = ThemedColor.Editor.Tag.General,
-                                    fileEach == completeTargetFile
+                                    fileEach == completeTargetFile && displayingFiles.size != 1
                                 )
                                 Spacer(modifier = Modifier.width(15.dp))
                             }
@@ -305,15 +309,17 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
 
 @Composable
 fun RowScope.CandidateText(text: String, color: Color, focused: Boolean) {
-    Text(
-        text = text,
-        color = color,
-        fontFamily = JetBrainsMono,
-        fontSize = 18.sp,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.weight(1f).let { if (focused) it.background(Color(0x20FFFFFF)) else it }
-    )
+    Box(modifier = Modifier.weight(1f)) {
+        Text(
+            text = text,
+            color = color,
+            fontFamily = JetBrainsMono,
+            fontSize = 18.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.let { if (focused) it.background(Color(0x30FFFFFF)) else it }
+        )
+    }
 }
 
 @Composable
