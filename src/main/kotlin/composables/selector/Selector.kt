@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.isPrimaryPressed
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
@@ -51,6 +52,10 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
 
     var completeTargetFile by remember { mutableStateOf<File?>(null) }
     var completingText by remember { mutableStateOf<String?>(null) }
+
+    var inputMaxWidth by remember { mutableStateOf(0) }
+    var inputWidth by remember { mutableStateOf(0) }
+    var inputRightPadding by remember { mutableStateOf(0) }
 
     val adjustedColumns = listOf(0, 0, 1, 0)
 
@@ -120,9 +125,7 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
                         else candidateFiles[candidateFiles.indexOf(completeTargetFile) - 1]
                     }
 
-                val enteringFileName = text.text.substring(text.text.lastIndexOf('/') + 1, text.text.length)
-                val lastFileName = completeTargetFile!!.name
-                completingText = lastFileName.substring(enteringFileName.length until lastFileName.length)
+                updateCompletingText()
             }
         } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
             if (!autoComplete() && selected != null && ctrl) onSelect(selected!!)
@@ -158,11 +161,18 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Spacer(modifier = Modifier.width(15.dp))
-            Box(modifier = Modifier.weight(1f)) {
+            Box(
+                contentAlignment = Alignment.CenterStart,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .onGloballyPositioned { inputMaxWidth = it.size.width }
+            ) {
                 BasicTextField(
                     "${text.text}${completingText ?: ""}".let { TextFieldValue(it, selection = TextRange(it.length)) },
                     onValueChange = { },
                     readOnly = true,
+                    enabled = false,
                     textStyle = TextStyle(
                         color = ThemedColor.Editor.Tag.General,
                         fontSize = 23.sp,
@@ -172,23 +182,45 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
                     modifier = Modifier.fillMaxWidth().alpha(0.4f),
                     singleLine = true
                 )
-                BasicTextField(
-                    text,
-                    onValueChange = {
-                        text = it
-                        onTextValueUpdated(it)
-                    },
-                    textStyle = TextStyle(
-                        color = ThemedColor.Editor.Tag.General,
+                val offset =
+                    if ((inputWidth + inputRightPadding) >= inputMaxWidth) (-(inputWidth + inputRightPadding - inputMaxWidth)).dp
+                    else 0.dp
+                Box(modifier = Modifier.offset(x = offset).fillMaxHeight(), contentAlignment = Alignment.CenterStart) {
+                    BasicTextField(
+                        text,
+                        onValueChange = {
+                            text = it
+                            onTextValueUpdated(it)
+                        },
+                        textStyle = TextStyle(
+                            color = ThemedColor.Editor.Tag.General,
+                            fontSize = 23.sp,
+                            fontFamily = JetBrainsMono
+                        ),
+                        cursorBrush = SolidColor(ThemedColor.Editor.Tag.General),
+                        modifier = Modifier.wrapContentWidth()
+                            .onKeyEvent(onKeyEvent)
+                            .focusRequester(requester)
+                            .onGloballyPositioned {
+                                inputWidth = it.size.width
+                            },
+                        singleLine = true
+                    )
+                    Box(modifier = Modifier.width(-offset - 15.dp).fillMaxHeight().background(ThemedColor.EditorArea))
+                    if (-offset > 0.dp) {
+                        Box(modifier = Modifier.offset(x = -offset - 15.dp).width(15.dp).fillMaxHeight(0.8f).background(Color(32, 32, 32)))
+                    }
+                }
+                if (text.text.length > 25) {
+                    Text(
+                        completingText ?: "",
+                        fontFamily = JetBrainsMono,
                         fontSize = 23.sp,
-                        fontFamily = JetBrainsMono
-                    ),
-                    cursorBrush = SolidColor(ThemedColor.Editor.Tag.General),
-                    modifier = Modifier.fillMaxWidth()
-                        .onKeyEvent(onKeyEvent)
-                        .focusRequester(requester),
-                    singleLine = true
-                )
+                        modifier = Modifier.alpha(0f).onGloballyPositioned {
+                            inputRightPadding = it.size.width
+                        }
+                    )
+                }
             }
             Spacer(modifier = Modifier.width(15.dp))
             Box (
