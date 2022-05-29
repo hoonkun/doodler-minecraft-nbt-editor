@@ -10,6 +10,8 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import composables.editor.single.SingleEditor
 import composables.editor.world.WorldEditor
+import composables.selector.FileSelector
+import composables.selector.WorldSelector
 import doodler.application.states.DoodlerApplicationState
 import doodler.application.structures.DoodlerWindow
 import keys
@@ -30,17 +32,22 @@ fun DoodlerWindow(
             when (windowState.type) {
                 DoodlerWindow.Type.MAIN -> DpSize(700.dp, 650.dp)
                 DoodlerWindow.Type.SINGLE_EDITOR -> DpSize(1000.dp, 1050.dp)
+                DoodlerWindow.Type.WORLD_SELECTOR -> DpSize(850.dp, 500.dp)
+                DoodlerWindow.Type.FILE_SELECTOR -> DpSize(850.dp, 500.dp)
                 else -> DpSize(1400.dp, 1150.dp)
             }
     ),
     title = windowState.title
 ) {
     when (windowState.type) {
-        DoodlerWindow.Type.MAIN -> Intro(
-            addWorld = { displayName, path -> appState.openNew(DoodlerWindow.Type.WORLD_EDITOR, displayName, path) },
-            addSingle = { displayName, path -> appState.openNew(DoodlerWindow.Type.SINGLE_EDITOR, displayName, path) }
-        )
+        DoodlerWindow.Type.MAIN -> Intro { type -> appState.openNew(type, "Open...", "") }
         DoodlerWindow.Type.WORLD_EDITOR -> WorldEditor(windowState.path ?: throw Exception("No path specified!"))
         DoodlerWindow.Type.SINGLE_EDITOR -> SingleEditor(windowState.path ?: throw Exception("No path specified!"))
+        DoodlerWindow.Type.FILE_SELECTOR -> FileSelector(windowState) { displayName, path ->
+            appState.openNew(DoodlerWindow.Type.SINGLE_EDITOR, displayName, path)
+        }
+        DoodlerWindow.Type.WORLD_SELECTOR -> WorldSelector(windowState) { displayName, path ->
+            appState.openNew(DoodlerWindow.Type.WORLD_EDITOR, displayName, path)
+        }
     }
 }
