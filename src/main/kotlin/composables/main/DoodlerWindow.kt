@@ -33,6 +33,7 @@ fun DoodlerWindow(
                 DoodlerWindow.Type.MAIN -> DpSize(700.dp, 650.dp)
                 DoodlerWindow.Type.SINGLE_EDITOR -> DpSize(1000.dp, 1050.dp)
                 DoodlerWindow.Type.WORLD_SELECTOR -> DpSize(850.dp, 500.dp)
+                DoodlerWindow.Type.FILE_SELECTOR -> DpSize(850.dp, 500.dp)
                 else -> DpSize(1400.dp, 1150.dp)
             }
     ),
