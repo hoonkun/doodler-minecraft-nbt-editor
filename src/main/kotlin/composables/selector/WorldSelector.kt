@@ -30,7 +30,21 @@ fun WorldSelector(window: DoodlerWindow, onSelect: (String, String) -> Unit) {
         window.close()
     }
 
+    val selectable: (File) -> Boolean = selectable@ { file ->
+        val level = File("${file.absolutePath}/level.dat")
+        if (!level.exists()) return@selectable false
+
+        DatWorker.read(level.readBytes())["Data"]
+            ?.getAs<CompoundTag>()
+            ?.get("LevelName")
+            ?.getAs<StringTag>()
+            ?.value
+            ?: return@selectable false
+
+        true
+    }
+
     Box(modifier = Modifier.background(ThemedColor.EditorArea).padding(start = 30.dp, end = 30.dp).fillMaxSize()) {
-        Selector(onWorldSelect)
+        Selector(onWorldSelect, selectable)
     }
 }

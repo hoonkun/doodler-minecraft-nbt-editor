@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
@@ -32,7 +33,7 @@ import java.io.File
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
-fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
+fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolean = { true }) {
 
     val basePath by remember { mutableStateOf(System.getProperty("user.home")) }
     var value by remember { mutableStateOf(TextFieldValue("/", selection = TextRange(1))) }
@@ -74,6 +75,8 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
     val selected by remember(basePath, value.text) {
         mutableStateOf(File("$basePath${value.text}").let { file -> if (file.exists()) file else null })
     }
+
+    val selectable by remember(selected) { mutableStateOf(selected.let { if (it == null) false else validate(it) }) }
 
     val displayValue by remember(value, completingText, haveToShift) {
         val newString = "${value.text}${completingText}"
@@ -151,7 +154,7 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
                 haveToShift = true
             }
         } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-            if (!autoComplete() && selected != null && ctrl) onSelect(selected!!)
+            if (!autoComplete() && selected != null && selectable && ctrl) onSelect(selected!!)
         } else if (it.key == Key.CtrlLeft || it.key == Key.CtrlRight) {
             ctrl = it.type == KeyEventType.KeyDown
         } else if (it.key == Key.ShiftLeft || it.key == Key.ShiftRight) {
@@ -203,10 +206,12 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
             Box (
                 modifier = Modifier.width(80.dp).fillMaxHeight().padding(5.dp)
                     .mouseClickable {
+                        if (!selectable) return@mouseClickable
                         if (buttons.isPrimaryPressed && selected != null) {
                             onSelect(selected!!)
                         }
                     }
+                    .alpha(if (selectable) 1.0f else 0.6f)
             ) {
                 Box (modifier = Modifier.background(Color(0xff55783d), RoundedCornerShape(5.dp)).fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("Go!", fontFamily = JetBrainsMono, color = Color(0xFFCCCCCC), fontSize = 22.sp)
