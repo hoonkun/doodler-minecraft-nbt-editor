@@ -42,14 +42,19 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
     var shift by remember { mutableStateOf(false) }
 
     var candidateParentFile by remember { mutableStateOf(File("$basePath${value.text}")) }
-    val candidateFiles by remember(candidateParentFile, value, basePath) {
+    val filteredCandidateFiles by remember(candidateParentFile, value.text, basePath) {
         mutableStateOf(
             if (candidateParentFile.isDirectory)
                 candidateParentFile.listFiles().toList()
                     .filter { file -> file.absolutePath.contains("$basePath${value.text}") }
-                    .sortedBy { file -> file.name }
-                    .sortedBy { file -> if (file.isDirectory && !file.isFile) -1 else if (file.isFile) 1 else 2 }
             else listOf()
+        )
+    }
+    val candidateFiles by remember(filteredCandidateFiles.size) {
+        mutableStateOf(
+            filteredCandidateFiles
+                .sortedBy { file -> file.name }
+                .sortedBy { file -> if (file.isDirectory && !file.isFile) -1 else if (file.isFile) 1 else 2 }
         )
     }
 
@@ -217,45 +222,8 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
             }
         }
         Column (modifier = Modifier.padding(start = 15.dp, end = 15.dp)) {
-
             if (candidateParentFile.isDirectory) {
-                val columns = 4
-                val childDirectories = candidateFiles
-                    .filter { it.isDirectory && !it.isFile }
-                    .chunked(columns)
-                val childFiles = candidateFiles
-                    .filter { it.isFile || (!it.isDirectory && !it.isFile) }
-                    .chunked(columns)
-
-                val chunkedDirectoryIndex = childDirectories.indexOf(
-                    childDirectories.find { chunked -> chunked.find { it == completeTargetFile } != null }
-                ).minus(1).coerceIn(0, (childDirectories.size - 3).coerceAtLeast(0))
-                val chunkedFileIndex = childFiles.indexOf(
-                    childFiles.find { chunked -> chunked.find { it == completeTargetFile } != null }
-                ).minus(1).coerceIn(0, (childFiles.size - 3).coerceAtLeast(0))
-
-                val displayingDirectories = childDirectories.slice(chunkedDirectoryIndex until (chunkedDirectoryIndex + 3).coerceAtMost(childDirectories.size))
-                val displayingFiles = childFiles.slice(chunkedFileIndex until (chunkedFileIndex + 3).coerceAtMost(childFiles.size))
-
-                Spacer(modifier = Modifier.height(15.dp))
-
-                CandidateFiles(
-                    displayingDirectories,
-                    childDirectories,
-                    chunkedDirectoryIndex,
-                    completeTargetFile,
-                    "directories",
-                    Color(0xFFFFC66D)
-                )
-
-                CandidateFiles(
-                    displayingFiles,
-                    childFiles,
-                    chunkedFileIndex,
-                    completeTargetFile,
-                    "files",
-                    ThemedColor.Editor.Tag.General
-                )
+                Candidates(candidateFiles, completeTargetFile)
             }
         }
     }
@@ -289,6 +257,47 @@ fun ColumnScope.RemainingItems(list: List<List<File>>, startIndex: Int, color: C
             maxLines = 1
         )
     }
+}
+
+@Composable
+fun ColumnScope.Candidates(candidateFiles: List<File>, completeTarget: File?) {
+    val columns = 4
+    val childDirectories = candidateFiles
+        .filter { it.isDirectory && !it.isFile }
+        .chunked(columns)
+    val childFiles = candidateFiles
+        .filter { it.isFile || (!it.isDirectory && !it.isFile) }
+        .chunked(columns)
+
+    val chunkedDirectoryIndex = childDirectories.indexOf(
+        childDirectories.find { chunked -> chunked.find { it == completeTarget } != null }
+    ).minus(1).coerceIn(0, (childDirectories.size - 3).coerceAtLeast(0))
+    val chunkedFileIndex = childFiles.indexOf(
+        childFiles.find { chunked -> chunked.find { it == completeTarget } != null }
+    ).minus(1).coerceIn(0, (childFiles.size - 3).coerceAtLeast(0))
+
+    val displayingDirectories = childDirectories.slice(chunkedDirectoryIndex until (chunkedDirectoryIndex + 3).coerceAtMost(childDirectories.size))
+    val displayingFiles = childFiles.slice(chunkedFileIndex until (chunkedFileIndex + 3).coerceAtMost(childFiles.size))
+
+    Spacer(modifier = Modifier.height(15.dp))
+
+    CandidateFiles(
+        displayingDirectories,
+        childDirectories,
+        chunkedDirectoryIndex,
+        completeTarget,
+        "directories",
+        Color(0xFFFFC66D)
+    )
+
+    CandidateFiles(
+        displayingFiles,
+        childFiles,
+        chunkedFileIndex,
+        completeTarget,
+        "files",
+        ThemedColor.Editor.Tag.General
+    )
 }
 
 @Composable
