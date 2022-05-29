@@ -21,7 +21,10 @@ fun DoodlerWindow(
     appState: DoodlerApplicationState,
     windowState: DoodlerWindow
 ) = Window(
-    onPreviewKeyEvent = {
+    onPreviewKeyEvent = onPreviewKeyEvent@ {
+        if (windowState.type != DoodlerWindow.Type.WORLD_EDITOR && windowState.type != DoodlerWindow.Type.SINGLE_EDITOR)
+            return@onPreviewKeyEvent false
+
         if (it.type == KeyEventType.KeyDown) keys.add(it.key)
         else if (it.type == KeyEventType.KeyUp) keys.remove(it.key)
         false
