@@ -41,17 +41,28 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
     var shift by remember { mutableStateOf(false) }
 
     var candidateParentFile by remember { mutableStateOf(File("$basePath${text.text}")) }
-    var candidateFiles by remember {
+    val candidateFiles by remember(candidateParentFile, text, basePath) {
         mutableStateOf(
             if (candidateParentFile.isDirectory)
-                candidateParentFile.listFiles().toList().sortedBy { file -> file.name }
+                candidateParentFile.listFiles().toList()
+                    .filter { file -> file.absolutePath.contains("$basePath${text.text}") }
+                    .sortedBy { file -> file.name }
                     .sortedBy { file -> if (file.isDirectory && !file.isFile) -1 else if (file.isFile) 1 else 2 }
             else listOf()
         )
     }
 
-    var completeTargetFile by remember { mutableStateOf<File?>(null) }
-    var completingText by remember { mutableStateOf<String?>(null) }
+    var completeTargetFile by remember(candidateFiles) {
+        mutableStateOf(if (candidateFiles.size == 1) candidateFiles[0] else null)
+    }
+    val completingText by remember(completeTargetFile, text.text) {
+        if (completeTargetFile == null) return@remember mutableStateOf<String?>(null)
+
+        val enteringFileName = text.text.substring(text.text.lastIndexOf('/') + 1, text.text.length)
+        val lastFileName = completeTargetFile!!.name
+
+        mutableStateOf<String?>(lastFileName.substring(enteringFileName.length until lastFileName.length))
+    }
 
     var inputMaxWidth by remember { mutableStateOf(0) }
     var inputWidth by remember { mutableStateOf(0) }
@@ -59,37 +70,18 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
 
     val adjustedColumns = listOf(0, 0, 1, 0)
 
-    var selected by remember { mutableStateOf<File?>(candidateParentFile) }
+    val selected by remember(basePath, text.text) {
+        mutableStateOf(File("$basePath${text.text}").let { file -> if (file.exists()) file else null })
+    }
 
     val requester by remember { mutableStateOf(FocusRequester()) }
 
-    val updateCompletingText = {
-        val enteringFileName = text.text.substring(text.text.lastIndexOf('/') + 1, text.text.length)
-        val lastFileName = completeTargetFile!!.name
-        completingText = lastFileName.substring(enteringFileName.length until lastFileName.length)
-    }
+    val onTextValueUpdated: (TextFieldValue) -> Unit = onTextValueUpdated@ {
+        val path = "$basePath${text.text}"
+        if (path.endsWith(".")) return@onTextValueUpdated
 
-    val onTextValueUpdated: (TextFieldValue) -> Unit = {
-        val path = "$basePath${it.text}"
-        val newFile = File(path)
-        selected = newFile.let { file -> if (file.exists()) file else null }
-        if (!path.endsWith(".")) {
-            val newAutoCompleteFile = File(path.let { str -> str.substring(0, str.lastIndexOf('/')) })
-            if (newAutoCompleteFile.exists()) candidateParentFile = newAutoCompleteFile
-            candidateFiles =
-                if (candidateParentFile.isDirectory) candidateParentFile.listFiles().toList()
-                    .filter { file -> file.absolutePath.contains("$basePath${text.text}") }
-                    .sortedBy { file -> file.name }
-                    .sortedBy { file -> if (file.isDirectory && !file.isFile) -1 else if (file.isFile) 1 else 2 }
-                else listOf()
-        }
-        completeTargetFile =
-            if (candidateFiles.size == 1) candidateFiles[0]
-            else null
-        if (completeTargetFile == null) completingText = null
-        if (candidateFiles.size == 1) {
-            updateCompletingText()
-        }
+        val newAutoCompleteFile = File(path.let { str -> str.substring(0, str.lastIndexOf('/')) })
+        if (newAutoCompleteFile.exists()) candidateParentFile = newAutoCompleteFile
     }
 
     val autoComplete = autoComplete@ {
@@ -101,7 +93,6 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
         )
         onTextValueUpdated(text)
         completeTargetFile = null
-        completingText = null
         true
     }
 
@@ -124,8 +115,6 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
                         if (noneSelected || firstFile) candidateFiles.last()
                         else candidateFiles[candidateFiles.indexOf(completeTargetFile) - 1]
                     }
-
-                updateCompletingText()
             }
         } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
             if (!autoComplete() && selected != null && ctrl) onSelect(selected!!)
