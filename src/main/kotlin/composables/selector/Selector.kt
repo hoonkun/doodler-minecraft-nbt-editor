@@ -70,8 +70,6 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
         mutableStateOf(remainingFileName)
     }
 
-    val adjustedColumns = listOf(0, 0, 1, 0)
-
     val selected by remember(basePath, value.text) {
         mutableStateOf(File("$basePath${value.text}").let { file -> if (file.exists()) file else null })
     }
@@ -241,49 +239,23 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
 
                 Spacer(modifier = Modifier.height(15.dp))
 
-                if (displayingDirectories.isNotEmpty()) {
-                    for (dirsChunked in displayingDirectories) {
-                        Row {
-                            for (dir in dirsChunked) {
-                                CandidateText(
-                                    dir.name,
-                                    color = Color(0xFFFFC66D),
-                                    dir == completeTargetFile && displayingDirectories.flatten().size != 1
-                                )
-                                Spacer(modifier = Modifier.width(15.dp))
-                            }
-                            for (dummy in 0 until adjustedColumns[dirsChunked.size - 1]) {
-                                Spacer(modifier = Modifier.weight(1f))
-                                Spacer(modifier = Modifier.width(15.dp))
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(5.dp))
-                    }
-                    RemainingItems(childDirectories, chunkedDirectoryIndex, Color(0x90FFC66D))
+                CandidateFiles(
+                    displayingDirectories,
+                    childDirectories,
+                    chunkedDirectoryIndex,
+                    completeTargetFile,
+                    "directories",
+                    Color(0xFFFFC66D)
+                )
 
-                    Spacer(modifier = Modifier.height(25.dp))
-                }
-
-                if (displayingFiles.isNotEmpty()) {
-                    for (filesChunked in displayingFiles) {
-                        Row {
-                            for (fileEach in filesChunked) {
-                                CandidateText(
-                                    fileEach.name,
-                                    color = ThemedColor.Editor.Tag.General,
-                                    fileEach == completeTargetFile && displayingFiles.flatten().size != 1
-                                )
-                                Spacer(modifier = Modifier.width(15.dp))
-                            }
-                            for (dummy in 0 until adjustedColumns[filesChunked.size - 1]) {
-                                Spacer(modifier = Modifier.weight(1f))
-                                Spacer(modifier = Modifier.width(15.dp))
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(5.dp))
-                    }
-                    RemainingItems(childFiles, chunkedFileIndex, ThemedColor.from(ThemedColor.Editor.Tag.General, alpha = 144))
-                }
+                CandidateFiles(
+                    displayingFiles,
+                    childFiles,
+                    chunkedFileIndex,
+                    completeTargetFile,
+                    "files",
+                    ThemedColor.Editor.Tag.General
+                )
             }
         }
     }
@@ -305,16 +277,56 @@ fun RowScope.CandidateText(text: String, color: Color, focused: Boolean) {
 }
 
 @Composable
-fun RemainingItems(list: List<List<File>>, startIndex: Int, color: Color) {
+fun ColumnScope.RemainingItems(list: List<List<File>>, startIndex: Int, color: Color, type: String) {
     val lastIndex = (startIndex + 3).coerceAtMost(list.size)
     if (list.size > lastIndex) {
         val remaining = list.slice(lastIndex until list.size).sumOf { it.size }
         Text(
-            "...$remaining items more",
+            "...$remaining $type more",
             color = color,
             fontFamily = JetBrainsMono,
             fontSize = 18.sp,
             maxLines = 1
         )
     }
+}
+
+@Composable
+fun ColumnScope.CandidateFiles(
+    displayingChunkedFiles: List<List<File>>,
+    chunkedFiles: List<List<File>>,
+    chunkIndex: Int,
+    completeTarget: File?,
+    type: String,
+    color: Color
+) {
+    val adjustedColumns = listOf(0, 0, 1, 0)
+
+    if (displayingChunkedFiles.isEmpty()) return
+
+    for (dirsChunked in displayingChunkedFiles) {
+        Row {
+            for (dir in dirsChunked) {
+                CandidateText(
+                    dir.name,
+                    color = ThemedColor.from(color, alpha = 255),
+                    dir == completeTarget && displayingChunkedFiles.flatten().size != 1
+                )
+                Spacer(modifier = Modifier.width(15.dp))
+            }
+            for (dummy in 0 until adjustedColumns[dirsChunked.size - 1]) {
+                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.width(15.dp))
+            }
+        }
+        Spacer(modifier = Modifier.height(5.dp))
+    }
+    RemainingItems(
+        chunkedFiles,
+        chunkIndex,
+        ThemedColor.from(color, alpha = 144),
+        type
+    )
+
+    Spacer(modifier = Modifier.height(25.dp))
 }
