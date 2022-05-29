@@ -11,14 +11,14 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.isPrimaryPressed
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
@@ -35,17 +35,17 @@ import java.io.File
 fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
 
     val basePath by remember { mutableStateOf(System.getProperty("user.home")) }
-    var text by remember { mutableStateOf(TextFieldValue("/", selection = TextRange(1))) }
+    var value by remember { mutableStateOf(TextFieldValue("/", selection = TextRange(1))) }
 
     var ctrl by remember { mutableStateOf(false) }
     var shift by remember { mutableStateOf(false) }
 
-    var candidateParentFile by remember { mutableStateOf(File("$basePath${text.text}")) }
-    val candidateFiles by remember(candidateParentFile, text, basePath) {
+    var candidateParentFile by remember { mutableStateOf(File("$basePath${value.text}")) }
+    val candidateFiles by remember(candidateParentFile, value, basePath) {
         mutableStateOf(
             if (candidateParentFile.isDirectory)
                 candidateParentFile.listFiles().toList()
-                    .filter { file -> file.absolutePath.contains("$basePath${text.text}") }
+                    .filter { file -> file.absolutePath.contains("$basePath${value.text}") }
                     .sortedBy { file -> file.name }
                     .sortedBy { file -> if (file.isDirectory && !file.isFile) -1 else if (file.isFile) 1 else 2 }
             else listOf()
@@ -55,43 +55,64 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
     var completeTargetFile by remember(candidateFiles) {
         mutableStateOf(if (candidateFiles.size == 1) candidateFiles[0] else null)
     }
-    val completingText by remember(completeTargetFile, text.text) {
+    val completingText by remember(completeTargetFile, value.text) {
         if (completeTargetFile == null) return@remember mutableStateOf<String?>(null)
 
-        val enteringFileName = text.text.substring(text.text.lastIndexOf('/') + 1, text.text.length)
+        val enteringFileName = value.text.substring(value.text.lastIndexOf('/') + 1, value.text.length)
         val lastFileName = completeTargetFile!!.name
 
         mutableStateOf<String?>(lastFileName.substring(enteringFileName.length until lastFileName.length))
     }
 
-    var inputMaxWidth by remember { mutableStateOf(0) }
-    var inputWidth by remember { mutableStateOf(0) }
-    var inputRightPadding by remember { mutableStateOf(0) }
-
     val adjustedColumns = listOf(0, 0, 1, 0)
 
-    val selected by remember(basePath, text.text) {
-        mutableStateOf(File("$basePath${text.text}").let { file -> if (file.exists()) file else null })
+    val selected by remember(basePath, value.text) {
+        mutableStateOf(File("$basePath${value.text}").let { file -> if (file.exists()) file else null })
+    }
+
+    val displayValue by remember(value, completingText) {
+        val newString = "${value.text}${completingText ?: ""}"
+        mutableStateOf(TextFieldValue(
+            AnnotatedString(
+                newString,
+                listOf(AnnotatedString.Range(
+                    SpanStyle(color = ThemedColor.from(ThemedColor.Editor.Tag.General, alpha = 80)),
+                    value.text.length,
+                    newString.length
+                ))
+            ),
+            selection = TextRange(value.selection.start)
+        ))
     }
 
     val requester by remember { mutableStateOf(FocusRequester()) }
 
-    val onTextValueUpdated: (TextFieldValue) -> Unit = onTextValueUpdated@ {
-        val path = "$basePath${text.text}"
-        if (path.endsWith(".")) return@onTextValueUpdated
+    val remap: (TextFieldValue) -> TextFieldValue = remap@ {
+        val newString = it.text.removeSuffix(completingText ?: "")
+        TextFieldValue(newString, selection = TextRange(it.selection.start.coerceAtMost(newString.length)))
+    }
+
+    val updateCandidateParent = updateCandidateParent@ {
+        val path = "$basePath${value.text}"
+        if (path.endsWith(".")) return@updateCandidateParent
 
         val newAutoCompleteFile = File(path.let { str -> str.substring(0, str.lastIndexOf('/')) })
         if (newAutoCompleteFile.exists()) candidateParentFile = newAutoCompleteFile
     }
 
+    val onTextValueUpdated: (TextFieldValue) -> Unit = {
+        value = remap(it)
+        updateCandidateParent()
+    }
+
     val autoComplete = autoComplete@ {
         if (completeTargetFile == null) return@autoComplete false
-        val newValue = "${text.text}$completingText${if (completeTargetFile!!.isDirectory) "/" else ""}"
-        text = TextFieldValue(
+        val newValue = "${value.text}$completingText${if (completeTargetFile!!.isDirectory) "/" else ""}"
+        value = TextFieldValue(
             newValue,
             selection = TextRange(newValue.length)
         )
-        onTextValueUpdated(text)
+        updateCandidateParent()
         completeTargetFile = null
         true
     }
@@ -150,67 +171,20 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Spacer(modifier = Modifier.width(15.dp))
-            Box(
-                contentAlignment = Alignment.CenterStart,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
-                    .onGloballyPositioned { inputMaxWidth = it.size.width }
-            ) {
-                BasicTextField(
-                    "${text.text}${completingText ?: ""}".let { TextFieldValue(it, selection = TextRange(it.length)) },
-                    onValueChange = { },
-                    readOnly = true,
-                    enabled = false,
-                    textStyle = TextStyle(
-                        color = ThemedColor.Editor.Tag.General,
-                        fontSize = 23.sp,
-                        fontFamily = JetBrainsMono
-                    ),
-                    cursorBrush = SolidColor(Color.Transparent),
-                    modifier = Modifier.fillMaxWidth().alpha(0.4f),
-                    singleLine = true
-                )
-                val offset =
-                    if ((inputWidth + inputRightPadding) >= inputMaxWidth) (-(inputWidth + inputRightPadding - inputMaxWidth)).dp
-                    else 0.dp
-                Box(modifier = Modifier.offset(x = offset).fillMaxHeight(), contentAlignment = Alignment.CenterStart) {
-                    BasicTextField(
-                        text,
-                        onValueChange = {
-                            text = it
-                            onTextValueUpdated(it)
-                        },
-                        textStyle = TextStyle(
-                            color = ThemedColor.Editor.Tag.General,
-                            fontSize = 23.sp,
-                            fontFamily = JetBrainsMono
-                        ),
-                        cursorBrush = SolidColor(ThemedColor.Editor.Tag.General),
-                        modifier = Modifier.wrapContentWidth()
-                            .onKeyEvent(onKeyEvent)
-                            .focusRequester(requester)
-                            .onGloballyPositioned {
-                                inputWidth = it.size.width
-                            },
-                        singleLine = true
-                    )
-                    Box(modifier = Modifier.width(-offset - 15.dp).fillMaxHeight().background(ThemedColor.EditorArea))
-                    if (-offset > 0.dp) {
-                        Box(modifier = Modifier.offset(x = -offset - 15.dp).width(15.dp).fillMaxHeight(0.8f).background(Color(32, 32, 32)))
-                    }
-                }
-                if (text.text.length > 25) {
-                    Text(
-                        completingText ?: "",
-                        fontFamily = JetBrainsMono,
-                        fontSize = 23.sp,
-                        modifier = Modifier.alpha(0f).onGloballyPositioned {
-                            inputRightPadding = it.size.width
-                        }
-                    )
-                }
-            }
+            BasicTextField(
+                displayValue,
+                onValueChange = onTextValueUpdated,
+                textStyle = TextStyle(
+                    color = ThemedColor.Editor.Tag.General,
+                    fontSize = 23.sp,
+                    fontFamily = JetBrainsMono
+                ),
+                cursorBrush = SolidColor(ThemedColor.Editor.Tag.General),
+                modifier = Modifier.weight(1f)
+                    .onKeyEvent(onKeyEvent)
+                    .focusRequester(requester),
+                singleLine = true
+            )
             Spacer(modifier = Modifier.width(15.dp))
             Box (
                 modifier = Modifier.width(80.dp).fillMaxHeight().padding(5.dp)
