@@ -34,13 +34,18 @@ import java.io.File
 fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
 
     val basePath by remember { mutableStateOf(System.getProperty("user.home")) }
-    var text by remember { mutableStateOf(TextFieldValue("/")) }
+    var text by remember { mutableStateOf(TextFieldValue("/", selection = TextRange(1))) }
 
     var ctrl by remember { mutableStateOf(false) }
 
     var candidateParentFile by remember { mutableStateOf(File("$basePath${text.text}")) }
     var candidateFiles by remember {
-        mutableStateOf(if (candidateParentFile.isDirectory) candidateParentFile.listFiles().toList() else listOf())
+        mutableStateOf(
+            if (candidateParentFile.isDirectory)
+                candidateParentFile.listFiles().toList().sortedBy { file -> file.name }
+                    .sortedBy { file -> if (file.isDirectory && !file.isFile) -1 else if (file.isFile) 1 else 2 }
+            else listOf()
+        )
     }
 
     var completeTargetFile by remember { mutableStateOf<File?>(null) }
@@ -51,7 +56,6 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
     var selected by remember { mutableStateOf<File?>(candidateParentFile) }
 
     val requester by remember { mutableStateOf(FocusRequester()) }
-
 
     val updateCompletingText = {
         val enteringFileName = text.text.substring(text.text.lastIndexOf('/') + 1, text.text.length)
@@ -69,7 +73,8 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
             candidateFiles =
                 if (candidateParentFile.isDirectory) candidateParentFile.listFiles().toList()
                     .filter { file -> file.absolutePath.contains("$basePath${text.text}") }
-                    .sortedBy { file -> file.name }.sortedBy { file -> file.isFile }
+                    .sortedBy { file -> file.name }
+                    .sortedBy { file -> if (file.isDirectory && !file.isFile) -1 else if (file.isFile) 1 else 2 }
                 else listOf()
         }
         completeTargetFile =
@@ -94,6 +99,36 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
         true
     }
 
+    val onKeyEvent: (KeyEvent) -> Boolean = onKeyEvent@ {
+        if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
+            if (completeTargetFile != null && candidateFiles.size == 1) {
+                autoComplete()
+            } else {
+                requester.requestFocus()
+                if (candidateFiles.isEmpty()) return@onKeyEvent true
+                val noneSelected = completeTargetFile == null
+                val lastFile =
+                    completeTargetFile?.absolutePath == candidateFiles.last().absolutePath
+                completeTargetFile =
+                    if (noneSelected || lastFile) candidateFiles[0]
+                    else candidateFiles[candidateFiles.indexOf(completeTargetFile) + 1]
+
+                val enteringFileName = text.text.substring(text.text.lastIndexOf('/') + 1, text.text.length)
+                val lastFileName = completeTargetFile!!.name
+                completingText = lastFileName.substring(enteringFileName.length until lastFileName.length)
+            }
+        } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
+            if (!autoComplete() && selected != null && ctrl) onSelect(selected!!)
+        } else if (it.key == Key.CtrlLeft || it.key == Key.CtrlRight) {
+            ctrl = it.type == KeyEventType.KeyDown
+        }
+        true
+    }
+
+    SideEffect {
+        requester.requestFocus()
+    }
+
     Column(modifier = Modifier.fillMaxSize().padding(top = 31.dp).requiredWidthIn(min = 790.dp)) {
         Column (modifier = Modifier.padding(start = 15.dp, end = 15.dp)) {
             Text("/** you can use '..' to go parent directory */", color = Color(0xFF629755), fontFamily = JetBrainsMono, fontSize = 18.sp)
@@ -116,7 +151,7 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
             Spacer(modifier = Modifier.width(15.dp))
             Box(modifier = Modifier.weight(1f)) {
                 BasicTextField(
-                    "${text.text}${completingText ?: ""}",
+                    "${text.text}${completingText ?: ""}".let { TextFieldValue(it, selection = TextRange(it.length)) },
                     onValueChange = { },
                     readOnly = true,
                     textStyle = TextStyle(
@@ -141,31 +176,7 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
                     ),
                     cursorBrush = SolidColor(ThemedColor.Editor.Tag.General),
                     modifier = Modifier.fillMaxWidth()
-                        .onKeyEvent {
-                            if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-                                if (completeTargetFile != null && candidateFiles.size == 1) {
-                                    autoComplete()
-                                } else {
-                                    requester.requestFocus()
-                                    if (candidateFiles.isEmpty()) return@onKeyEvent true
-                                    val noneSelected = completeTargetFile == null
-                                    val lastFile =
-                                        completeTargetFile?.absolutePath == candidateFiles.last().absolutePath
-                                    completeTargetFile =
-                                        if (noneSelected || lastFile) candidateFiles[0]
-                                        else candidateFiles[candidateFiles.indexOf(completeTargetFile) + 1]
-
-                                    val enteringFileName = text.text.substring(text.text.lastIndexOf('/') + 1, text.text.length)
-                                    val lastFileName = completeTargetFile!!.name
-                                    completingText = lastFileName.substring(enteringFileName.length until lastFileName.length)
-                                }
-                            } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-                                if (!autoComplete() && selected != null && ctrl) onSelect(selected!!)
-                            } else if (it.key == Key.CtrlLeft || it.key == Key.CtrlRight) {
-                                ctrl = it.type == KeyEventType.KeyDown
-                            }
-                            true
-                        }
+                        .onKeyEvent(onKeyEvent)
                         .focusRequester(requester),
                     singleLine = true
                 )
@@ -185,69 +196,66 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
             }
         }
         Column (modifier = Modifier.padding(start = 15.dp, end = 15.dp)) {
-            val breakIfOverflow: @Composable (List<List<File>>, List<File>, Color) -> Boolean =
-                { entire, chunked, color ->
-                    if (entire.indexOf(chunked) == 3) {
-                        val remaining = entire.slice(3 until entire.size).sumOf { it.size }
-                        Text(
-                            "...$remaining items more",
-                            color = color,
-                            fontFamily = JetBrainsMono,
-                            fontSize = 18.sp,
-                            maxLines = 1
-                        )
-                    }
-                    entire.indexOf(chunked) == 3
-                }
 
             if (candidateParentFile.isDirectory) {
                 val columns = 4
                 val childDirectories = candidateFiles
-                    .filter { it.isDirectory }
-                    .sortedBy { it.name }
+                    .filter { it.isDirectory && !it.isFile }
                     .chunked(columns)
                 val childFiles = candidateFiles
-                    .filter { it.isFile }
-                    .sortedBy { it.name }
+                    .filter { it.isFile || (!it.isDirectory && !it.isFile) }
                     .chunked(columns)
+
+                val chunkedDirectoryIndex = childDirectories.indexOf(
+                    childDirectories.find { chunked -> chunked.find { it == completeTargetFile } != null }
+                ).minus(1).coerceIn(0, (childDirectories.size - 3).coerceAtLeast(0))
+                val chunkedFileIndex = childFiles.indexOf(
+                    childFiles.find { chunked -> chunked.find { it == completeTargetFile } != null }
+                ).minus(1).coerceIn(0, (childFiles.size - 3).coerceAtLeast(0))
+
+                val displayingDirectories = childDirectories.slice(chunkedDirectoryIndex until (chunkedDirectoryIndex + 3).coerceAtMost(childDirectories.size))
+                val displayingFiles = childFiles.slice(chunkedFileIndex until (chunkedFileIndex + 3).coerceAtMost(childFiles.size))
 
                 Spacer(modifier = Modifier.height(15.dp))
 
-                for (dirsChunked in childDirectories) {
-                    if (breakIfOverflow(childDirectories, dirsChunked, Color(0x90FFC66D))) break
-                    Row {
-                        for (dir in dirsChunked) {
-                            AutoCompleteText(dir.name, color = Color(0xFFFFC66D))
-                            Spacer(modifier = Modifier.width(15.dp))
+                if (displayingDirectories.isNotEmpty()) {
+                    for (dirsChunked in displayingDirectories) {
+                        Row {
+                            for (dir in dirsChunked) {
+                                CandidateText(dir.name, color = Color(0xFFFFC66D), dir == completeTargetFile)
+                                Spacer(modifier = Modifier.width(15.dp))
+                            }
+                            for (dummy in 0 until adjustedColumns[dirsChunked.size - 1]) {
+                                Spacer(modifier = Modifier.weight(1f))
+                                Spacer(modifier = Modifier.width(15.dp))
+                            }
                         }
-                        for (dummy in 0 until adjustedColumns[dirsChunked.size - 1]) {
-                            Spacer(modifier = Modifier.weight(1f))
-                            Spacer(modifier = Modifier.width(15.dp))
-                        }
+                        Spacer(modifier = Modifier.height(5.dp))
                     }
-                    Spacer(modifier = Modifier.height(5.dp))
+                    RemainingItems(childDirectories, chunkedDirectoryIndex, Color(0x90FFC66D))
+
+                    Spacer(modifier = Modifier.height(25.dp))
                 }
 
-                Spacer(modifier = Modifier.height(25.dp))
-
-                for (filesChunked in childFiles) {
-                    if (breakIfOverflow(
-                            childFiles,
-                            filesChunked,
-                            ThemedColor.from(ThemedColor.Editor.Tag.General, alpha = 144)
-                        )
-                    ) break
-                    Row {
-                        for (fileEach in filesChunked) {
-                            AutoCompleteText(fileEach.name, color = ThemedColor.Editor.Tag.General)
-                            Spacer(modifier = Modifier.width(15.dp))
+                if (displayingFiles.isNotEmpty()) {
+                    for (filesChunked in displayingFiles) {
+                        Row {
+                            for (fileEach in filesChunked) {
+                                CandidateText(
+                                    fileEach.name,
+                                    color = ThemedColor.Editor.Tag.General,
+                                    fileEach == completeTargetFile
+                                )
+                                Spacer(modifier = Modifier.width(15.dp))
+                            }
+                            for (dummy in 0 until adjustedColumns[filesChunked.size - 1]) {
+                                Spacer(modifier = Modifier.weight(1f))
+                                Spacer(modifier = Modifier.width(15.dp))
+                            }
                         }
-                        for (dummy in 0 until adjustedColumns[filesChunked.size - 1]) {
-                            Spacer(modifier = Modifier.weight(1f))
-                            Spacer(modifier = Modifier.width(15.dp))
-                        }
+                        Spacer(modifier = Modifier.height(5.dp))
                     }
-                    Spacer(modifier = Modifier.height(5.dp))
+                    RemainingItems(childFiles, chunkedFileIndex, ThemedColor.from(ThemedColor.Editor.Tag.General, alpha = 144))
                 }
             }
         }
@@ -255,6 +263,29 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
 }
 
 @Composable
-fun RowScope.AutoCompleteText(text: String, color: Color) {
-    Text(text = text, color = color, fontFamily = JetBrainsMono, fontSize = 18.sp, modifier = Modifier.weight(1f), maxLines = 1, overflow = TextOverflow.Ellipsis)
+fun RowScope.CandidateText(text: String, color: Color, focused: Boolean) {
+    Text(
+        text = text,
+        color = color,
+        fontFamily = JetBrainsMono,
+        fontSize = 18.sp,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.weight(1f).let { if (focused) it.background(Color(0x20FFFFFF)) else it }
+    )
+}
+
+@Composable
+fun RemainingItems(list: List<List<File>>, startIndex: Int, color: Color) {
+    val lastIndex = (startIndex + 3).coerceAtMost(list.size)
+    if (list.size > lastIndex) {
+        val remaining = list.slice(lastIndex until list.size).sumOf { it.size }
+        Text(
+            "...$remaining items more",
+            color = color,
+            fontFamily = JetBrainsMono,
+            fontSize = 18.sp,
+            maxLines = 1
+        )
+    }
 }
