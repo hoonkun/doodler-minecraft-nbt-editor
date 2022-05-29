@@ -111,7 +111,8 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
         if (newAutoCompleteFile.exists()) candidateParentFile = newAutoCompleteFile
     }
 
-    val onTextValueUpdated: (TextFieldValue) -> Unit = {
+    val onTextValueUpdated: (TextFieldValue) -> Unit = onTextValueUpdated@ {
+        if (it.text.isEmpty()) return@onTextValueUpdated
         value = remap(it)
         updateCandidateParent()
     }
