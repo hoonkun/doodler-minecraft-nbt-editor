@@ -242,7 +242,7 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
                                 CandidateText(
                                     dir.name,
                                     color = Color(0xFFFFC66D),
-                                    dir == completeTargetFile && displayingDirectories.size != 1
+                                    dir == completeTargetFile && displayingDirectories.flatten().size != 1
                                 )
                                 Spacer(modifier = Modifier.width(15.dp))
                             }
@@ -265,7 +265,7 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }) {
                                 CandidateText(
                                     fileEach.name,
                                     color = ThemedColor.Editor.Tag.General,
-                                    fileEach == completeTargetFile && displayingFiles.size != 1
+                                    fileEach == completeTargetFile && displayingFiles.flatten().size != 1
                                 )
                                 Spacer(modifier = Modifier.width(15.dp))
                             }
