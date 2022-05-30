@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -30,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import composables.global.JetBrainsMono
 import composables.global.ThemedColor
+import doodler.files.StateFile
+import doodler.files.stateFileOf
 import doodler.logger.DoodlerLogger
 import java.io.File
 
@@ -38,7 +41,6 @@ import java.io.File
 @Composable
 fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolean = { true }) {
     DoodlerLogger.recomposition("Selector")
-
 
     val basePath by remember { mutableStateOf(System.getProperty("user.home")) }
     var value by remember { mutableStateOf(TextFieldValue("/", selection = TextRange(1))) }
@@ -55,12 +57,12 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
             else listOf()
         )
     }
-    val candidateFiles by remember(filteredCandidateFiles.size) {
-        mutableStateOf(
-            filteredCandidateFiles
-                .sortedBy { file -> file.name }
-                .sortedBy { file -> if (file.isDirectory && !file.isFile) -1 else if (file.isFile) 1 else 2 }
-        )
+    val candidateFiles = remember(filteredCandidateFiles.size) {
+        filteredCandidateFiles
+            .sortedBy { file -> file.name }
+            .sortedBy { file -> if (file.isDirectory && !file.isFile) -1 else if (file.isFile) 1 else 2 }
+            .map { stateFileOf(it.name, it.absolutePath, it.isDirectory, it.isFile) }
+            .toMutableStateList()
     }
 
     var haveToShift by remember { mutableStateOf(false) }
@@ -231,11 +233,90 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
         }
         Column (modifier = Modifier.padding(start = 15.dp, end = 15.dp)) {
             if (candidateParentFile.isDirectory) {
-                Candidates(candidateFiles, completeTargetFile)
+                Spacer(modifier = Modifier.height(15.dp))
+
+                CandidateFiles(
+                    candidateFiles,
+                    completeTargetFile?.let { if (it.isDirectory && !it.isFile) it else null },
+                    "directories",
+                    Color(0xFFFFC66D)
+                ) { it.isDirectory && !it.isFile }
+
+                CandidateFiles(
+                    candidateFiles,
+                    completeTargetFile?.let { if (!it.isDirectory) it else null },
+                    "files",
+                    ThemedColor.Editor.Tag.General
+                ) { !it.isDirectory }
             }
         }
     }
 }
+
+@Composable
+fun ColumnScope.CandidateFiles(
+    targets: SnapshotStateList<StateFile>,
+    completeTarget: StateFile?,
+    type: String,
+    color: Color,
+    filter: (StateFile) -> Boolean
+) {
+    DoodlerLogger.recomposition("CandidateFiles")
+
+    val columns: Int by remember { derivedStateOf { 4 } }
+
+    val directories = remember(targets) { targets.filter(filter).toMutableStateList() }
+
+    val calculateRange: SnapshotStateList<StateFile>.() -> IntRange = {
+        this.indexOf(directories.find { it == completeTarget })
+            .coerceAtLeast(0)
+            .mod(columns).minus(1)
+            .coerceIn(0, (directories.size - 3).coerceAtLeast(0))
+            .times(columns)
+            .let { it until ((it + 3) * columns).coerceAtMost(size) }
+    }
+
+    val calculateRemains: (
+        SnapshotStateList<StateFile>,
+        SnapshotStateList<StateFile>
+    ) -> Int = { list, subList ->
+        list.size - subList.size - list.indexOf(subList.firstOrNull() ?: 0)
+    }
+
+    val printTargets by remember(directories, completeTarget) {
+        derivedStateOf { directories.slice(directories.calculateRange()).toMutableStateList() }
+    }
+
+    val remainingCount by remember(directories, printTargets) {
+        mutableStateOf(calculateRemains(directories, printTargets))
+    }
+
+    val adjustedColumns = listOf(0, 0, 1, 0)
+
+    if (printTargets.isEmpty()) return
+
+    for (chunked in printTargets.chunked(4)) {
+        Row {
+            for (file in chunked) {
+                CandidateText(
+                    file.name,
+                    color = ThemedColor.from(color, alpha = 255),
+                    file == completeTarget && printTargets.size != 1
+                )
+                Spacer(modifier = Modifier.width(15.dp))
+            }
+            for (dummy in 0 until adjustedColumns[chunked.size - 1]) {
+                Spacer(modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.width(15.dp))
+            }
+        }
+        Spacer(modifier = Modifier.height(5.dp))
+    }
+    if (remainingCount > 0) RemainingItems(remainingCount, ThemedColor.from(color, alpha = 144), type)
+
+    Spacer(modifier = Modifier.height(25.dp))
+}
+
 
 @Composable
 fun RowScope.CandidateText(text: String, color: Color, focused: Boolean) {
@@ -255,103 +336,14 @@ fun RowScope.CandidateText(text: String, color: Color, focused: Boolean) {
 }
 
 @Composable
-fun ColumnScope.RemainingItems(list: List<List<File>>, startIndex: Int, color: Color, type: String) {
+fun ColumnScope.RemainingItems(remaining: Int, color: Color, type: String) {
     DoodlerLogger.recomposition("RemainingItems")
 
-    val lastIndex = (startIndex + 3).coerceAtMost(list.size)
-    if (list.size > lastIndex) {
-        val remaining = list.slice(lastIndex until list.size).sumOf { it.size }
-        Text(
-            "...$remaining $type more",
-            color = color,
-            fontFamily = JetBrainsMono,
-            fontSize = 18.sp,
-            maxLines = 1
-        )
-    }
-}
-
-@Composable
-fun ColumnScope.Candidates(candidateFiles: List<File>, completeTarget: File?) {
-    DoodlerLogger.recomposition("Candidates")
-
-    val columns = 4
-    val childDirectories = candidateFiles
-        .filter { it.isDirectory && !it.isFile }
-        .chunked(columns)
-    val childFiles = candidateFiles
-        .filter { it.isFile || (!it.isDirectory && !it.isFile) }
-        .chunked(columns)
-
-    val chunkedDirectoryIndex = childDirectories.indexOf(
-        childDirectories.find { chunked -> chunked.find { it == completeTarget } != null }
-    ).minus(1).coerceIn(0, (childDirectories.size - 3).coerceAtLeast(0))
-    val chunkedFileIndex = childFiles.indexOf(
-        childFiles.find { chunked -> chunked.find { it == completeTarget } != null }
-    ).minus(1).coerceIn(0, (childFiles.size - 3).coerceAtLeast(0))
-
-    val displayingDirectories = childDirectories.slice(chunkedDirectoryIndex until (chunkedDirectoryIndex + 3).coerceAtMost(childDirectories.size))
-    val displayingFiles = childFiles.slice(chunkedFileIndex until (chunkedFileIndex + 3).coerceAtMost(childFiles.size))
-
-    Spacer(modifier = Modifier.height(15.dp))
-
-    CandidateFiles(
-        displayingDirectories,
-        childDirectories,
-        chunkedDirectoryIndex,
-        completeTarget,
-        "directories",
-        Color(0xFFFFC66D)
+    Text(
+        "...$remaining $type more",
+        color = color,
+        fontFamily = JetBrainsMono,
+        fontSize = 18.sp,
+        maxLines = 1
     )
-
-    CandidateFiles(
-        displayingFiles,
-        childFiles,
-        chunkedFileIndex,
-        completeTarget,
-        "files",
-        ThemedColor.Editor.Tag.General
-    )
-}
-
-@Composable
-fun ColumnScope.CandidateFiles(
-    displayingChunkedFiles: List<List<File>>,
-    chunkedFiles: List<List<File>>,
-    chunkIndex: Int,
-    completeTarget: File?,
-    type: String,
-    color: Color
-) {
-    DoodlerLogger.recomposition("CandidateFiles")
-
-    val adjustedColumns = listOf(0, 0, 1, 0)
-
-    if (displayingChunkedFiles.isEmpty()) return
-
-    for (dirsChunked in displayingChunkedFiles) {
-        Row {
-            for (dir in dirsChunked) {
-                CandidateText(
-                    dir.name,
-                    color = ThemedColor.from(color, alpha = 255),
-                    dir == completeTarget && displayingChunkedFiles.flatten().size != 1
-                )
-                Spacer(modifier = Modifier.width(15.dp))
-            }
-            for (dummy in 0 until adjustedColumns[dirsChunked.size - 1]) {
-                Spacer(modifier = Modifier.weight(1f))
-                Spacer(modifier = Modifier.width(15.dp))
-            }
-        }
-        Spacer(modifier = Modifier.height(5.dp))
-    }
-    RemainingItems(
-        chunkedFiles,
-        chunkIndex,
-        ThemedColor.from(color, alpha = 144),
-        type
-    )
-
-    Spacer(modifier = Modifier.height(25.dp))
 }
