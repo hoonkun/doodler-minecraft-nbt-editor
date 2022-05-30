@@ -20,11 +20,13 @@ repositories {
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
 }
 
+@OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
 dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test:1.5.31")
     testImplementation("io.kotlintest:kotlintest-runner-junit5:3.4.2")
     testImplementation("org.spigotmc:spigot:1.18.2-R0.1-SNAPSHOT")
     implementation(compose.desktop.currentOs)
+    testImplementation(compose.uiTestJUnit4)
 }
 
 kotlin.sourceSets.all {
