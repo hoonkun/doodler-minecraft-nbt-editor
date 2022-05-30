@@ -49,20 +49,16 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
     var shift by remember { mutableStateOf(false) }
 
     var candidateParentFile by remember { mutableStateOf(File("$basePath${value.text}")) }
-    val filteredCandidateFiles by remember(candidateParentFile, value.text, basePath) {
-        mutableStateOf(
-            if (candidateParentFile.isDirectory)
-                candidateParentFile.listFiles().toList()
-                    .filter { file -> file.absolutePath.contains("$basePath${value.text}") }
-            else listOf()
-        )
-    }
-    val candidateFiles = remember(filteredCandidateFiles.size) {
-        filteredCandidateFiles
+    val tempCandidateFiles = remember(candidateParentFile, value.text, basePath) {
+        candidateParentFile.listFiles().toList()
+            .filter { file -> file.absolutePath.contains("$basePath${value.text}") }
             .sortedBy { file -> file.name }
             .sortedBy { file -> if (file.isDirectory && !file.isFile) -1 else if (file.isFile) 1 else 2 }
             .map { stateFileOf(it.name, it.absolutePath, it.isDirectory, it.isFile) }
             .toMutableStateList()
+    }
+    val candidateFiles = remember(*tempCandidateFiles.toTypedArray()) {
+        tempCandidateFiles
     }
 
     var haveToShift by remember { mutableStateOf(false) }
