@@ -14,6 +14,7 @@ import composables.selector.FileSelector
 import composables.selector.WorldSelector
 import doodler.application.states.DoodlerApplicationState
 import doodler.application.structures.DoodlerWindow
+import doodler.logger.RecomposeLogger
 import keys
 
 @Composable
@@ -42,6 +43,8 @@ fun DoodlerWindow(
     ),
     title = windowState.title
 ) {
+    RecomposeLogger.log("DoodlerWindow")
+
     when (windowState.type) {
         DoodlerWindow.Type.MAIN -> Intro { type -> appState.openNew(type, "Open...", "") }
         DoodlerWindow.Type.WORLD_EDITOR -> WorldEditor(windowState.path ?: throw Exception("No path specified!"))

@@ -23,6 +23,7 @@ import doodler.doodle.VirtualDoodle
 import doodler.doodle.structures.CannotBePasted
 import doodler.editor.*
 import doodler.editor.states.NbtState
+import doodler.logger.RecomposeLogger
 import keys
 import kotlinx.coroutines.launch
 import doodler.nbt.TagType
@@ -32,6 +33,8 @@ import doodler.nbt.TagType
 fun BoxScope.NbtEditor(
     species: NbtEditor
 ) {
+    RecomposeLogger.log("NbtEditor")
+
     val coroutineScope = rememberCoroutineScope()
 
     val state = species.state
@@ -169,6 +172,8 @@ fun BoxScope.NbtEditor(
 fun ColumnScope.UndoRedoActionColumn(
     state: NbtState
 ) {
+    RecomposeLogger.log("UndoRedoActionColumn")
+
     val actions = state.actions
 
     Column(
@@ -191,6 +196,8 @@ fun ColumnScope.UndoRedoActionColumn(
 fun ColumnScope.IndexChangeActionColumn(
     state: NbtState
 ) {
+    RecomposeLogger.log("IndexChangeActionColumn")
+
     val available =
         state.ui.selected.map { it.index }.toRanges().size == 1 &&
         state.ui.selected.map { it.parent }.toSet().size == 1
@@ -224,6 +231,8 @@ fun ColumnScope.CreateActionColumn(
     state: NbtState,
     selected: NbtDoodle?
 ) {
+    RecomposeLogger.log("CreateActionColumn")
+
     val actions = state.actions
     val tag = selected?.tag ?: state.rootDoodle.tag
 
@@ -253,6 +262,8 @@ fun ColumnScope.CreateActionColumn(
 fun ColumnScope.SaveActionColumn(
     state: NbtState,
 ) {
+    RecomposeLogger.log("SaveActionColumn")
+
     Column(
         modifier = Modifier
             .background(ThemedColor.Editor.Action.Background, RoundedCornerShape(4.dp))
@@ -274,6 +285,8 @@ fun ColumnScope.SaveActionColumn(
 fun ColumnScope.NormalActionColumn(
     state: NbtState
 ) {
+    RecomposeLogger.log("NormalActionColumn")
+
     val actions = state.actions
 
     val available = state.ui.selected.isNotEmpty()

@@ -20,6 +20,7 @@ import composables.global.border
 import doodler.editor.McaEditor
 import doodler.editor.StandaloneNbtEditor
 import doodler.editor.states.rememberWorldEditorState
+import doodler.logger.RecomposeLogger
 import doodler.minecraft.DatWorker
 import doodler.minecraft.WorldUtils
 import doodler.nbt.tag.CompoundTag
@@ -32,6 +33,8 @@ import java.util.*
 fun WorldEditor(
     worldPath: String
 ) {
+    RecomposeLogger.log("WorldEditor")
+
     val states = rememberWorldEditorState()
 
     if (states.worldSpec.tree == null)
@@ -106,11 +109,15 @@ fun WorldEditor(
 
 @Composable
 fun MainColumn(content: @Composable ColumnScope.() -> Unit) {
+    RecomposeLogger.log("MainColumn")
+
     Column(modifier = Modifier.fillMaxSize(), content = content)
 }
 
 @Composable
 fun ColumnScope.TopBar(content: @Composable RowScope.() -> Unit) {
+    RecomposeLogger.log("TopBar")
+
     TopAppBar(
         elevation = 0.dp,
         backgroundColor = ThemedColor.ActionBar,
@@ -125,11 +132,15 @@ fun ColumnScope.TopBar(content: @Composable RowScope.() -> Unit) {
 
 @Composable
 fun RowScope.TopBarText(text: String) {
+    RecomposeLogger.log("TopBarText")
+
     Text(text, color = Color.White, fontSize = 25.sp)
 }
 
 @Composable
 fun ColumnScope.MainArea(content: @Composable RowScope.() -> Unit) {
+    RecomposeLogger.log("MainArea")
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -142,11 +153,15 @@ fun ColumnScope.MainArea(content: @Composable RowScope.() -> Unit) {
 
 @Composable
 fun RowScope.MainFiles(content: @Composable BoxScope.() -> Unit) {
+    RecomposeLogger.log("MainFiles")
+
     Box(modifier = Modifier.fillMaxHeight().requiredWidth(400.dp).background(ThemedColor.TaskArea), content = content)
 }
 
 @Composable
 fun RowScope.MainContents(content: @Composable BoxScope.() -> Unit) {
+    RecomposeLogger.log("MainContents")
+
     Box(
         modifier = Modifier
             .fillMaxHeight()
@@ -157,6 +172,8 @@ fun RowScope.MainContents(content: @Composable BoxScope.() -> Unit) {
 
 @Composable
 fun ColumnScope.BottomBar(content: @Composable RowScope.() -> Unit) {
+    RecomposeLogger.log("BottomBar")
+
     BottomAppBar(
         elevation = 0.dp,
         backgroundColor = ThemedColor.TaskArea,
@@ -171,6 +188,8 @@ fun ColumnScope.BottomBar(content: @Composable RowScope.() -> Unit) {
 
 @Composable
 fun RowScope.BottomBarText(text: String) {
+    RecomposeLogger.log("BottomBarText")
+
     Text(
         text,
         color = ThemedColor.Copyright,
@@ -180,6 +199,8 @@ fun RowScope.BottomBarText(text: String) {
 
 @Composable
 fun BoxScope.NoFileSelected(worldName: String) {
+    RecomposeLogger.log("NoFileSelected")
+
     Column (
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -209,6 +230,8 @@ fun BoxScope.NoFileSelected(worldName: String) {
 
 @Composable
 fun WhatIsThis(link: String) {
+    RecomposeLogger.log("WhatIsThis")
+
     Spacer(modifier = Modifier.height(60.dp))
     Text(
         "What is this?",

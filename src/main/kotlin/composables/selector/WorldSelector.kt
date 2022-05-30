@@ -9,6 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import composables.global.ThemedColor
 import doodler.application.structures.DoodlerWindow
+import doodler.logger.RecomposeLogger
 import doodler.minecraft.DatWorker
 import doodler.nbt.tag.CompoundTag
 import doodler.nbt.tag.StringTag
@@ -17,6 +18,8 @@ import java.io.File
 
 @Composable
 fun WorldSelector(window: DoodlerWindow, onSelect: (String, String) -> Unit) {
+    RecomposeLogger.log("WorldSelector")
+
 
     val onWorldSelect: (File) -> Unit = open@ { file ->
         val path = file.absolutePath

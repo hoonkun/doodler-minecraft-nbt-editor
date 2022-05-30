@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import doodler.doodle.DoodleException
 import doodler.editor.McaEditor
 import doodler.editor.McaPayload
+import doodler.logger.RecomposeLogger
 import doodler.minecraft.McaWorker
 import doodler.minecraft.structures.*
 import doodler.nbt.tag.CompoundTag
@@ -27,6 +28,8 @@ fun BoxScope.McaEditor(
     onOpenRequest: (ChunkLocation, File) -> Unit,
     onUpdateRequest: (GlobalAnvilUpdateRequest) -> Unit
 ) {
+    RecomposeLogger.log("McaEditor")
+
     val request = selector.from
 
     val data by remember(request) {

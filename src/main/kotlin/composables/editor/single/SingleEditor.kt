@@ -12,6 +12,7 @@ import composables.editor.NbtEditor
 import composables.global.ThemedColor
 import doodler.editor.StandaloneNbtEditor
 import doodler.editor.states.NbtState
+import doodler.logger.RecomposeLogger
 import doodler.minecraft.DatWorker
 import doodler.minecraft.structures.DatFileType
 import java.io.File
@@ -20,6 +21,8 @@ import java.io.File
 fun SingleEditor(
     nbtPath: String
 ) {
+    RecomposeLogger.log("SingleEditor")
+
     val file = File(nbtPath)
     val nbt = DatWorker.read(file.readBytes())
     val editor by remember { mutableStateOf(StandaloneNbtEditor(NbtState.new(nbt, file, DatFileType), file)) }

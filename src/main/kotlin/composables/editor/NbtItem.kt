@@ -36,6 +36,7 @@ import doodler.doodle.extensions.shorten
 import doodler.doodle.extensions.transformer
 import doodler.doodle.*
 import doodler.editor.states.NbtState
+import doodler.logger.RecomposeLogger
 import doodler.nbt.AnyTag
 import doodler.nbt.TagType
 
@@ -107,6 +108,8 @@ private fun NbtActionButtonWrapper(
 
 @Composable
 fun NbtText(text: String, color: Color, fontSize: TextUnit = 18.sp, rotate: Float = 0f, multiplier: Int = 0) {
+    RecomposeLogger.log("NbtText")
+
     val offset = if (rotate == 0f) 0 else (5 * multiplier)
     Text(
         text,
@@ -121,6 +124,8 @@ fun NbtText(text: String, color: Color, fontSize: TextUnit = 18.sp, rotate: Floa
 
 @Composable
 fun NbtText(text: AnnotatedString, fontSize: TextUnit = 18.sp, rotate: Float = 0f, multiplier: Int = 0) {
+    RecomposeLogger.log("NbtText")
+
     val offset = if (rotate == 0f) 0 else (5 * multiplier)
     Text(
         text,
@@ -165,6 +170,8 @@ private fun TagTypeIndicator(type: TagType, selected: Boolean) {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun TagCreationButton(holderTag: AnyTag?, type: TagType, actions: NbtState.Actions) {
+    RecomposeLogger.log("TagCreationButton")
+
     val disabled = holderTag?.canHold(type) != true
     NbtActionButtonWrapper (
         disabled = disabled,
@@ -182,6 +189,8 @@ fun NbtActionButton(
     onRightClick: MouseClickScope.() -> Unit = { },
     content: @Composable () -> Unit
 ) {
+    RecomposeLogger.log("NbtActionButton")
+
     NbtActionButtonWrapper (disabled, onClick, onRightClick) {
         content()
     }
@@ -247,6 +256,8 @@ fun DepthPreviewNbtItem(
     state: DoodleUi,
     scrollTo: () -> Unit
 ) {
+    RecomposeLogger.log("DepthPreviewNbtItem")
+
     var focused by remember { mutableStateOf(false) }
     var pressed by remember { mutableStateOf(false) }
 
@@ -288,6 +299,8 @@ fun ActualNbtItem(
     onCreationMode: Boolean = false,
     disabled: Boolean = false
 ) {
+    RecomposeLogger.log("ActualNbtItem")
+
     val hierarchy = getHierarchy(doodle)
 
     val selected = state.selected.contains(doodle)
@@ -367,6 +380,8 @@ fun ActualNbtItem(
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun VirtualNbtItem(virtual: VirtualDoodle, state: NbtState) {
+    RecomposeLogger.log("VirtualNbtItem")
+
     val hierarchy = getHierarchy(virtual)
 
     ItemRoot(
@@ -422,6 +437,8 @@ fun VirtualNbtItem(virtual: VirtualDoodle, state: NbtState) {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RowScope.DoodleCreationContent(actions: NbtState.Actions, doodle: VirtualDoodle) {
+    RecomposeLogger.log("DoodleCreationContent")
+
 
     val intoIndex =
         if (!doodle.mode.isEdit()) doodle.parent.expandedItems.size.coerceAtLeast(doodle.parent.collapsedItems.size)
@@ -518,6 +535,8 @@ fun RowScope.TagField(
     wide: Boolean = true,
     focus: Boolean = false
 ) {
+    RecomposeLogger.log("TagField")
+
     val (text, setText) = textState
     val (_, setValid) = validState
 
@@ -567,6 +586,8 @@ fun RowScope.ValueField(
     wide: Boolean = true,
     focus: Boolean = false
 ) {
+    RecomposeLogger.log("ValueField")
+
     TagField(textState, validState, type.color(), type.creationHint(), type.transformer(), wide, focus)
 }
 
@@ -576,6 +597,8 @@ fun RowScope.CreationField(
     validState: MutableState<Boolean>,
     content: @Composable RowScope.() -> Unit
 ) {
+    RecomposeLogger.log("CreationField")
+
     TagField(
         nameState,
         validState,
@@ -591,6 +614,8 @@ fun RowScope.CreationField(
 
 @Composable
 fun RowScope.ActualNbtItemContent(doodle: ActualDoodle, selected: Boolean) {
+    RecomposeLogger.log("ActualNbtItemContent")
+
     when (doodle) {
         is NbtDoodle -> {
             TagTypeIndicator(doodle.tag.type, selected)

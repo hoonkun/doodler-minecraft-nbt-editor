@@ -44,6 +44,7 @@ import composables.global.ThemedColor
 import doodler.editor.McaEditor
 import doodler.editor.McaPayload
 import doodler.editor.states.SelectorState
+import doodler.logger.RecomposeLogger
 import doodler.minecraft.structures.*
 import kotlinx.coroutines.delay
 import java.io.File
@@ -58,6 +59,8 @@ fun ColumnScope.ChunkSelector(
     onSelectChunk: (ChunkLocation, File) -> Unit,
     onUpdateRequest: (GlobalAnvilUpdateRequest) -> Unit
 ) {
+    RecomposeLogger.log("ChunkSelector")
+
 
     val dimension = payload.dimension
     val type = payload.type
@@ -445,6 +448,8 @@ fun BoxScope.ChunkSelectorProperties(
     invalidateCache: () -> Unit,
     content: @Composable BoxScope.(MutableState<Boolean>, MutableState<Boolean>) -> Unit
 ) {
+    RecomposeLogger.log("ChunkSelectorProperties")
+
 
     val alignment = Alignment.TopStart
 
@@ -538,12 +543,16 @@ fun BoxScope.ChunkSelectorProperties(
 
 @Composable
 fun PropertyKeyText(text: String) {
+    RecomposeLogger.log("PropertyKeyText")
+
     Text(text, color = ThemedColor.ChunkSelectorPropertyKey, fontFamily = JetBrainsMono, fontSize = 18.sp)
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PropertyButton(text: String, onClick: MouseClickScope.() -> Unit) {
+    RecomposeLogger.log("PropertyButton")
+
     Box(
         modifier = Modifier
             .wrapContentSize()
@@ -558,6 +567,8 @@ fun PropertyButton(text: String, onClick: MouseClickScope.() -> Unit) {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RowScope.ChunkInvestButton(direction: String, dest: AnvilLocation? = null, move: (AnvilLocation) -> Unit) {
+    RecomposeLogger.log("ChunkInvestButton")
+
     Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
         PropertyKeyText("$direction = ")
         if (dest == null) {
@@ -575,6 +586,8 @@ fun PopupBackground(
     current: String?,
     onCloseRequest: MouseClickScope.() -> Unit,
 ) {
+    RecomposeLogger.log("PopupBackground")
+
     var state by remember { mutableStateOf(-1) }
     val alpha by animateFloatAsState(if (state == 1) 1f else 0f, tween(75, easing = LinearEasing))
 
@@ -653,6 +666,8 @@ fun <T>SelectorDropdown(
 
 @Composable
 fun RowScope.CoordinateText(text: String, invalid: Boolean = false) {
+    RecomposeLogger.log("CoordinateText")
+
     Text(
         text,
         fontSize = 16.sp,
@@ -669,6 +684,8 @@ fun RowScope.CoordinateInput(
     transformer: (AnnotatedString) -> TransformedText = { TransformedText(it, OffsetMapping.Identity) },
     disabled: Boolean = false
 ) {
+    RecomposeLogger.log("CoordinateInput")
+
     BasicTextField(
         value,
         onValueChange,
@@ -702,6 +719,8 @@ fun ChunkSelectorDropdown(
     onClick: (MouseClickScope.() -> Unit)? = null,
     content: @Composable RowScope.(Boolean) -> Unit
 ) {
+    RecomposeLogger.log("ChunkSelectorDropdown")
+
     var hover by remember { mutableStateOf(false) }
 
     Row (

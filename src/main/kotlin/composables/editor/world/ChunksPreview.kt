@@ -15,6 +15,7 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import doodler.extensions.toReversedRange
+import doodler.logger.RecomposeLogger
 import doodler.minecraft.*
 import doodler.minecraft.structures.*
 import kotlinx.coroutines.Dispatchers
@@ -36,6 +37,8 @@ fun BoxScope.ChunksPreview(
     forceAnvilLocation: AnvilLocation? = null,
     onSelect: (ChunkLocation) -> Unit
 ) {
+    RecomposeLogger.log("ChunksPreview")
+
     val (location, setLocation) = remember { mutableStateOf(selected?.toAnvilLocation()) }
 
     if (location == null) return
