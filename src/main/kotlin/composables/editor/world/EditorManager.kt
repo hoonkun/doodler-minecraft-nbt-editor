@@ -10,7 +10,7 @@ import doodler.editor.EditorManager
 import doodler.editor.McaEditor
 import doodler.editor.NbtEditor
 import doodler.editor.states.NbtState
-import doodler.logger.RecomposeLogger
+import doodler.logger.DoodlerLogger
 import doodler.minecraft.McaWorker
 import doodler.minecraft.structures.McaFileType
 import doodler.minecraft.structures.WorldHierarchy
@@ -22,7 +22,7 @@ fun BoxScope.EditorManager(
     tree: WorldHierarchy,
     manager: EditorManager,
 ) {
-    RecomposeLogger.log("EditorManager")
+    DoodlerLogger.recomposition("EditorManager")
 
     EditorManagerRoot {
         EditorTabs(
@@ -60,7 +60,7 @@ fun BoxScope.EditorManager(
 
 @Composable
 fun BoxScope.EditorManagerRoot(content: @Composable ColumnScope.() -> Unit) {
-    RecomposeLogger.log("EditorManagerRoot")
+    DoodlerLogger.recomposition("EditorManagerRoot")
 
     Column(
         modifier = Modifier
@@ -72,7 +72,7 @@ fun BoxScope.EditorManagerRoot(content: @Composable ColumnScope.() -> Unit) {
 
 @Composable
 fun ColumnScope.Editors(content: @Composable BoxScope.() -> Unit) {
-    RecomposeLogger.log("Editors")
+    DoodlerLogger.recomposition("Editors")
 
     Box(
         modifier = Modifier

@@ -14,7 +14,7 @@ import composables.selector.FileSelector
 import composables.selector.WorldSelector
 import doodler.application.states.DoodlerApplicationState
 import doodler.application.structures.DoodlerWindow
-import doodler.logger.RecomposeLogger
+import doodler.logger.DoodlerLogger
 import keys
 
 @Composable
@@ -43,7 +43,7 @@ fun DoodlerWindow(
     ),
     title = windowState.title
 ) {
-    RecomposeLogger.log("DoodlerWindow")
+    DoodlerLogger.recomposition("DoodlerWindow")
 
     when (windowState.type) {
         DoodlerWindow.Type.MAIN -> Intro { type -> appState.openNew(type, "Open...", "") }

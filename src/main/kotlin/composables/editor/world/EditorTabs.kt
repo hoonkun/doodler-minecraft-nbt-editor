@@ -20,7 +20,7 @@ import composables.global.ThemedColor
 import doodler.editor.Editor
 import composables.global.ThemedColor.Companion.selectable
 import doodler.editor.AnvilNbtEditor
-import doodler.logger.RecomposeLogger
+import doodler.logger.DoodlerLogger
 
 @Composable
 fun ColumnScope.EditorTabs(
@@ -28,7 +28,7 @@ fun ColumnScope.EditorTabs(
     onSelectEditable: (Editor) -> Unit,
     onCloseEditable: (Editor) -> Unit
 ) {
-    RecomposeLogger.log("EditorTabs")
+    DoodlerLogger.recomposition("EditorTabs")
 
     val scrollState = rememberScrollState()
 
@@ -48,7 +48,7 @@ fun EditorTab(
     onSelectEditable: (Editor) -> Unit,
     onCloseEditable: (Editor) -> Unit
 ) {
-    RecomposeLogger.log("EditorTab")
+    DoodlerLogger.recomposition("EditorTab")
 
     var hover by remember { mutableStateOf(false) }
     var press by remember { mutableStateOf(false) }

@@ -21,7 +21,7 @@ import androidx.compose.ui.zIndex
 import composables.global.JetBrainsMono
 import composables.global.ThemedColor
 import doodler.doodle.structures.DoodleLog
-import doodler.logger.RecomposeLogger
+import doodler.logger.DoodlerLogger
 import kotlinx.coroutines.delay
 
 // TODO:
@@ -33,7 +33,7 @@ import kotlinx.coroutines.delay
 fun ColumnScope.Log(
     logState: MutableState<DoodleLog?>,
 ) {
-    RecomposeLogger.log("Log")
+    DoodlerLogger.recomposition("Log")
 
 
     var currentLog by logState
@@ -96,7 +96,7 @@ fun ColumnScope.Log(
 
 @Composable
 fun LogText(text: String, alpha: Float, fontSize: TextUnit = 19.sp) {
-    RecomposeLogger.log("LogText")
+    DoodlerLogger.recomposition("LogText")
 
     Text(
         text,

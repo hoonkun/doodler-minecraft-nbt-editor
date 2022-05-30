@@ -24,7 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import composables.global.JetBrainsMono
 import composables.global.ThemedColor
-import doodler.logger.RecomposeLogger
+import doodler.logger.DoodlerLogger
 import doodler.minecraft.structures.*
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.ColorAlphaType
@@ -49,7 +49,7 @@ fun GlobalMapViewerButton(
     selected: Boolean,
     onClick: (() -> Unit)? = null
 ) {
-    RecomposeLogger.log("GlobalMapViewerButton")
+    DoodlerLogger.recomposition("GlobalMapViewerButton")
 
     var hover by hoverState
 
@@ -85,7 +85,7 @@ fun GlobalMapViewerButton(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun BoxScope.WorldTreeView(worldName: String, tree: WorldHierarchy, onOpen: (OpenRequest) -> Unit) {
-    RecomposeLogger.log("WorldTreeView")
+    DoodlerLogger.recomposition("WorldTreeView")
 
 
     val width = 400.dp
@@ -269,7 +269,7 @@ fun BoxScope.WorldTreeView(worldName: String, tree: WorldHierarchy, onOpen: (Ope
 
 @Composable
 fun TreeViewText(text: String, bold: Boolean = false, fontSize: TextUnit? = null) {
-    RecomposeLogger.log("TreeViewText")
+    DoodlerLogger.recomposition("TreeViewText")
 
     Text(
         text,
@@ -282,7 +282,7 @@ fun TreeViewText(text: String, bold: Boolean = false, fontSize: TextUnit? = null
 
 @Composable
 fun BoxScope.TreeViewIndicatorText(text: String) {
-    RecomposeLogger.log("TreeViewIndicatorText")
+    DoodlerLogger.recomposition("TreeViewIndicatorText")
 
     Text(
         text,

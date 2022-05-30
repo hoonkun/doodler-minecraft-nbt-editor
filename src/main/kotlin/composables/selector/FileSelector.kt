@@ -9,13 +9,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import composables.global.ThemedColor
 import doodler.application.structures.DoodlerWindow
-import doodler.logger.RecomposeLogger
+import doodler.logger.DoodlerLogger
 import doodler.minecraft.DatWorker
 import java.io.File
 
 @Composable
 fun FileSelector(window: DoodlerWindow,  onSelect: (String, String) -> Unit) {
-    RecomposeLogger.log("FileSelector")
+    DoodlerLogger.recomposition("FileSelector")
 
 
     val onFileSelect: (File) -> Unit = open@ { file ->

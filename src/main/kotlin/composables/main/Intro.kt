@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.sp
 import composables.global.LinkText
 import composables.global.ThemedColor
 import doodler.application.structures.DoodlerWindow
-import doodler.logger.RecomposeLogger
+import doodler.logger.DoodlerLogger
 
 @Composable
 @Preview
@@ -46,7 +46,7 @@ fun Intro(
 fun ColumnScope.NoWorldsSelected(
     onOpen: (DoodlerWindow.Type) -> Unit
 ) {
-    RecomposeLogger.log("NoWorldsSelected")
+    DoodlerLogger.recomposition("NoWorldsSelected")
 
     Column (
         modifier = Modifier

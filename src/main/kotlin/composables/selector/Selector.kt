@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.isPrimaryPressed
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
@@ -28,14 +30,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import composables.global.JetBrainsMono
 import composables.global.ThemedColor
-import doodler.logger.RecomposeLogger
+import doodler.logger.DoodlerLogger
 import java.io.File
 
 
 @OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolean = { true }) {
-    RecomposeLogger.log("Selector")
+    DoodlerLogger.recomposition("Selector")
 
 
     val basePath by remember { mutableStateOf(System.getProperty("user.home")) }
@@ -205,7 +207,10 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
                 cursorBrush = if (!haveToShift) SolidColor(ThemedColor.Editor.Tag.General) else SolidColor(Color.Transparent),
                 modifier = Modifier.weight(1f)
                     .onKeyEvent(onKeyEvent)
-                    .focusRequester(requester),
+                    .focusRequester(requester)
+                    .semantics {
+                        this.text = AnnotatedString("path input")
+                    },
                 singleLine = true
             )
             Spacer(modifier = Modifier.width(15.dp))
@@ -234,7 +239,7 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
 
 @Composable
 fun RowScope.CandidateText(text: String, color: Color, focused: Boolean) {
-    RecomposeLogger.log("CandidateText")
+    DoodlerLogger.recomposition("CandidateText")
 
     Box(modifier = Modifier.weight(1f)) {
         Text(
@@ -251,7 +256,7 @@ fun RowScope.CandidateText(text: String, color: Color, focused: Boolean) {
 
 @Composable
 fun ColumnScope.RemainingItems(list: List<List<File>>, startIndex: Int, color: Color, type: String) {
-    RecomposeLogger.log("RemainingItems")
+    DoodlerLogger.recomposition("RemainingItems")
 
     val lastIndex = (startIndex + 3).coerceAtMost(list.size)
     if (list.size > lastIndex) {
@@ -268,7 +273,7 @@ fun ColumnScope.RemainingItems(list: List<List<File>>, startIndex: Int, color: C
 
 @Composable
 fun ColumnScope.Candidates(candidateFiles: List<File>, completeTarget: File?) {
-    RecomposeLogger.log("Candidates")
+    DoodlerLogger.recomposition("Candidates")
 
     val columns = 4
     val childDirectories = candidateFiles
@@ -318,7 +323,7 @@ fun ColumnScope.CandidateFiles(
     type: String,
     color: Color
 ) {
-    RecomposeLogger.log("CandidateFiles")
+    DoodlerLogger.recomposition("CandidateFiles")
 
     val adjustedColumns = listOf(0, 0, 1, 0)
 

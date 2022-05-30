@@ -12,7 +12,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.TextUnit
-import doodler.logger.RecomposeLogger
+import doodler.logger.DoodlerLogger
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -24,7 +24,7 @@ fun LinkText(
     fontFamily: FontFamily = FontFamily.Default,
     onClick: () -> Unit
 ) {
-    RecomposeLogger.log("LinkText")
+    DoodlerLogger.recomposition("LinkText")
 
     var active by remember { mutableStateOf(false) }
 

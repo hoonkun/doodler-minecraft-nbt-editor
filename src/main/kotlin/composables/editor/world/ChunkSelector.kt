@@ -44,7 +44,7 @@ import composables.global.ThemedColor
 import doodler.editor.McaEditor
 import doodler.editor.McaPayload
 import doodler.editor.states.SelectorState
-import doodler.logger.RecomposeLogger
+import doodler.logger.DoodlerLogger
 import doodler.minecraft.structures.*
 import kotlinx.coroutines.delay
 import java.io.File
@@ -59,7 +59,7 @@ fun ColumnScope.ChunkSelector(
     onSelectChunk: (ChunkLocation, File) -> Unit,
     onUpdateRequest: (GlobalAnvilUpdateRequest) -> Unit
 ) {
-    RecomposeLogger.log("ChunkSelector")
+    DoodlerLogger.recomposition("ChunkSelector")
 
 
     val dimension = payload.dimension
@@ -448,7 +448,7 @@ fun BoxScope.ChunkSelectorProperties(
     invalidateCache: () -> Unit,
     content: @Composable BoxScope.(MutableState<Boolean>, MutableState<Boolean>) -> Unit
 ) {
-    RecomposeLogger.log("ChunkSelectorProperties")
+    DoodlerLogger.recomposition("ChunkSelectorProperties")
 
 
     val alignment = Alignment.TopStart
@@ -543,7 +543,7 @@ fun BoxScope.ChunkSelectorProperties(
 
 @Composable
 fun PropertyKeyText(text: String) {
-    RecomposeLogger.log("PropertyKeyText")
+    DoodlerLogger.recomposition("PropertyKeyText")
 
     Text(text, color = ThemedColor.ChunkSelectorPropertyKey, fontFamily = JetBrainsMono, fontSize = 18.sp)
 }
@@ -551,7 +551,7 @@ fun PropertyKeyText(text: String) {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PropertyButton(text: String, onClick: MouseClickScope.() -> Unit) {
-    RecomposeLogger.log("PropertyButton")
+    DoodlerLogger.recomposition("PropertyButton")
 
     Box(
         modifier = Modifier
@@ -567,7 +567,7 @@ fun PropertyButton(text: String, onClick: MouseClickScope.() -> Unit) {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun RowScope.ChunkInvestButton(direction: String, dest: AnvilLocation? = null, move: (AnvilLocation) -> Unit) {
-    RecomposeLogger.log("ChunkInvestButton")
+    DoodlerLogger.recomposition("ChunkInvestButton")
 
     Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
         PropertyKeyText("$direction = ")
@@ -586,7 +586,7 @@ fun PopupBackground(
     current: String?,
     onCloseRequest: MouseClickScope.() -> Unit,
 ) {
-    RecomposeLogger.log("PopupBackground")
+    DoodlerLogger.recomposition("PopupBackground")
 
     var state by remember { mutableStateOf(-1) }
     val alpha by animateFloatAsState(if (state == 1) 1f else 0f, tween(75, easing = LinearEasing))
@@ -666,7 +666,7 @@ fun <T>SelectorDropdown(
 
 @Composable
 fun RowScope.CoordinateText(text: String, invalid: Boolean = false) {
-    RecomposeLogger.log("CoordinateText")
+    DoodlerLogger.recomposition("CoordinateText")
 
     Text(
         text,
@@ -684,7 +684,7 @@ fun RowScope.CoordinateInput(
     transformer: (AnnotatedString) -> TransformedText = { TransformedText(it, OffsetMapping.Identity) },
     disabled: Boolean = false
 ) {
-    RecomposeLogger.log("CoordinateInput")
+    DoodlerLogger.recomposition("CoordinateInput")
 
     BasicTextField(
         value,
@@ -719,7 +719,7 @@ fun ChunkSelectorDropdown(
     onClick: (MouseClickScope.() -> Unit)? = null,
     content: @Composable RowScope.(Boolean) -> Unit
 ) {
-    RecomposeLogger.log("ChunkSelectorDropdown")
+    DoodlerLogger.recomposition("ChunkSelectorDropdown")
 
     var hover by remember { mutableStateOf(false) }
 
