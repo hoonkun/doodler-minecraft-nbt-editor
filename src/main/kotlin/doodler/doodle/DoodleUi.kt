@@ -1,32 +1,15 @@
 package doodler.doodle
 
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
 
 
-class DoodleUi (
-    val selected: SnapshotStateList<ActualDoodle>,
-    pressed: MutableState<ActualDoodle?>,
-    focusedDirectly: MutableState<ActualDoodle?>,
-    focusedTree: MutableState<ActualDoodle?>,
-    focusedTreeView: MutableState<ActualDoodle?>
-) {
-    var pressed by pressed
-    var focusedDirectly by focusedDirectly
-    var focusedTree by focusedTree
-    var focusedTreeView by focusedTreeView
-
-    companion object {
-        fun new(
-            selected: SnapshotStateList<ActualDoodle> = mutableStateListOf(),
-            pressed: MutableState<ActualDoodle?> = mutableStateOf(null),
-            focusedDirectly: MutableState<ActualDoodle?> = mutableStateOf(null),
-            focusedTree: MutableState<ActualDoodle?> = mutableStateOf(null),
-            focusedTreeView: MutableState<ActualDoodle?> = mutableStateOf(null)
-        ) = DoodleUi(
-            selected, pressed, focusedDirectly, focusedTree, focusedTreeView
-        )
-    }
+@Stable
+class DoodleUi {
+    val selected = mutableStateListOf<ActualDoodle>()
+    var pressed by mutableStateOf<ActualDoodle?>(null)
+    var focusedDirectly by mutableStateOf<ActualDoodle?>(null)
+    var focusedTree by mutableStateOf<ActualDoodle?>(null)
+    var focusedTreeView by mutableStateOf<ActualDoodle?>(null)
 
     fun press(target: ActualDoodle) {
         pressed = target

@@ -30,7 +30,7 @@ class NbtState (
             rootTag: CompoundTag,
             file: File,
             fileType: WorldFileType,
-            ui: MutableState<DoodleUi> = mutableStateOf(DoodleUi.new()),
+            ui: MutableState<DoodleUi> = mutableStateOf(DoodleUi()),
             lazyState: LazyListState = LazyListState(),
             logs: SnapshotStateList<DoodleLog> = mutableStateListOf()
         ) = NbtState(NbtDoodle(rootTag, -1, -1), ui, lazyState, logs, file, fileType)
