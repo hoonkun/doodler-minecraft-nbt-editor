@@ -19,8 +19,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.isPrimaryPressed
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.text
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextRange
@@ -173,77 +171,39 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
         if (haveToShift) haveToShift = false
     }
 
-    Column(modifier = Modifier.fillMaxSize().padding(top = 31.dp).requiredWidthIn(min = 790.dp)) {
-        Column (modifier = Modifier.padding(start = 15.dp, end = 15.dp)) {
-            Text("/** you can use '..' to go parent directory */", color = Color(0xFF629755), fontFamily = JetBrainsMono, fontSize = 18.sp)
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(verticalAlignment = Alignment.Bottom) {
-                Text(
-                    "basePath = ",
-                    color = ThemedColor.ChunkSelectorPropertyKey,
-                    fontFamily = JetBrainsMono,
-                    fontSize = 22.sp
-                )
-                Text(basePath, color = ThemedColor.Editor.Tag.General, fontFamily = JetBrainsMono, fontSize = 22.sp)
-            }
-            Spacer(modifier = Modifier.height(10.dp))
+    SelectorRoot {
+        PaddedContent {
+            DocumentationDescription("/** you can use '..' to go parent directory */")
+            PropertyDescription("basePath", basePath)
         }
-        Row(
-            modifier = Modifier.fillMaxWidth().background(Color(32, 32, 32), RoundedCornerShape(5.dp)).height(60.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Spacer(modifier = Modifier.width(15.dp))
-            BasicTextField(
-                displayValue,
+        PathInputBox {
+            PathInput(
+                value = displayValue,
                 onValueChange = onTextValueUpdated,
-                textStyle = TextStyle(
-                    color = ThemedColor.Editor.Tag.General,
-                    fontSize = 23.sp,
-                    fontFamily = JetBrainsMono
-                ),
-                cursorBrush = if (!haveToShift) SolidColor(ThemedColor.Editor.Tag.General) else SolidColor(Color.Transparent),
-                modifier = Modifier.weight(1f)
-                    .onKeyEvent(onKeyEvent)
-                    .focusRequester(requester)
-                    .semantics {
-                        this.text = AnnotatedString("path input")
-                    },
-                singleLine = true
+                onKeyEvent = onKeyEvent,
+                hideCursor = haveToShift,
+                focusRequester = requester
             )
-            Spacer(modifier = Modifier.width(15.dp))
-            Box (
-                modifier = Modifier.width(80.dp).fillMaxHeight().padding(5.dp)
-                    .mouseClickable {
-                        if (!selectable) return@mouseClickable
-                        if (buttons.isPrimaryPressed && selected != null) {
-                            onSelect(selected!!)
-                        }
-                    }
-                    .alpha(if (selectable) 1.0f else 0.6f)
-            ) {
-                Box (modifier = Modifier.background(Color(0xff55783d), RoundedCornerShape(5.dp)).fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("Go!", fontFamily = JetBrainsMono, color = Color(0xFFCCCCCC), fontSize = 22.sp)
-                }
-            }
+            SelectButton(selectable) { onSelect(selected!!) }
         }
-        Column (modifier = Modifier.padding(start = 15.dp, end = 15.dp)) {
-            if (candidateParentFile.isDirectory) {
-                Spacer(modifier = Modifier.height(15.dp))
+        PaddedContent {
+            if (!candidateParentFile.isDirectory) return@PaddedContent
 
-                CandidateFiles(
-                    candidateFiles,
-                    completeTargetFile?.let { if (it.isDirectory && !it.isFile) it else null },
-                    "directories",
-                    Color(0xFFFFC66D)
-                ) { it.isDirectory && !it.isFile }
+            Spacer(modifier = Modifier.height(15.dp))
 
-                CandidateFiles(
-                    candidateFiles,
-                    completeTargetFile?.let { if (!it.isDirectory) it else null },
-                    "files",
-                    ThemedColor.Editor.Tag.General
-                ) { !it.isDirectory }
-            }
+            CandidateFiles(
+                candidateFiles,
+                completeTargetFile?.let { if (it.isDirectory && !it.isFile) it else null },
+                "directories",
+                Color(0xFFFFC66D)
+            ) { it.isDirectory && !it.isFile }
+
+            CandidateFiles(
+                candidateFiles,
+                completeTargetFile?.let { if (!it.isDirectory) it else null },
+                "files",
+                ThemedColor.Editor.Tag.General
+            ) { !it.isDirectory }
         }
     }
 }
@@ -341,4 +301,95 @@ fun ColumnScope.RemainingItems(remaining: Int, color: Color, type: String) {
         fontSize = 18.sp,
         maxLines = 1
     )
+}
+
+@Composable
+fun BoxScope.SelectorRoot(content: @Composable ColumnScope.() -> Unit) {
+    Column(modifier = Modifier.fillMaxSize().padding(top = 31.dp).requiredWidthIn(min = 790.dp), content = content)
+}
+
+@Composable
+fun ColumnScope.PaddedContent(content: @Composable ColumnScope.() -> Unit) {
+    Column (modifier = Modifier.padding(start = 15.dp, end = 15.dp), content = content)
+}
+
+@Composable
+fun ColumnScope.DocumentationDescription(text: String) {
+    Text(
+        text,
+        color = Color(0xFF629755),
+        fontFamily = JetBrainsMono,
+        fontSize = 18.sp,
+        modifier = Modifier.padding(bottom = 8.dp)
+    )
+}
+
+@Composable
+fun ColumnScope.PropertyDescription(key: String, value: String) {
+    Text(
+        AnnotatedString(
+            text = "$key = $value",
+            spanStyles = listOf(
+                AnnotatedString.Range(SpanStyle(color = ThemedColor.ChunkSelectorPropertyKey), 0, key.length + 2)
+            )
+        ),
+        color = ThemedColor.Editor.Tag.General,
+        fontFamily = JetBrainsMono,
+        fontSize = 22.sp,
+        modifier = Modifier.padding(bottom = 10.dp)
+    )
+}
+
+@Composable
+fun ColumnScope.PathInputBox(content: @Composable RowScope.() -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.fillMaxWidth().background(Color(32, 32, 32), RoundedCornerShape(5.dp)).height(60.dp),
+        content = content
+    )
+}
+
+@Composable
+fun RowScope.PathInput(
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
+    onKeyEvent: (KeyEvent) -> Boolean,
+    hideCursor: Boolean,
+    focusRequester: FocusRequester
+) {
+    BasicTextField(
+        value = value,
+        onValueChange = onValueChange,
+        textStyle = TextStyle(
+            color = ThemedColor.Editor.Tag.General,
+            fontSize = 23.sp,
+            fontFamily = JetBrainsMono
+        ),
+        cursorBrush = if (!hideCursor) SolidColor(ThemedColor.Editor.Tag.General) else SolidColor(Color.Transparent),
+        modifier = Modifier.weight(1f)
+            .onKeyEvent(onKeyEvent)
+            .focusRequester(focusRequester)
+            .padding(start = 15.dp, end = 15.dp),
+        singleLine = true
+    )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun RowScope.SelectButton(
+    enabled: Boolean,
+    onSelect: () -> Unit
+) {
+    Box (
+        modifier = Modifier.width(80.dp).fillMaxHeight().padding(5.dp)
+            .mouseClickable {
+                if (!enabled) return@mouseClickable
+                if (buttons.isPrimaryPressed) onSelect()
+            }
+            .alpha(if (enabled) 1.0f else 0.6f)
+    ) {
+        Box (modifier = Modifier.background(Color(0xff55783d), RoundedCornerShape(5.dp)).fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Go!", fontFamily = JetBrainsMono, color = Color(0xFFCCCCCC), fontSize = 22.sp)
+        }
+    }
 }
