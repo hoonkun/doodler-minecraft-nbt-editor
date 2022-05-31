@@ -27,11 +27,11 @@ fun ByteArrayTag.doodle(parent: NbtDoodle, depth: Int): List<ActualDoodle> {
 }
 
 fun IntArrayTag.doodle(parent: NbtDoodle, depth: Int): List<ActualDoodle> {
-    return this.value.map { ValueDoodle("$value", depth, parent) }
+    return this.value.map { ValueDoodle("$it", depth, parent) }
 }
 
 fun LongArrayTag.doodle(parent: NbtDoodle, depth: Int): List<ActualDoodle> {
-    return this.value.map { ValueDoodle("$value", depth, parent) }
+    return this.value.map { ValueDoodle("$it", depth, parent) }
 }
 
 fun TagType.shorten(): String {
