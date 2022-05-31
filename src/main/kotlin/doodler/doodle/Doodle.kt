@@ -390,9 +390,7 @@ class ValueDoodle (
     override fun index(): Int {
         val parent = parent ?: return 0
         return when (parent.tag.type) {
-            TagType.TAG_BYTE_ARRAY -> parent.tag.getAs<ByteArrayTag>().value.indexOf(value.toByte())
-            TagType.TAG_INT_ARRAY -> parent.tag.getAs<IntArrayTag>().value.indexOf(value.toInt())
-            TagType.TAG_LONG_ARRAY -> parent.tag.getAs<LongArrayTag>().value.indexOf(value.toLong())
+            TagType.TAG_BYTE_ARRAY, TagType.TAG_INT_ARRAY, TagType.TAG_LONG_ARRAY -> parent.children.indexOf(this)
             else -> 0
         }
     }
