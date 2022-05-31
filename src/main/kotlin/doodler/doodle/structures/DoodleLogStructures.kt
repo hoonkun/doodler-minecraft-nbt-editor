@@ -1,5 +1,6 @@
 package doodler.doodle.structures
 
+import androidx.compose.runtime.Stable
 import androidx.compose.ui.graphics.Color
 
 enum class DoodleLogLevel {
@@ -14,6 +15,7 @@ enum class DoodleLogLevel {
 
 }
 
+@Stable
 class DoodleLog(
     val level: DoodleLogLevel,
     val title: String,

@@ -1,6 +1,7 @@
 package doodler.doodle
 
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import doodler.doodle.extensions.displayName
 import doodler.doodle.extensions.doodle
 import doodler.extensions.replaceAt
@@ -204,7 +205,7 @@ class NbtDoodle (
         return size
     }
 
-    fun children(root: Boolean = false): List<Doodle> {
+    fun children(root: Boolean = false): SnapshotStateList<Doodle> {
         return mutableListOf<Doodle>().apply {
             if (!root) add(this@NbtDoodle)
 
@@ -217,7 +218,7 @@ class NbtDoodle (
                     is EditionDoodle -> replaceAt(it.from.index() + if (!root) 1 else 0, it)
                 }
             }
-        }
+        }.toMutableStateList()
     }
 
     private fun initializeChildren() {

@@ -7,6 +7,7 @@ import doodler.doodle.*
 import doodler.doodle.structures.*
 import doodler.extensions.removeRange
 import doodler.extensions.toRanges
+import doodler.files.StateFile
 import doodler.minecraft.DatWorker
 import doodler.minecraft.McaWorker
 import doodler.minecraft.structures.DatFileType
@@ -16,12 +17,10 @@ import doodler.nbt.TagType
 import doodler.nbt.tag.*
 import java.io.File
 
+@Stable
 class NbtState (
     val rootDoodle: NbtDoodle,
-    ui: MutableState<DoodleUi>,
-    val lazyState: LazyListState,
-    private val logs: SnapshotStateList<DoodleLog>,
-    private val file: File,
+    private val file: StateFile,
     private val fileType: WorldFileType
 ) {
 
@@ -29,21 +28,25 @@ class NbtState (
         fun new(
             rootTag: CompoundTag,
             file: File,
-            fileType: WorldFileType,
-            ui: MutableState<DoodleUi> = mutableStateOf(DoodleUi()),
-            lazyState: LazyListState = LazyListState(),
-            logs: SnapshotStateList<DoodleLog> = mutableStateListOf()
-        ) = NbtState(NbtDoodle(rootTag, -1), ui, lazyState, logs, file, fileType)
+            fileType: WorldFileType
+        ) = NbtState(
+            NbtDoodle(rootTag, -1),
+            StateFile(file.name, file.absolutePath, file.isDirectory, file.isFile),
+            fileType
+        )
     }
 
-    var ui by ui
-
-    val doodles: DoodleManager = DoodleManager(rootDoodle)
-
-    val actions = Actions()
+    private val logs = mutableStateListOf<DoodleLog>()
 
     val currentLogState: MutableState<DoodleLog?> = mutableStateOf(null)
-    var currentLog by currentLogState
+    private var currentLog by currentLogState
+
+    val ui by mutableStateOf(DoodleUi())
+    val lazyState = LazyListState()
+
+    val doodles get() = rootDoodle.children(true)
+
+    val actions = Actions()
 
     var lastSaveUid by mutableStateOf(0L)
 
@@ -58,8 +61,8 @@ class NbtState (
 
     fun save() {
         when (fileType) {
-            DatFileType -> DatWorker.write(rootDoodle.tag.getAs(), file)
-            is McaFileType -> McaWorker.writeChunk(file, rootDoodle.tag.getAs(), fileType.location)
+            DatFileType -> DatWorker.write(rootDoodle.tag.getAs(), File(file.absolutePath))
+            is McaFileType -> McaWorker.writeChunk(File(file.absolutePath), rootDoodle.tag.getAs(), fileType.location)
         }
 
         lastSaveUid = actions.history.lastActionUid
@@ -80,6 +83,7 @@ class NbtState (
         currentLog = new
     }
 
+    @Stable
     inner class Actions {
 
         val history = HistoryAction()
@@ -107,17 +111,19 @@ class NbtState (
 
     }
 
+    @Stable
     open inner class Action {
         fun uid(): Long = System.currentTimeMillis()
     }
 
+    @Stable
     inner class HistoryAction: Action() {
 
-        private val undoStack: MutableList<DoodleAction> = mutableStateListOf()
-        private val redoStack: MutableList<DoodleAction> = mutableStateListOf()
+        private val undoStack: SnapshotStateList<DoodleAction> = mutableStateListOf()
+        private val redoStack: SnapshotStateList<DoodleAction> = mutableStateListOf()
 
-        var canBeUndo: Boolean by mutableStateOf(false)
-        var canBeRedo: Boolean by mutableStateOf(false)
+        val canBeUndo: Boolean by derivedStateOf { undoStack.isNotEmpty() }
+        val canBeRedo: Boolean by derivedStateOf { redoStack.isNotEmpty() }
 
         var lastActionUid by mutableStateOf(0L)
 
@@ -125,7 +131,7 @@ class NbtState (
             lastActionUid = action.uid
             redoStack.clear()
             undoStack.add(action)
-            updateFlags()
+            updateLastAction()
         }
 
         fun undo() {
@@ -133,7 +139,7 @@ class NbtState (
 
             val action = undoStack.removeLast()
             redoStack.add(action)
-            updateFlags()
+            updateLastAction()
 
             when (action) {
                 is DeleteDoodleAction -> undoDelete(action)
@@ -150,7 +156,7 @@ class NbtState (
             val action = redoStack.removeLast()
 
             undoStack.add(action)
-            updateFlags()
+            updateLastAction()
 
             when (action) {
                 is DeleteDoodleAction -> redoDelete(action)
@@ -161,10 +167,7 @@ class NbtState (
             }
         }
 
-        private fun updateFlags() {
-            canBeUndo = undoStack.isNotEmpty()
-            canBeRedo = redoStack.isNotEmpty()
-
+        private fun updateLastAction() {
             lastActionUid = undoStack.lastOrNull()?.uid ?: 0L
         }
 
@@ -218,22 +221,24 @@ class NbtState (
 
     }
 
+    @Stable
     inner class MoveAction: Action() {
 
         val internal = Internal()
 
-        fun moveUp(targets: List<ActualDoodle>) {
+        fun moveUp(targets: SnapshotStateList<ActualDoodle>) {
             internal.moveUp(targets)
 
             actions.history.newAction(MoveDoodleAction(uid(), MoveDoodleAction.DoodleMoveDirection.UP, targets))
         }
 
-        fun moveDown(targets: List<ActualDoodle>) {
+        fun moveDown(targets: SnapshotStateList<ActualDoodle>) {
             internal.moveDown(targets)
 
             actions.history.newAction(MoveDoodleAction(uid(), MoveDoodleAction.DoodleMoveDirection.DOWN, targets))
         }
 
+        @Stable
         inner class Internal {
 
             fun moveUp(targets: List<ActualDoodle>) {
@@ -307,6 +312,7 @@ class NbtState (
 
     }
 
+    @Stable
     inner class ClipboardAction: Action() {
 
         val stack: SnapshotStateList<Pair<PasteTarget, List<ActualDoodle>>> = mutableStateListOf()
@@ -418,7 +424,7 @@ class NbtState (
                 }
             }
 
-            val created = doodles.map { selected.create(it.cloneAsChild(selected)) }
+            val created = doodles.map { selected.create(it.cloneAsChild(selected)) }.toMutableStateList()
 
             selected.expand()
 
@@ -430,6 +436,7 @@ class NbtState (
 
     }
 
+    @Stable
     inner class CreateAction: Action() {
 
         val internal = Internal()
@@ -476,6 +483,7 @@ class NbtState (
             actions.history.newAction(CreateDoodleAction(uid(), new))
         }
 
+        @Stable
         inner class Internal {
 
             fun create(targets: List<ActualDoodle>) {
@@ -495,6 +503,7 @@ class NbtState (
 
     }
 
+    @Stable
     inner class EditAction: Action() {
 
         val internal = Internal()
@@ -522,6 +531,7 @@ class NbtState (
             actions.history.newAction(EditDoodleAction(uid(), oldActual, newActual))
         }
 
+        @Stable
         inner class Internal {
 
             fun edit(oldActual: ActualDoodle, newActual: ActualDoodle) {
@@ -545,18 +555,20 @@ class NbtState (
 
     }
 
+    @Stable
     inner class DeleteAction: Action() {
 
         val internal = Internal()
 
         fun delete() {
-            ui.selected.sortBy { doodles.cached.indexOf(it) }
+            ui.selected.sortBy { doodles.indexOf(it) }
 
             ui.selected.clear()
 
-            actions.history.newAction(DeleteDoodleAction(uid(), ui.selected.mapNotNull { it.delete() }))
+            actions.history.newAction(DeleteDoodleAction(uid(), ui.selected.mapNotNull { it.delete() }.toMutableStateList()))
         }
 
+        @Stable
         inner class Internal {
 
             fun delete(targets: List<ActualDoodle>) {
