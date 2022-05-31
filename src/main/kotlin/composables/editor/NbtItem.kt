@@ -439,11 +439,6 @@ fun VirtualNbtItem(virtual: VirtualDoodle, state: NbtState) {
 fun RowScope.DoodleCreationContent(actions: NbtState.Actions, doodle: VirtualDoodle) {
     DoodlerLogger.recomposition("DoodleCreationContent")
 
-
-    val intoIndex =
-        if (doodle !is EditionDoodle) doodle.parent.children.size
-        else doodle.from.index()
-
     val nameState = remember {
         mutableStateOf(
             if (doodle is EditionDoodle) doodle.from.let { if (it is NbtDoodle) it.tag.name else null } ?: ""
@@ -475,7 +470,7 @@ fun RowScope.DoodleCreationContent(actions: NbtState.Actions, doodle: VirtualDoo
 
     val ok: MouseClickScope.() -> Unit = {
         if (doodle is CreationDoodle)
-            actions.withLog { creator.create(doodle.actualize(name, value), doodle.parent, intoIndex) }
+            actions.withLog { creator.create(doodle.actualize(name, value), doodle.parent, doodle.parent.children.size) }
         else if (doodle is EditionDoodle)
             actions.withLog { editor.edit(doodle.from, doodle.actualize(name, value)) }
     }
@@ -498,7 +493,7 @@ fun RowScope.DoodleCreationContent(actions: NbtState.Actions, doodle: VirtualDoo
                 ExpandableValue(if (doodle is EditionDoodle) value else type.creationHint(), true)
         }
     } else if (doodle is ValueCreationDoodle) {
-        Index(intoIndex, true)
+        Index(doodle.parent.children.size, true)
         Spacer(modifier = Modifier.width(10.dp))
         ValueField(valueState, valueValidState, doodle.parent.tag.type.arrayElementType(), wide = false, focus = true)
     }
