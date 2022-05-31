@@ -39,23 +39,29 @@ abstract class VirtualDoodle(
         }
     }
 
-    abstract fun actualize(rawName: String, value: String, intoIndex: Int): Pair<ActualDoodle, Int>
+    abstract fun actualize(rawName: String, value: String): ActualDoodle
 
 }
+
+@Stable
+sealed class CreationDoodle(
+    depth: Int,
+    parent: NbtDoodle
+): VirtualDoodle(depth, parent)
 
 @Stable
 class NbtCreationDoodle(
     val type: TagType,
     depth: Int,
     parent: NbtDoodle,
-): VirtualDoodle(depth, parent) {
+): CreationDoodle(depth, parent) {
 
-    override fun actualize(rawName: String, value: String, intoIndex: Int): Pair<ActualDoodle, Int> {
+    override fun actualize(rawName: String, value: String): ActualDoodle {
         val parentTag = parent.tag
         val name = rawName.ifEmpty { null }
 
         if (type.isPrimitive())
-            return Pair(NbtDoodle(primitiveActualize(rawName, type, value), depth, parent), intoIndex)
+            return NbtDoodle(primitiveActualize(rawName, type, value), depth, parent)
 
         val tag = when (type) {
             TagType.TAG_BYTE_ARRAY -> ByteArrayTag(name, parentTag, value = ByteArray(0))
@@ -66,7 +72,7 @@ class NbtCreationDoodle(
             TagType.TAG_END -> throw EndCreationException()
             else -> throw DoodleException("Internal Error", null, "Primitive Tag Creation is not handled by this function.")
         }
-        return Pair(NbtDoodle(tag, depth, parent), intoIndex)
+        return NbtDoodle(tag, depth, parent)
     }
 
 }
@@ -75,15 +81,15 @@ class NbtCreationDoodle(
 class ValueCreationDoodle(
     depth: Int,
     parent: NbtDoodle,
-): VirtualDoodle(depth, parent) {
+): CreationDoodle(depth, parent) {
 
-    override fun actualize(rawName: String, value: String, intoIndex: Int): Pair<ActualDoodle, Int> =
-        Pair(ValueDoodle(value, depth, parent), intoIndex)
+    override fun actualize(rawName: String, value: String): ActualDoodle =
+        ValueDoodle(value, depth, parent)
 
 }
 
 @Stable
-abstract class EditionDoodle(
+sealed class EditionDoodle(
     open val from: ActualDoodle,
     depth: Int,
     parent: NbtDoodle
@@ -94,14 +100,14 @@ class NbtEditionDoodle(
     override val from: NbtDoodle
 ): EditionDoodle(from, from.depth, from.parent!!) {
 
-    override fun actualize(rawName: String, value: String, intoIndex: Int): Pair<ActualDoodle, Int> {
+    override fun actualize(rawName: String, value: String): ActualDoodle {
         val parentTag = parent.tag
         val name = rawName.ifEmpty { null }
 
         val type = from.tag.type
 
         if (type.isPrimitive())
-            return Pair(NbtDoodle(primitiveActualize(rawName, type, value), depth, parent), intoIndex)
+            return NbtDoodle(primitiveActualize(rawName, type, value), depth, parent)
 
         val tag = when (type) {
             TagType.TAG_BYTE_ARRAY -> ByteArrayTag(name, parentTag, value = from.tag.getAs<ByteArrayTag>().value)
@@ -112,7 +118,7 @@ class NbtEditionDoodle(
             TagType.TAG_END -> throw EndCreationException()
             else -> throw DoodleException("Internal Error", null, "Primitive Tag Creation is not handled by this function.")
         }
-        return Pair(NbtDoodle(tag, depth, parent), intoIndex)
+        return NbtDoodle(tag, depth, parent)
     }
 
 }
@@ -122,8 +128,8 @@ class ValueEditionDoodle(
     override val from: ValueDoodle,
 ): EditionDoodle(from, from.depth, from.parent!!) {
 
-    override fun actualize(rawName: String, value: String, intoIndex: Int): Pair<ActualDoodle, Int> =
-        Pair(ValueDoodle(value, depth, parent), intoIndex)
+    override fun actualize(rawName: String, value: String): ActualDoodle =
+        ValueDoodle(value, depth, parent)
 
 }
 
