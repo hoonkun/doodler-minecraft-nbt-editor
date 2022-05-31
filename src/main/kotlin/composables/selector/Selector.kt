@@ -32,7 +32,9 @@ import androidx.compose.ui.unit.sp
 import composables.global.JetBrainsMono
 import composables.global.ThemedColor
 import doodler.files.StateFile
+import doodler.files.StateFileList
 import doodler.files.stateFileOf
+import doodler.files.toStateFileList
 import doodler.logger.DoodlerLogger
 import java.io.File
 
@@ -49,21 +51,18 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
     var shift by remember { mutableStateOf(false) }
 
     var candidateParentFile by remember { mutableStateOf(File("$basePath${value.text}")) }
-    val tempCandidateFiles = remember(candidateParentFile, value.text, basePath) {
+    val candidateFiles = remember(candidateParentFile, value.text, basePath) {
         candidateParentFile.listFiles().toList()
             .filter { file -> file.absolutePath.contains("$basePath${value.text}") }
             .sortedBy { file -> file.name }
             .sortedBy { file -> if (file.isDirectory && !file.isFile) -1 else if (file.isFile) 1 else 2 }
             .map { stateFileOf(it.name, it.absolutePath, it.isDirectory, it.isFile) }
-            .toMutableStateList()
-    }
-    val candidateFiles = remember(*tempCandidateFiles.toTypedArray()) {
-        tempCandidateFiles
+            .toStateFileList()
     }
 
     var haveToShift by remember { mutableStateOf(false) }
     var completeTargetFile by remember(candidateFiles) {
-        val newState = if (candidateFiles.size == 1) candidateFiles[0] else null
+        val newState = if (candidateFiles.items.size == 1) candidateFiles.items[0] else null
         if (newState != null) haveToShift = true
         mutableStateOf(newState)
     }
@@ -140,22 +139,22 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
 
     val onKeyEvent: (KeyEvent) -> Boolean = onKeyEvent@ {
         if (it.key == Key.Tab && it.type == KeyEventType.KeyDown) {
-            if (completeTargetFile != null && candidateFiles.size == 1) {
+            if (completeTargetFile != null && candidateFiles.items.size == 1) {
                 if (shift) return@onKeyEvent true
                 autoComplete()
             } else {
                 requester.requestFocus()
-                if (candidateFiles.isEmpty()) return@onKeyEvent true
+                if (candidateFiles.items.isEmpty()) return@onKeyEvent true
                 val noneSelected = completeTargetFile == null
-                val lastFile = completeTargetFile?.absolutePath == candidateFiles.last().absolutePath
-                val firstFile = completeTargetFile?.absolutePath == candidateFiles.first().absolutePath
+                val lastFile = completeTargetFile?.absolutePath == candidateFiles.items.last().absolutePath
+                val firstFile = completeTargetFile?.absolutePath == candidateFiles.items.first().absolutePath
                 completeTargetFile =
                     if (!shift) {
-                        if (noneSelected || lastFile) candidateFiles.first()
-                        else candidateFiles[candidateFiles.indexOf(completeTargetFile) + 1]
+                        if (noneSelected || lastFile) candidateFiles.items.first()
+                        else candidateFiles.items[candidateFiles.items.indexOf(completeTargetFile) + 1]
                     } else {
-                        if (noneSelected || firstFile) candidateFiles.last()
-                        else candidateFiles[candidateFiles.indexOf(completeTargetFile) - 1]
+                        if (noneSelected || firstFile) candidateFiles.items.last()
+                        else candidateFiles.items[candidateFiles.items.indexOf(completeTargetFile) - 1]
                     }
                 haveToShift = true
             }
@@ -251,7 +250,7 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
 
 @Composable
 fun ColumnScope.CandidateFiles(
-    targets: SnapshotStateList<StateFile>,
+    targets: StateFileList,
     completeTarget: StateFile?,
     type: String,
     color: Color,
@@ -261,13 +260,13 @@ fun ColumnScope.CandidateFiles(
 
     val columns: Int by remember { derivedStateOf { 4 } }
 
-    val directories = remember(targets) { targets.filter(filter).toMutableStateList() }
+    val filteredTargets = remember(targets) { targets.items.filter(filter).toMutableStateList() }
 
     val calculateRange: SnapshotStateList<StateFile>.() -> IntRange = {
-        this.indexOf(directories.find { it == completeTarget })
+        this.indexOf(filteredTargets.find { it == completeTarget })
             .coerceAtLeast(0)
             .mod(columns).minus(1)
-            .coerceIn(0, (directories.size - 3).coerceAtLeast(0))
+            .coerceIn(0, (filteredTargets.size - 3).coerceAtLeast(0))
             .times(columns)
             .let { it until ((it + 3) * columns).coerceAtMost(size) }
     }
@@ -279,12 +278,12 @@ fun ColumnScope.CandidateFiles(
         list.size - subList.size - list.indexOf(subList.firstOrNull() ?: 0)
     }
 
-    val printTargets by remember(directories, completeTarget) {
-        derivedStateOf { directories.slice(directories.calculateRange()).toMutableStateList() }
+    val printTargets by remember(filteredTargets, completeTarget) {
+        derivedStateOf { filteredTargets.slice(filteredTargets.calculateRange()).toMutableStateList() }
     }
 
-    val remainingCount by remember(directories, printTargets) {
-        mutableStateOf(calculateRemains(directories, printTargets))
+    val remainingCount by remember(filteredTargets, printTargets) {
+        mutableStateOf(calculateRemains(filteredTargets, printTargets))
     }
 
     val adjustedColumns = listOf(0, 0, 1, 0)
