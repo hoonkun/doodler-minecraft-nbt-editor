@@ -190,10 +190,7 @@ class NbtDoodle (
             }
     }
 
-    fun value() {
-        if (tag.canHaveChildren) valueSuffix(tag)
-        else tag.value.toString()
-    }
+    fun value(): String = if (tag.canHaveChildren) valueSuffix(tag) else tag.value.toString()
 
     override fun index(): Int {
         val parent = parent ?: return 0
