@@ -187,7 +187,10 @@ class NbtDoodle (
     val children = mutableStateListOf<ActualDoodle>()
 
     val doodles: SnapshotStateList<Doodle> by derivedStateOf {
-        if (!expanded) mutableStateListOf<Doodle>().apply { if (!root) add(this@NbtDoodle) }
+        if (!expanded)
+            mutableStateListOf<Doodle>().apply {
+                if (!root) parent!!.virtual.let { if (it is EditionDoodle && it.from.path == path) add(it) else add(this@NbtDoodle) }
+            }
         else
             mutableStateListOf<Doodle>().apply {
                 if (!root) parent!!.virtual.let { if (it is EditionDoodle && it.from.path == path) add(it) else add(this@NbtDoodle) }
