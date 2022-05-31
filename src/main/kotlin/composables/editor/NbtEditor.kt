@@ -39,7 +39,7 @@ fun BoxScope.NbtEditor(
 
     val state = species.state
 
-    val doodles by remember(state.doodles.size()) { mutableStateOf(state.doodles.create()) }
+    val doodles = state.doodles
     val creation by remember(doodles) { mutableStateOf(doodles.find { it is VirtualDoodle } as? VirtualDoodle?) }
 
     val uiState = state.ui
@@ -199,11 +199,11 @@ fun ColumnScope.IndexChangeActionColumn(
     DoodlerLogger.recomposition("IndexChangeActionColumn")
 
     val available =
-        state.ui.selected.map { it.index }.toRanges().size == 1 &&
+        state.ui.selected.map { it.index() }.toRanges().size == 1 &&
         state.ui.selected.map { it.parent }.toSet().size == 1
 
-    val canMoveUp = (state.ui.selected.firstOrNull()?.index ?: 0) != 0
-    val canMoveDown = (state.ui.selected.lastOrNull()?.let { it.index == it.parent?.expandedItems?.size?.minus(1) }) != true
+    val canMoveUp = (state.ui.selected.firstOrNull()?.index() ?: 0) != 0
+    val canMoveDown = (state.ui.selected.lastOrNull()?.let { it.index() == it.parent?.children?.size?.minus(1) }) != true
 
     Column(
         modifier = Modifier
