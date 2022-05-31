@@ -1,7 +1,6 @@
 package doodler.nbt.tag
 
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import doodler.nbt.AnyTag
@@ -16,7 +15,12 @@ import java.nio.ByteBuffer
 typealias Compound = SnapshotStateList<AnyTag>
 
 @Stable
-class CompoundTag private constructor(name: String? = null, parent: AnyTag?): Tag<Compound>(TAG_COMPOUND, name, parent) {
+class CompoundTag(
+    name: String? = null,
+    parent: AnyTag?,
+    value: Compound? = null,
+    buffer: ByteBuffer? = null
+): Tag<Compound>(TAG_COMPOUND, name, parent, value, buffer) {
 
     override val sizeInBytes: Int
         get() = value.sumOf { tag ->
@@ -44,15 +48,7 @@ class CompoundTag private constructor(name: String? = null, parent: AnyTag?): Ta
         value.removeIf { it.name == name }
     }
 
-    constructor(value: Compound, name: String? = null, parent: AnyTag?): this(name, parent) {
-        valueState = mutableStateOf(value.map { tag -> tag.ensureName(tag.name ?: "") }.toMutableStateList())
-    }
-
-    constructor(buffer: ByteBuffer, name: String? = null, parent: AnyTag?): this(name, parent) {
-        read(buffer)
-    }
-
-    override fun read(buffer: ByteBuffer) {
+    override fun read(buffer: ByteBuffer, vararg extras: Any?): Compound {
         val new = mutableListOf<AnyTag>()
 
         var nextId: Byte
@@ -67,7 +63,7 @@ class CompoundTag private constructor(name: String? = null, parent: AnyTag?): Ta
             new.add(nextTag)
         } while (true)
 
-        valueState = mutableStateOf(new.toMutableStateList())
+        return new.toMutableStateList()
     }
 
     override fun write(buffer: ByteBuffer) {
@@ -87,7 +83,7 @@ class CompoundTag private constructor(name: String? = null, parent: AnyTag?): Ta
         write(buffer)
     }
 
-    override fun clone(name: String?) = CompoundTag(value.map { tag -> tag.clone(tag.name) }.toMutableStateList(), name, parent)
+    override fun clone(name: String?) = CompoundTag(name, parent, value = value.map { tag -> tag.clone(tag.name) }.toMutableStateList())
 
     override fun valueToString(): String =
         "{\n${value.sortedBy { it.name ?: "" }.joinToString(",\n") { "${it.value}" }}\n}"

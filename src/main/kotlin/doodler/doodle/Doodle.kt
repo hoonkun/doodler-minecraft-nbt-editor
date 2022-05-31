@@ -32,33 +32,32 @@ abstract class VirtualDoodle(
         val parentTag = parent.tag
         return if (this is NbtCreationDoodle) {
             val tag = when (type) {
-                TagType.TAG_BYTE -> ByteTag(value.toByte(), name, parentTag)
-                TagType.TAG_SHORT -> ShortTag(value.toShort(), name, parentTag)
-                TagType.TAG_INT -> IntTag(value.toInt(), name, parentTag)
-                TagType.TAG_LONG -> LongTag(value.toLong(), name, parentTag)
-                TagType.TAG_FLOAT -> FloatTag(value.toFloat(), name, parentTag)
-                TagType.TAG_DOUBLE -> DoubleTag(value.toDouble(), name, parentTag)
-                TagType.TAG_STRING -> StringTag(value, name, parentTag)
+                TagType.TAG_BYTE -> ByteTag(name, parentTag, value = value.toByte())
+                TagType.TAG_SHORT -> ShortTag(name, parentTag, value = value.toShort())
+                TagType.TAG_INT -> IntTag(name, parentTag, value = value.toInt())
+                TagType.TAG_LONG -> LongTag(name, parentTag, value = value.toLong())
+                TagType.TAG_FLOAT -> FloatTag(name, parentTag, value = value.toFloat())
+                TagType.TAG_DOUBLE -> DoubleTag(name, parentTag, value = value.toDouble())
+                TagType.TAG_STRING -> StringTag(name, parentTag, value = value)
                 TagType.TAG_BYTE_ARRAY -> ByteArrayTag(
-                    if (mode.isEdit()) (from as NbtDoodle).tag.getAs<ByteArrayTag>().value else ByteArray(0),
-                    name, parentTag
+                    name, parentTag,
+                    value = if (mode.isEdit()) (from as NbtDoodle).tag.getAs<ByteArrayTag>().value else ByteArray(0)
                 )
                 TagType.TAG_INT_ARRAY -> IntArrayTag(
-                    if (mode.isEdit()) (from as NbtDoodle).tag.getAs<IntArrayTag>().value else IntArray(0),
-                    name, parentTag
+                    name, parentTag,
+                    value = if (mode.isEdit()) (from as NbtDoodle).tag.getAs<IntArrayTag>().value else IntArray(0)
                 )
                 TagType.TAG_LONG_ARRAY -> LongArrayTag(
-                    if (mode.isEdit()) (from as NbtDoodle).tag.getAs<LongArrayTag>().value else LongArray(0),
-                    name, parentTag
+                    name, parentTag,
+                    value = if (mode.isEdit()) (from as NbtDoodle).tag.getAs<LongArrayTag>().value else LongArray(0)
                 )
                 TagType.TAG_LIST -> ListTag(
-                    TagType.TAG_END,
-                    if (mode.isEdit()) (from as NbtDoodle).tag.getAs<ListTag>().value else listOf(),
-                    true, name, parentTag
+                    name, parentTag, TagType.TAG_END,
+                    value = if (mode.isEdit()) (from as NbtDoodle).tag.getAs<ListTag>().value else mutableStateListOf()
                 )
                 TagType.TAG_COMPOUND -> CompoundTag(
-                    if (mode.isEdit()) (from as NbtDoodle).tag.getAs<CompoundTag>().value else mutableStateListOf(),
-                    name, parentTag
+                    name, parentTag,
+                    value = if (mode.isEdit()) (from as NbtDoodle).tag.getAs<CompoundTag>().value else mutableStateListOf()
                 )
                 TagType.TAG_END -> throw EndCreationException()
             }

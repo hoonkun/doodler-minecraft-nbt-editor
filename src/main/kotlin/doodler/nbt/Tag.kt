@@ -1,22 +1,24 @@
 package doodler.nbt
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
+import doodler.doodle.DoodleException
 import doodler.doodle.InternalAssertionException
 import doodler.nbt.tag.*
 import doodler.nbt.TagType.*
+import doodler.nbt.extensions.byte
 
 import java.nio.ByteBuffer
 
 typealias AnyTag = Tag<out Any>
 
 @Stable
-abstract class Tag<T: Any> protected constructor(
+abstract class Tag<T: Any>(
     val type: TagType,
     val name: String?,
-    val parent: Tag<out Any>?
+    val parent: Tag<out Any>?,
+    valueInput: T? = null,
+    buffer: ByteBuffer? = null,
+    vararg extras: Any?
 ) {
 
     init {
@@ -24,7 +26,10 @@ abstract class Tag<T: Any> protected constructor(
             throw Exception("parent must be one of 'TAG_COMPOUND' or 'TAG_LIST'")
     }
 
-    protected lateinit var valueState: MutableState<T>
+    private val valueState: MutableState<T> =
+        mutableStateOf(
+            valueInput ?: buffer?.let { read(it, *extras) } ?: throw DoodleException("Internal Error", null, "Not enough arguments.")
+        )
     var value by valueState
 
     abstract val sizeInBytes: Int
@@ -35,7 +40,7 @@ abstract class Tag<T: Any> protected constructor(
 
     fun ensureName(name: String?) = if (this.name == name) this else clone(name)
 
-    abstract fun read(buffer: ByteBuffer)
+    abstract fun read(buffer: ByteBuffer, vararg extras: Any?): T
 
     abstract fun write(buffer: ByteBuffer)
 
@@ -59,18 +64,18 @@ abstract class Tag<T: Any> protected constructor(
 
         fun read(tagType: TagType, buffer: ByteBuffer, name: String? = null, parent: AnyTag?) = when(tagType) {
             TAG_END -> EndTag()
-            TAG_BYTE -> ByteTag(buffer, name, parent)
-            TAG_SHORT -> ShortTag(buffer, name, parent)
-            TAG_INT -> IntTag(buffer, name, parent)
-            TAG_LONG -> LongTag(buffer, name, parent)
-            TAG_FLOAT -> FloatTag(buffer, name, parent)
-            TAG_DOUBLE -> DoubleTag(buffer, name, parent)
-            TAG_BYTE_ARRAY -> ByteArrayTag(buffer, name, parent)
-            TAG_STRING -> StringTag(buffer, name, parent)
-            TAG_LIST -> ListTag(buffer, name, parent)
-            TAG_COMPOUND -> CompoundTag(buffer, name, parent)
-            TAG_INT_ARRAY -> IntArrayTag(buffer, name, parent)
-            TAG_LONG_ARRAY -> LongArrayTag(buffer, name, parent)
+            TAG_BYTE -> ByteTag(name, parent, buffer = buffer)
+            TAG_SHORT -> ShortTag(name, parent, buffer = buffer)
+            TAG_INT -> IntTag(name, parent, buffer = buffer)
+            TAG_LONG -> LongTag(name, parent, buffer = buffer)
+            TAG_FLOAT -> FloatTag(name, parent, buffer = buffer)
+            TAG_DOUBLE -> DoubleTag(name, parent, buffer = buffer)
+            TAG_BYTE_ARRAY -> ByteArrayTag(name, parent, buffer = buffer)
+            TAG_STRING -> StringTag(name, parent, buffer = buffer)
+            TAG_LIST -> ListTag(name, parent, TagType[buffer.byte], buffer = buffer)
+            TAG_COMPOUND -> CompoundTag(name, parent, buffer = buffer)
+            TAG_INT_ARRAY -> IntArrayTag(name, parent, buffer = buffer)
+            TAG_LONG_ARRAY -> LongArrayTag(name, parent, buffer = buffer)
         }
 
     }
