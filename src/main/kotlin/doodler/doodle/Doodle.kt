@@ -190,8 +190,8 @@ class NbtDoodle (
         if (!expanded) mutableStateListOf<Doodle>().apply { if (!root) add(this@NbtDoodle) }
         else
             mutableStateListOf<Doodle>().apply {
-                if (!root) parent!!.virtual.let { if (it is EditionDoodle) add(it) else add(this@NbtDoodle) }
-                virtual?.let { if (it is NbtCreationDoodle) add(it) }
+                if (!root) parent!!.virtual.let { if (it is EditionDoodle && it.from.path == path) add(it) else add(this@NbtDoodle) }
+                virtual?.let { if (it is CreationDoodle) add(it) }
                 addAll(children.map { if (it is NbtDoodle) it.doodles else mutableStateListOf(it) }.flatten())
             }
     }
