@@ -25,6 +25,7 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import composables.global.JetBrainsMono
@@ -48,6 +49,8 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
     var ctrl by remember { mutableStateOf(false) }
     var shift by remember { mutableStateOf(false) }
 
+    var haveToShift by remember { mutableStateOf(false) }
+
     var candidateParentFile by remember { mutableStateOf(File("$basePath${value.text}")) }
     val candidateFiles = remember(candidateParentFile, value.text, basePath) {
         candidateParentFile.listFiles().toList()
@@ -58,10 +61,10 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
             .toStateFileList()
     }
 
-    var haveToShift by remember { mutableStateOf(false) }
     var completeTargetFile by remember(candidateFiles) {
         val newState = if (candidateFiles.items.size == 1) candidateFiles.items[0] else null
         if (newState != null) haveToShift = true
+
         mutableStateOf(newState)
     }
     val completingText by remember(completeTargetFile, value.text, haveToShift) {
@@ -76,10 +79,10 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
     }
 
     val selected by remember(basePath, value.text) {
-        mutableStateOf(File("$basePath${value.text}").let { file -> if (file.exists()) file else null })
+        mutableStateOf(
+            File("$basePath${value.text}").let { file -> if (file.exists() && validate(file)) file else null }
+        )
     }
-
-    val selectable by remember(selected) { mutableStateOf(selected.let { if (it == null) false else validate(it) }) }
 
     val displayValue by remember(value, completingText, haveToShift) {
         val newString = "${value.text}${completingText}"
@@ -92,7 +95,9 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
                     newString.length
                 ))
             ),
-            selection = if (!haveToShift) value.selection else TextRange(value.selection.start + completingText.length)
+            selection =
+                if (!haveToShift) value.selection
+                else TextRange(value.selection.start + completingText.length)
         ))
     }
 
@@ -157,7 +162,7 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
                 haveToShift = true
             }
         } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-            if (!autoComplete() && selected != null && selectable && ctrl) onSelect(selected!!)
+            if (!autoComplete() && selected != null && ctrl) onSelect(selected!!)
         } else if (it.key == Key.CtrlLeft || it.key == Key.CtrlRight) {
             ctrl = it.type == KeyEventType.KeyDown
         } else if (it.key == Key.ShiftLeft || it.key == Key.ShiftRight) {
@@ -173,8 +178,8 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
 
     SelectorRoot {
         PaddedContent {
-            DocumentationDescription("/** you can use '..' to go parent directory */")
-            PropertyDescription("basePath", basePath)
+            DocumentationDescription(text = "/** you can use '..' to go parent directory */")
+            PropertyDescription(key = "basePath", value = basePath)
         }
         PathInputBox {
             PathInput(
@@ -184,25 +189,23 @@ fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolea
                 hideCursor = haveToShift,
                 focusRequester = requester
             )
-            SelectButton(selectable) { onSelect(selected!!) }
+            SelectButton(enabled = selected != null) { selected?.let { onSelect(it) } }
         }
-        PaddedContent {
+        PaddedContent(top = 15.dp) {
             if (!candidateParentFile.isDirectory) return@PaddedContent
 
-            Spacer(modifier = Modifier.height(15.dp))
-
             CandidateFiles(
-                candidateFiles,
-                completeTargetFile?.let { if (it.isDirectory && !it.isFile) it else null },
-                "directories",
-                Color(0xFFFFC66D)
+                targets = candidateFiles,
+                completeTarget = completeTargetFile?.let { if (it.isDirectory && !it.isFile) it else null },
+                type = "directories",
+                color = Color(0xFFFFC66D)
             ) { it.isDirectory && !it.isFile }
 
             CandidateFiles(
-                candidateFiles,
-                completeTargetFile?.let { if (!it.isDirectory) it else null },
-                "files",
-                ThemedColor.Editor.Tag.General
+                targets = candidateFiles,
+                completeTarget = completeTargetFile?.let { if (!it.isDirectory) it else null },
+                type = "files",
+                color = ThemedColor.Editor.Tag.General
             ) { !it.isDirectory }
         }
     }
@@ -312,8 +315,8 @@ fun BoxScope.SelectorRoot(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-fun ColumnScope.PaddedContent(content: @Composable ColumnScope.() -> Unit) {
-    Column (modifier = Modifier.padding(start = 15.dp, end = 15.dp), content = content)
+fun ColumnScope.PaddedContent(top: Dp = 0.dp, content: @Composable ColumnScope.() -> Unit) {
+    Column (modifier = Modifier.padding(start = 15.dp, end = 15.dp, top = top), content = content)
 }
 
 @Composable
@@ -333,7 +336,11 @@ fun ColumnScope.PropertyDescription(key: String, value: String) {
         AnnotatedString(
             text = "$key = $value",
             spanStyles = listOf(
-                AnnotatedString.Range(SpanStyle(color = ThemedColor.ChunkSelectorPropertyKey), 0, key.length + 2)
+                AnnotatedString.Range(
+                    item = SpanStyle(color = ThemedColor.ChunkSelectorPropertyKey),
+                    start = 0,
+                    end = key.length + 2
+                )
             )
         ),
         color = ThemedColor.Editor.Tag.General,
@@ -347,7 +354,10 @@ fun ColumnScope.PropertyDescription(key: String, value: String) {
 fun ColumnScope.PathInputBox(content: @Composable RowScope.() -> Unit) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth().background(Color(32, 32, 32), RoundedCornerShape(5.dp)).height(60.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(60.dp)
+            .background(Color(32, 32, 32), RoundedCornerShape(5.dp)),
         content = content
     )
 }
