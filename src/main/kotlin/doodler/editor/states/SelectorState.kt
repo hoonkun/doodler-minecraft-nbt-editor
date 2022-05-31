@@ -1,13 +1,11 @@
 package doodler.editor.states
 
-import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.text.input.TextFieldValue
 import doodler.minecraft.structures.BlockLocation
 import doodler.minecraft.structures.ChunkLocation
 
+@Stable
 class SelectorState (
     selectedChunk: MutableState<ChunkLocation?> = mutableStateOf(null),
     chunkXValue: MutableState<TextFieldValue> = mutableStateOf(TextFieldValue("")),
