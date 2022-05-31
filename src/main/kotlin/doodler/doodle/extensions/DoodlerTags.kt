@@ -15,29 +15,23 @@ import doodler.nbt.tag.*
 
 
 fun CompoundTag.doodle(parent: NbtDoodle?, depth: Int): List<ActualDoodle> {
-    return this.value.mapIndexed { index, value -> NbtDoodle(value, depth, index, parent) }
+    return this.value.map { NbtDoodle(it, depth, parent) }
 }
 
 fun ListTag.doodle(parent: NbtDoodle, depth: Int): List<ActualDoodle> {
-    return this.value.mapIndexed { index, value -> NbtDoodle(value, depth, index, parent) }
+    return this.value.map { NbtDoodle(it, depth, parent) }
 }
 
 fun ByteArrayTag.doodle(parent: NbtDoodle, depth: Int): List<ActualDoodle> {
-    return this.value.mapIndexed { index, value ->
-        ValueDoodle("$value", depth, index, parent)
-    }
+    return this.value.map { ValueDoodle("$it", depth, parent) }
 }
 
 fun IntArrayTag.doodle(parent: NbtDoodle, depth: Int): List<ActualDoodle> {
-    return this.value.mapIndexed { index, value ->
-        ValueDoodle("$value", depth, index, parent)
-    }
+    return this.value.map { ValueDoodle("$value", depth, parent) }
 }
 
 fun LongArrayTag.doodle(parent: NbtDoodle, depth: Int): List<ActualDoodle> {
-    return this.value.mapIndexed { index, value ->
-        ValueDoodle("$value", depth, index, parent)
-    }
+    return this.value.map { ValueDoodle("$value", depth, parent) }
 }
 
 fun TagType.shorten(): String {
