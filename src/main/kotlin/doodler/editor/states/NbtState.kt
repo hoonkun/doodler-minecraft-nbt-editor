@@ -44,7 +44,7 @@ class NbtState (
     val ui by mutableStateOf(DoodleUi())
     val lazyState = LazyListState()
 
-    val doodles get() = rootDoodle.children(true)
+    val doodles get() = rootDoodle.doodles
 
     val actions = Actions()
 
@@ -450,9 +450,9 @@ class NbtState (
             into.expand()
 
             if (into.tag.type.isArray()) {
-                into.creator = ValueCreationDoodle(into.depth + 1, into)
+                into.virtual = ValueCreationDoodle(into.depth + 1, into)
             } else {
-                into.creator = NbtCreationDoodle(type, into.depth + 1, into)
+                into.virtual = NbtCreationDoodle(type, into.depth + 1, into)
             }
         }
 
@@ -462,7 +462,7 @@ class NbtState (
             val into = ui.selected.firstOrNull() ?: rootDoodle
             if (into !is NbtDoodle) throw InternalAssertionException(NbtDoodle::class.java.simpleName, into.javaClass.name)
 
-            into.creator = null
+            into.virtual = null
         }
 
         fun create(new: ActualDoodle, into: NbtDoodle, where: Int) {
@@ -475,7 +475,7 @@ class NbtState (
 
             into.create(new, where)
 
-            into.creator = null
+            into.virtual = null
 
             ui.selected.clear()
             ui.selected.add(new)
@@ -513,8 +513,8 @@ class NbtState (
             if (ui.selected.size > 1) throw AttemptToEditMultipleTagsException()
 
             when (val target = ui.selected[0]) {
-                is NbtDoodle -> target.parent?.creator = NbtEditionDoodle(target)
-                is ValueDoodle -> target.parent?.creator = ValueEditionDoodle(target)
+                is NbtDoodle -> target.parent?.virtual = NbtEditionDoodle(target)
+                is ValueDoodle -> target.parent?.virtual = ValueEditionDoodle(target)
             }
         }
 
@@ -522,7 +522,7 @@ class NbtState (
             if (ui.selected.isEmpty() || ui.selected.size > 1) throw VirtualActionCancelException("edition")
 
             val targetParent = ui.selected[0].parent ?: throw ParentNotFoundException()
-            targetParent.creator = null
+            targetParent.virtual = null
         }
 
         fun edit(oldActual: ActualDoodle, newActual: ActualDoodle) {
@@ -545,7 +545,7 @@ class NbtState (
                 actions.deleter.internal.delete(listOf(oldActual))
                 actions.creator.internal.create(listOf(newActual))
 
-                into.creator = null
+                into.virtual = null
 
                 ui.selected.clear()
                 ui.selected.add(newActual)

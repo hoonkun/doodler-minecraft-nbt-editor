@@ -4,7 +4,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import doodler.doodle.extensions.displayName
 import doodler.doodle.extensions.doodle
-import doodler.extensions.replaceAt
 import doodler.nbt.AnyTag
 import doodler.nbt.TagType
 import doodler.nbt.tag.*
@@ -163,7 +162,7 @@ sealed class ActualDoodle(
 class NbtDoodle (
     val tag: AnyTag,
     depth: Int,
-    parent: NbtDoodle? = null
+    parent: NbtDoodle? = null,
 ): ActualDoodle(depth, parent) {
 
     override val path: String get() = parent?.let {
@@ -174,10 +173,22 @@ class NbtDoodle (
         }
     } ?: "root"
 
+    private val root = parent == null
+
     var expanded by mutableStateOf(false)
 
-    var creator by mutableStateOf<VirtualDoodle?>(null)
+    var virtual by mutableStateOf<VirtualDoodle?>(null)
     val children = mutableStateListOf<ActualDoodle>()
+
+    val doodles: SnapshotStateList<Doodle> by derivedStateOf {
+        if (!expanded) mutableStateListOf<Doodle>().apply { if (!root) add(this@NbtDoodle) }
+        else
+            mutableStateListOf<Doodle>().apply {
+                if (!root) parent!!.virtual.let { if (it is EditionDoodle) add(it) else add(this@NbtDoodle) }
+                virtual?.let { if (it is NbtCreationDoodle) add(it) }
+                addAll(children.map { if (it is NbtDoodle) it.doodles else mutableStateListOf(it) }.flatten())
+            }
+    }
 
     fun value() {
         if (tag.canHaveChildren) valueSuffix(tag)
@@ -192,33 +203,6 @@ class NbtDoodle (
             TagType.TAG_COMPOUND -> parent.tag.getAs<CompoundTag>().value.indexOf(tag)
             else -> 0
         }
-    }
-
-    fun sizeOfChildren(root: Boolean = false): Int {
-        var size = 0
-        if (!root) size++
-
-        if (!expanded) return size
-
-        size += children.sumOf { if (it is NbtDoodle) it.sizeOfChildren() else 1 }
-        size += if (creator is NbtCreationDoodle || creator is ValueCreationDoodle) 1 else 0
-        return size
-    }
-
-    fun children(root: Boolean = false): SnapshotStateList<Doodle> {
-        return mutableListOf<Doodle>().apply {
-            if (!root) add(this@NbtDoodle)
-
-            if (!expanded) return@apply
-
-            addAll(children.map { if (it is NbtDoodle) it.children() else listOf(it) }.flatten())
-            creator?.let {
-                when (it) {
-                    is NbtCreationDoodle, is ValueCreationDoodle -> add(it.parent.index() + if (!root) 1 else 0, it)
-                    is EditionDoodle -> replaceAt(it.from.index() + if (!root) 1 else 0, it)
-                }
-            }
-        }.toMutableStateList()
     }
 
     private fun initializeChildren() {
@@ -243,9 +227,9 @@ class NbtDoodle (
 
         parent?.let { if (!it.expanded) it.expand() }
 
-        expanded = true
-
         initializeChildren()
+
+        expanded = true
     }
 
     fun collapse(selected: MutableList<ActualDoodle>) {
