@@ -27,4 +27,14 @@ class LongArrayTag(
 
     override fun valueToString(): String = "[ ${value.joinToString(", ")} ]"
 
+    override fun valueEquals(other: AnyTag): Boolean {
+        if (javaClass != other.javaClass) return false
+
+        other as LongArrayTag
+
+        return value.contentEquals(other.value)
+    }
+
+    override fun valueHashcode(): Int = value.hashCode()
+
 }

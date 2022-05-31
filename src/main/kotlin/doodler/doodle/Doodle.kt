@@ -136,7 +136,6 @@ sealed class ActualDoodle(
 
     var parent by mutableStateOf(parent)
 
-    // TODO: 이거 활용하려면 Tag 에다가 equals 를 정의해야함
     abstract fun index(): Int
 
     abstract fun delete(): ActualDoodle?

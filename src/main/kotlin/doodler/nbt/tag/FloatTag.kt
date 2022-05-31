@@ -24,4 +24,14 @@ class FloatTag(
 
     override fun clone(name: String?) = FloatTag(name, parent, value = value)
 
+    override fun valueEquals(other: AnyTag): Boolean {
+        if (javaClass != other.javaClass) return false
+
+        other as FloatTag
+
+        return value == other.value
+    }
+
+    override fun valueHashcode(): Int = value.hashCode()
+
 }

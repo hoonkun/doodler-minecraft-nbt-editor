@@ -24,4 +24,14 @@ class LongTag(
 
     override fun clone(name: String?) = LongTag(name, parent, value = value)
 
+    override fun valueEquals(other: AnyTag): Boolean {
+        if (javaClass != other.javaClass) return false
+
+        other as LongTag
+
+        return value == other.value
+    }
+
+    override fun valueHashcode(): Int = value.hashCode()
+
 }

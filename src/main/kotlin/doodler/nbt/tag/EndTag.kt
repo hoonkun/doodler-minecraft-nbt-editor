@@ -2,6 +2,7 @@ package doodler.nbt.tag
 
 import androidx.compose.runtime.Stable
 import doodler.doodle.DoodleException
+import doodler.nbt.AnyTag
 import doodler.nbt.Tag
 import doodler.nbt.TagType.*
 import java.nio.ByteBuffer
@@ -17,5 +18,9 @@ class EndTag: Tag<Nothing>(TAG_END, null, null) {
     override fun write(buffer: ByteBuffer) { }
 
     override fun clone(name: String?) = EndTag()
+
+    override fun valueEquals(other: AnyTag): Boolean = javaClass == other.javaClass
+
+    override fun valueHashcode(): Int = 0
 
 }

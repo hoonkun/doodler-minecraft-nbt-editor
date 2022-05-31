@@ -3,6 +3,7 @@ package doodler.nbt.tag
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
+import doodler.extensions.contentEquals
 import doodler.nbt.AnyTag
 import doodler.nbt.Tag
 import doodler.nbt.TagType
@@ -87,5 +88,15 @@ class CompoundTag(
 
     override fun valueToString(): String =
         "{\n${value.sortedBy { it.name ?: "" }.joinToString(",\n") { "${it.value}" }}\n}"
+
+    override fun valueEquals(other: AnyTag): Boolean {
+        if (javaClass != other.javaClass) return false
+
+        other as CompoundTag
+
+        return value.contentEquals(other.value)
+    }
+
+    override fun valueHashcode(): Int = value.hashCode()
 
 }

@@ -46,11 +46,34 @@ abstract class Tag<T: Any>(
 
     abstract fun clone(name: String? = this.name): Tag<T>
 
+    abstract fun valueEquals(other: AnyTag): Boolean
+
+    // TODO: 이거 SnapshotStateList.hashCode() 로 괜찮은가?
+    abstract fun valueHashcode(): Int
+
     open fun prefix() = if (name.isNullOrEmpty()) "" else "\"${name}\": "
 
     open fun valueToString() = "$value"
 
     override fun toString(): String = prefix() + valueToString()
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as AnyTag
+
+        if (name != other.name) return false
+        if (!valueEquals(other)) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = name.hashCode()
+        result = result * 31 + valueHashcode()
+        return result
+    }
 
     fun canHold(other: TagType) =
         this.type == TAG_COMPOUND ||

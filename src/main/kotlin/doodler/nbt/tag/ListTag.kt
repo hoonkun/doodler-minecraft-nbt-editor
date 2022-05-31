@@ -2,6 +2,7 @@ package doodler.nbt.tag
 
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import doodler.extensions.contentEquals
 import doodler.nbt.AnyTag
 import doodler.nbt.Tag
 import doodler.nbt.TagType
@@ -43,5 +44,15 @@ class ListTag(
             .also { require(it.typeCheck(it.elementsType, it.value)) { "ListTag's elements must be of a single type" } }
 
     override fun valueToString(): String = if (value.isEmpty()) "[]" else "[\n${value.joinToString(",\n") { it.toString() }.indent()}\n]"
+
+    override fun valueEquals(other: AnyTag): Boolean {
+        if (javaClass != other.javaClass) return false
+
+        other as ListTag
+
+        return value.contentEquals(other.value)
+    }
+
+    override fun valueHashcode(): Int = value.hashCode()
 
 }

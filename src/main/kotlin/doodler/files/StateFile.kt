@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
+import doodler.extensions.contentEquals
 
 @Immutable
 data class StateFile(
@@ -27,12 +28,7 @@ data class StateFileList(
 
         other as StateFileList
 
-        if (items.size != other.items.size) return false
-        for ((i1, i2) in items.mapIndexed { index, item -> item to other.items[index] }) {
-            if (i1 != i2) return false
-        }
-
-        return true
+        return items.contentEquals(other.items)
     }
 
     override fun hashCode(): Int {

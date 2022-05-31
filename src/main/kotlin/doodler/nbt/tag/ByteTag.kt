@@ -26,4 +26,14 @@ class ByteTag(
 
     override fun clone(name: String?) = ByteTag(name, parent, value = value)
 
+    override fun valueEquals(other: AnyTag): Boolean {
+        if (javaClass != other.javaClass) return false
+
+        other as ByteTag
+
+        return value == other.value
+    }
+
+    override fun valueHashcode(): Int = value.hashCode()
+
 }

@@ -25,4 +25,14 @@ class DoubleTag(
 
     override fun clone(name: String?) = DoubleTag(name, parent, value = value)
 
+    override fun valueEquals(other: AnyTag): Boolean {
+        if (javaClass != other.javaClass) return false
+
+        other as DoubleTag
+
+        return value == other.value
+    }
+
+    override fun valueHashcode(): Int = value.hashCode()
+
 }

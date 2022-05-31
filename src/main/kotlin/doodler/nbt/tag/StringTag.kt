@@ -28,4 +28,14 @@ class StringTag(
 
     override fun valueToString(): String = "\"$value\""
 
+    override fun valueEquals(other: AnyTag): Boolean {
+        if (javaClass != other.javaClass) return false
+
+        other as StringTag
+
+        return value == other.value
+    }
+
+    override fun valueHashcode(): Int = value.hashCode()
+
 }

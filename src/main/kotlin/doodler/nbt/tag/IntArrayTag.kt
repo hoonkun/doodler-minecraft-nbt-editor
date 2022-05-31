@@ -27,4 +27,14 @@ class IntArrayTag(
 
     override fun valueToString(): String = "[ ${value.joinToString(", ")} ]"
 
+    override fun valueEquals(other: AnyTag): Boolean {
+        if (javaClass != other.javaClass) return false
+
+        other as IntArrayTag
+
+        return value.contentEquals(other.value)
+    }
+
+    override fun valueHashcode(): Int = value.hashCode()
+
 }
