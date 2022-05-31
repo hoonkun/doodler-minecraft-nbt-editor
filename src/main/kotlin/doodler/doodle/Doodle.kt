@@ -10,94 +10,129 @@ import doodler.nbt.TagType
 import doodler.nbt.tag.*
 
 
+@Stable
 sealed class Doodle(
-    var depth: Int,
-    var index: Int,
-) {
+    depth: Int,
+    index: Int
+){
+    var depth by mutableStateOf(depth)
+    var index by mutableStateOf(index)
+
     abstract val path: String
 }
 
+@Stable
 abstract class VirtualDoodle(
     depth: Int,
     index: Int,
     val parent: NbtDoodle,
-    val mode: VirtualMode
 ): Doodle(depth, index) {
     override val path: String = "_DOODLE_CREATOR_"
 
-    lateinit var from: ActualDoodle
-    
-    fun actualize(rawName: String, value: String, intoIndex: Int): ActualDoodle {
-        val name = rawName.ifEmpty { null }
+    fun primitiveActualize(rawName: String, type: TagType, value: String): AnyTag {
         val parentTag = parent.tag
-        return if (this is NbtCreationDoodle) {
-            val tag = when (type) {
-                TagType.TAG_BYTE -> ByteTag(name, parentTag, value = value.toByte())
-                TagType.TAG_SHORT -> ShortTag(name, parentTag, value = value.toShort())
-                TagType.TAG_INT -> IntTag(name, parentTag, value = value.toInt())
-                TagType.TAG_LONG -> LongTag(name, parentTag, value = value.toLong())
-                TagType.TAG_FLOAT -> FloatTag(name, parentTag, value = value.toFloat())
-                TagType.TAG_DOUBLE -> DoubleTag(name, parentTag, value = value.toDouble())
-                TagType.TAG_STRING -> StringTag(name, parentTag, value = value)
-                TagType.TAG_BYTE_ARRAY -> ByteArrayTag(
-                    name, parentTag,
-                    value = if (mode.isEdit()) (from as NbtDoodle).tag.getAs<ByteArrayTag>().value else ByteArray(0)
-                )
-                TagType.TAG_INT_ARRAY -> IntArrayTag(
-                    name, parentTag,
-                    value = if (mode.isEdit()) (from as NbtDoodle).tag.getAs<IntArrayTag>().value else IntArray(0)
-                )
-                TagType.TAG_LONG_ARRAY -> LongArrayTag(
-                    name, parentTag,
-                    value = if (mode.isEdit()) (from as NbtDoodle).tag.getAs<LongArrayTag>().value else LongArray(0)
-                )
-                TagType.TAG_LIST -> ListTag(
-                    name, parentTag, TagType.TAG_END,
-                    value = if (mode.isEdit()) (from as NbtDoodle).tag.getAs<ListTag>().value else mutableStateListOf()
-                )
-                TagType.TAG_COMPOUND -> CompoundTag(
-                    name, parentTag,
-                    value = if (mode.isEdit()) (from as NbtDoodle).tag.getAs<CompoundTag>().value else mutableStateListOf()
-                )
-                TagType.TAG_END -> throw EndCreationException()
-            }
-            NbtDoodle(tag, depth, intoIndex, parent)
-        } else {
-            ValueDoodle(value, depth, intoIndex, parent)
+        val name = rawName.ifEmpty { null }
+
+        return when (type) {
+            TagType.TAG_BYTE -> ByteTag(name, parentTag, value = value.toByte())
+            TagType.TAG_SHORT -> ShortTag(name, parentTag, value = value.toShort())
+            TagType.TAG_INT -> IntTag(name, parentTag, value = value.toInt())
+            TagType.TAG_LONG -> LongTag(name, parentTag, value = value.toLong())
+            TagType.TAG_FLOAT -> FloatTag(name, parentTag, value = value.toFloat())
+            TagType.TAG_DOUBLE -> DoubleTag(name, parentTag, value = value.toDouble())
+            TagType.TAG_STRING -> StringTag(name, parentTag, value = value)
+            else -> throw DoodleException("Internal Error", null, "Non-Primitive Tag Creation is not handled by this function!")
         }
     }
 
-    enum class VirtualMode {
-        CREATE, EDIT;
+    abstract fun actualize(rawName: String, value: String, intoIndex: Int): ActualDoodle
 
-        fun isEdit() = this == EDIT
-    }
 }
 
+@Stable
 class NbtCreationDoodle(
     val type: TagType,
     depth: Int,
     index: Int,
     parent: NbtDoodle,
-    mode: VirtualMode
-): VirtualDoodle(depth, index, parent, mode) {
-    constructor(from: NbtDoodle, mode: VirtualMode):
-            this(from.tag.type, from.depth, from.index, from.parent!!, mode) {
-                this.from = from
-            }
+): VirtualDoodle(depth, index, parent) {
+
+    override fun actualize(rawName: String, value: String, intoIndex: Int): ActualDoodle {
+        val parentTag = parent.tag
+        val name = rawName.ifEmpty { null }
+
+        if (type.isPrimitive())
+            return NbtDoodle(primitiveActualize(rawName, type, value), depth, intoIndex, parent)
+
+        val tag = when (type) {
+            TagType.TAG_BYTE_ARRAY -> ByteArrayTag(name, parentTag, value = ByteArray(0))
+            TagType.TAG_INT_ARRAY -> IntArrayTag(name, parentTag, value = IntArray(0))
+            TagType.TAG_LONG_ARRAY -> LongArrayTag(name, parentTag, value = LongArray(0))
+            TagType.TAG_LIST -> ListTag(name, parentTag, TagType.TAG_END, value = mutableStateListOf())
+            TagType.TAG_COMPOUND -> CompoundTag(name, parentTag, value = mutableStateListOf())
+            TagType.TAG_END -> throw EndCreationException()
+            else -> throw DoodleException("Internal Error", null, "Primitive Tag Creation is not handled by this function.")
+        }
+        return NbtDoodle(tag, depth, intoIndex, parent)
+    }
+
 }
 
+@Stable
 class ValueCreationDoodle(
     depth: Int,
     index: Int,
     parent: NbtDoodle,
-    mode: VirtualMode
-): VirtualDoodle(depth, index, parent, mode) {
-    constructor(from: ValueDoodle, mode: VirtualMode):
-            this(from.depth, from.index, from.parent!!, mode) {
-                this.from = from
-            }
+): VirtualDoodle(depth, index, parent) {
+
+    override fun actualize(rawName: String, value: String, intoIndex: Int): ActualDoodle =
+        ValueDoodle(value, depth, intoIndex, parent)
+
 }
+
+@Stable
+class NbtEditionDoodle(
+    val from: NbtDoodle,
+    depth: Int,
+    index: Int,
+    parent: NbtDoodle
+): VirtualDoodle(depth, index, parent) {
+
+    override fun actualize(rawName: String, value: String, intoIndex: Int): ActualDoodle {
+        val parentTag = parent.tag
+        val name = rawName.ifEmpty { null }
+
+        val type = from.tag.type
+
+        if (type.isPrimitive())
+            return NbtDoodle(primitiveActualize(rawName, type, value), depth, intoIndex, parent)
+
+        val tag = when (type) {
+            TagType.TAG_BYTE_ARRAY -> ByteArrayTag(name, parentTag, value = from.tag.getAs<ByteArrayTag>().value)
+            TagType.TAG_INT_ARRAY -> IntArrayTag(name, parentTag, value = from.tag.getAs<IntArrayTag>().value)
+            TagType.TAG_LONG_ARRAY -> LongArrayTag(name, parentTag, value = from.tag.getAs<LongArrayTag>().value)
+            TagType.TAG_LIST -> ListTag(name, parentTag, TagType.TAG_END, value = from.tag.getAs<ListTag>().value)
+            TagType.TAG_COMPOUND -> CompoundTag(name, parentTag, value = from.tag.getAs<CompoundTag>().value)
+            TagType.TAG_END -> throw EndCreationException()
+            else -> throw DoodleException("Internal Error", null, "Primitive Tag Creation is not handled by this function.")
+        }
+        return NbtDoodle(tag, depth, intoIndex, parent)
+    }
+
+}
+
+@Stable
+class ValueEditionDoodle(
+    depth: Int,
+    index: Int,
+    parent: NbtDoodle,
+): VirtualDoodle(depth, index, parent) {
+
+    override fun actualize(rawName: String, value: String, intoIndex: Int): ActualDoodle =
+        ValueDoodle(value, depth, intoIndex, parent)
+
+}
+
 
 sealed class ActualDoodle(
     depth: Int,
@@ -166,7 +201,7 @@ class NbtDoodle (
         var size = 0
         if (!root) size++
         size += expandedItems.sumOf { if (it is NbtDoodle) it.sizeOfChildren() else 1 }
-        size += if (creator?.mode == VirtualDoodle.VirtualMode.CREATE) 1 else 0
+        size += if (creator is NbtCreationDoodle || creator is ValueCreationDoodle) 1 else 0
         return size
     }
 
@@ -175,9 +210,9 @@ class NbtDoodle (
             if (!root) add(this@NbtDoodle)
             addAll(expandedItems.map { if (it is NbtDoodle) it.children() else listOf(it) }.flatten())
             creator?.let {
-                when (it.mode) {
-                    VirtualDoodle.VirtualMode.CREATE -> add(it.index + if (!root) 1 else 0, it)
-                    VirtualDoodle.VirtualMode.EDIT -> replaceAt(it.index + if (!root) 1 else 0, it)
+                when (it) {
+                    is NbtCreationDoodle, is ValueCreationDoodle -> add(it.index + if (!root) 1 else 0, it)
+                    is NbtEditionDoodle, is ValueEditionDoodle -> replaceAt(it.index + if (!root) 1 else 0, it)
                 }
             }
         }

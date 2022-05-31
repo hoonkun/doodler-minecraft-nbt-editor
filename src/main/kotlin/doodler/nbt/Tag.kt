@@ -123,6 +123,8 @@ enum class TagType(val id: Byte) {
         this == TAG_LIST ||
         this == TAG_COMPOUND
 
+    fun isPrimitive() = !canHaveChildren()
+
     fun arrayElementType(): TagType = when (this) {
         TAG_BYTE_ARRAY -> TAG_BYTE
         TAG_INT_ARRAY -> TAG_INT
