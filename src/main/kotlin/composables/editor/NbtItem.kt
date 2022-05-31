@@ -232,21 +232,21 @@ private fun Index(index: Int, selected: Boolean) {
 
 @Composable
 private fun RowScope.KeyValue(doodle: NbtDoodle, selected: Boolean) {
-    val key = doodle.name
+    val key = doodle.tag.name
     if (key != null) {
         NbtContentText(key, ThemedColor.Editor.Tag.General)
         Spacer(modifier = Modifier.width(20.dp))
     }
-    if ((doodle.parent?.tag?.type ?: TagType.TAG_COMPOUND) != TagType.TAG_COMPOUND && doodle.index >= 0) {
-        Index(doodle.index, selected)
+    if ((doodle.parent?.tag?.type ?: TagType.TAG_COMPOUND) != TagType.TAG_COMPOUND && doodle.index() >= 0) {
+        Index(doodle.index(), selected)
         Spacer(modifier = Modifier.width(10.dp))
     }
     if (doodle.tag.type.isNumber())
-        NumberValue(doodle.value)
+        NumberValue(doodle.value())
     else if (doodle.tag.type.isString())
-        StringValue(doodle.value)
+        StringValue(doodle.value())
     else if (doodle.tag.type.canHaveChildren())
-        ExpandableValue(doodle.value, selected)
+        ExpandableValue(doodle.value(), selected)
 }
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
@@ -441,19 +441,23 @@ fun RowScope.DoodleCreationContent(actions: NbtState.Actions, doodle: VirtualDoo
 
 
     val intoIndex =
-        if (!doodle.mode.isEdit()) doodle.parent.expandedItems.size.coerceAtLeast(doodle.parent.collapsedItems.size)
-        else doodle.index
+        if (doodle !is EditionDoodle) doodle.parent.children.size
+        else doodle.from.index()
 
-    val nameState = remember { mutableStateOf(
-        if (doodle.mode.isEdit()) doodle.from.let { if (it is NbtDoodle) it.tag.name else null } ?: ""
-        else ""
-    ) }
-    val valueState = remember { mutableStateOf(
-        if (doodle.mode.isEdit()) doodle.from.let {
-            if (it is NbtDoodle) it.value else if (it is ValueDoodle) it.value else null
-        } ?: ""
-        else ""
-    ) }
+    val nameState = remember {
+        mutableStateOf(
+            if (doodle is EditionDoodle) doodle.from.let { if (it is NbtDoodle) it.tag.name else null } ?: ""
+            else ""
+        )
+    }
+    val valueState = remember {
+        mutableStateOf(
+            if (doodle is EditionDoodle) doodle.from.let {
+                if (it is NbtDoodle) it.value() else if (it is ValueDoodle) it.value else null
+            } ?: ""
+            else ""
+        )
+    }
 
     val nameValidState = remember { mutableStateOf(doodle.parent.tag.type.isList()) }
     val valueValidState = remember { mutableStateOf(doodle !is NbtCreationDoodle || doodle.type.canHaveChildren()) }
@@ -465,32 +469,33 @@ fun RowScope.DoodleCreationContent(actions: NbtState.Actions, doodle: VirtualDoo
     val valueValid by valueValidState
 
     val cancel: MouseClickScope.() -> Unit = {
-        if (doodle.mode == VirtualDoodle.VirtualMode.CREATE) actions.withLog { creator.cancel() }
-        else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT) actions.withLog { editor.cancel() }
+        if (doodle is CreationDoodle) actions.withLog { creator.cancel() }
+        else if (doodle is EditionDoodle) actions.withLog { editor.cancel() }
     }
 
     val ok: MouseClickScope.() -> Unit = {
-        if (doodle.mode == VirtualDoodle.VirtualMode.CREATE)
-            actions.withLog { creator.create(doodle.actualize(name, value, intoIndex), doodle.parent) }
-        else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT)
-            actions.withLog { editor.edit(doodle.from, doodle.actualize(name, value, intoIndex)) }
+        if (doodle is CreationDoodle)
+            actions.withLog { creator.create(doodle.actualize(name, value), doodle.parent, intoIndex) }
+        else if (doodle is EditionDoodle)
+            actions.withLog { editor.edit(doodle.from, doodle.actualize(name, value)) }
     }
 
-    if (doodle is NbtCreationDoodle) {
-        TagTypeIndicator(doodle.type, true)
+    if (doodle is NbtCreationDoodle || doodle is NbtEditionDoodle) {
+        val type = if (doodle is NbtCreationDoodle) doodle.type else (doodle as NbtEditionDoodle).from.tag.type
+        TagTypeIndicator(type, true)
         Spacer(modifier = Modifier.width(20.dp))
         if (!doodle.parent.tag.type.isList()) {
             CreationField(nameState, nameValidState) {
-                if (doodle.type.isNumber() || doodle.type.isString())
-                    ValueField(valueState, valueValidState, doodle.type, true)
+                if (type.isNumber() || type.isString())
+                    ValueField(valueState, valueValidState, type, true)
                 else
-                    ExpandableValue(if (doodle.mode.isEdit()) value else doodle.type.creationHint(), true)
+                    ExpandableValue(if (doodle is EditionDoodle) value else type.creationHint(), true)
             }
         } else {
-            if (doodle.type.isNumber() || doodle.type.isString())
-                ValueField(valueState, valueValidState, doodle.type, wide = true, focus = true)
+            if (type.isNumber() || type.isString())
+                ValueField(valueState, valueValidState, type, wide = true, focus = true)
             else
-                ExpandableValue(if (doodle.mode.isEdit()) value else doodle.type.creationHint(), true)
+                ExpandableValue(if (doodle is EditionDoodle) value else type.creationHint(), true)
         }
     } else if (doodle is ValueCreationDoodle) {
         Index(intoIndex, true)
@@ -623,7 +628,7 @@ fun RowScope.ActualNbtItemContent(doodle: ActualDoodle, selected: Boolean) {
             KeyValue(doodle, selected)
         }
         is ValueDoodle -> {
-            Index(doodle.index, selected)
+            Index(doodle.index(), selected)
             Spacer(modifier = Modifier.width(10.dp))
             NumberValue(doodle.value)
         }
