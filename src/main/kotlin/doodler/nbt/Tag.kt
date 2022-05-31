@@ -1,5 +1,9 @@
 package doodler.nbt
 
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import doodler.doodle.InternalAssertionException
 import doodler.nbt.tag.*
 import doodler.nbt.TagType.*
@@ -8,6 +12,7 @@ import java.nio.ByteBuffer
 
 typealias AnyTag = Tag<out Any>
 
+@Stable
 abstract class Tag<T: Any> protected constructor(
     val type: TagType,
     val name: String?,
@@ -19,11 +24,12 @@ abstract class Tag<T: Any> protected constructor(
             throw Exception("parent must be one of 'TAG_COMPOUND' or 'TAG_LIST'")
     }
 
-    lateinit var value: T
+    protected lateinit var valueState: MutableState<T>
+    var value by valueState
 
     abstract val sizeInBytes: Int
 
-    val canHaveChildren get() = type.canHaveChildren()
+    val canHaveChildren = type.canHaveChildren()
 
     inline fun <reified T: AnyTag?> getAs() = this as? T ?: throw Exception("Tag is not a ${T::class.java.simpleName}")
 

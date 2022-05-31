@@ -1,5 +1,7 @@
 package doodler.nbt.tag
 
+import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import doodler.nbt.AnyTag
 import doodler.nbt.Tag
 import doodler.nbt.TagType
@@ -8,20 +10,22 @@ import doodler.nbt.extensions.byte
 import doodler.nbt.extensions.indent
 import java.nio.ByteBuffer
 
-class ListTag private constructor(name: String? = null, parent: AnyTag?): Tag<MutableList<AnyTag>>(TAG_LIST, name, parent) {
+@Stable
+class ListTag private constructor(name: String? = null, parent: AnyTag?): Tag<SnapshotStateList<AnyTag>>(TAG_LIST, name, parent) {
 
     override val sizeInBytes: Int
         get() = Byte.SIZE_BYTES + Int.SIZE_BYTES + value.sumOf { it.sizeInBytes }
 
-    lateinit var elementsType: TagType
+    lateinit var elementsTypeState: MutableState<TagType>
+    var elementsType by elementsTypeState
 
     operator fun get(index: Int) = value[index]
 
     constructor(elementsType: TagType, value: List<AnyTag>, typeCheck: Boolean = true, name: String? = null, parent: AnyTag?): this(name, parent) {
         require(!typeCheck || typeCheck(elementsType, value)) { "ListTag's elements must be of a single type" }
 
-        this.elementsType = elementsType
-        this.value = value.map { tag -> tag.ensureName(null) }.toMutableList()
+        elementsTypeState = mutableStateOf(elementsType)
+        valueState = mutableStateOf(value.map { tag -> tag.ensureName(null) }.toMutableStateList())
     }
 
     constructor(buffer: ByteBuffer, name: String? = null, parent: AnyTag?): this(name, parent) {
@@ -31,8 +35,10 @@ class ListTag private constructor(name: String? = null, parent: AnyTag?): Tag<Mu
     private fun typeCheck(elementsType: TagType, list: List<AnyTag>) = list.all { it.type == elementsType }
 
     override fun read(buffer: ByteBuffer) {
-        elementsType = TagType[buffer.byte]
-        value = MutableList(buffer.int) { read(elementsType, buffer, null, this) }
+        elementsTypeState = mutableStateOf(TagType[buffer.byte])
+        valueState = mutableStateOf(
+            MutableList(buffer.int) { read(elementsType, buffer, null, this) }.toMutableStateList()
+        )
     }
 
     override fun write(buffer: ByteBuffer) {

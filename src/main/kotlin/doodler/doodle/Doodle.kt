@@ -57,7 +57,7 @@ abstract class VirtualDoodle(
                     true, name, parentTag
                 )
                 TagType.TAG_COMPOUND -> CompoundTag(
-                    if (mode.isEdit()) (from as NbtDoodle).tag.getAs<CompoundTag>().value else mutableListOf(),
+                    if (mode.isEdit()) (from as NbtDoodle).tag.getAs<CompoundTag>().value else mutableStateListOf(),
                     name, parentTag
                 )
                 TagType.TAG_END -> throw EndCreationException()

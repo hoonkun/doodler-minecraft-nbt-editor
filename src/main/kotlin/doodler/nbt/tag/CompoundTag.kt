@@ -1,5 +1,9 @@
 package doodler.nbt.tag
 
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.toMutableStateList
 import doodler.nbt.AnyTag
 import doodler.nbt.Tag
 import doodler.nbt.TagType
@@ -9,11 +13,10 @@ import doodler.nbt.extensions.putString
 import doodler.nbt.extensions.string
 import java.nio.ByteBuffer
 
-typealias Compound = MutableList<AnyTag>
+typealias Compound = SnapshotStateList<AnyTag>
 
+@Stable
 class CompoundTag private constructor(name: String? = null, parent: AnyTag?): Tag<Compound>(TAG_COMPOUND, name, parent) {
-
-    private var complicated = false
 
     override val sizeInBytes: Int
         get() = value.sumOf { tag ->
@@ -42,7 +45,7 @@ class CompoundTag private constructor(name: String? = null, parent: AnyTag?): Ta
     }
 
     constructor(value: Compound, name: String? = null, parent: AnyTag?): this(name, parent) {
-        this.value = value.map { tag -> tag.ensureName(tag.name ?: "") }.toMutableList()
+        valueState = mutableStateOf(value.map { tag -> tag.ensureName(tag.name ?: "") }.toMutableStateList())
     }
 
     constructor(buffer: ByteBuffer, name: String? = null, parent: AnyTag?): this(name, parent) {
@@ -64,7 +67,7 @@ class CompoundTag private constructor(name: String? = null, parent: AnyTag?): Ta
             new.add(nextTag)
         } while (true)
 
-        value = new
+        valueState = mutableStateOf(new.toMutableStateList())
     }
 
     override fun write(buffer: ByteBuffer) {
@@ -84,11 +87,9 @@ class CompoundTag private constructor(name: String? = null, parent: AnyTag?): Ta
         write(buffer)
     }
 
-    override fun clone(name: String?) = CompoundTag(value.map { tag -> tag.clone(tag.name) }.toMutableList(), name, parent)
+    override fun clone(name: String?) = CompoundTag(value.map { tag -> tag.clone(tag.name) }.toMutableStateList(), name, parent)
 
-    override fun valueToString(): String {
-        val result = "{\n${value.sortedBy { it.name ?: "" }.joinToString(",\n") { "${it.value}" }}\n}"
-        return if (complicated) result else result.replace("\n", " ")
-    }
+    override fun valueToString(): String =
+        "{\n${value.sortedBy { it.name ?: "" }.joinToString(",\n") { "${it.value}" }}\n}"
 
 }
