@@ -187,16 +187,14 @@ class NbtDoodle (
     val children = mutableStateListOf<ActualDoodle>()
 
     val doodles: SnapshotStateList<Doodle> by derivedStateOf {
-        if (!expanded)
-            mutableStateListOf<Doodle>().apply {
-                if (!root) parent!!.virtual.let { if (it is EditionDoodle && it.from.path == path) add(it) else add(this@NbtDoodle) }
-            }
-        else
-            mutableStateListOf<Doodle>().apply {
-                if (!root) parent!!.virtual.let { if (it is EditionDoodle && it.from.path == path) add(it) else add(this@NbtDoodle) }
-                virtual?.let { if (it is CreationDoodle) add(it) }
-                addAll(children.map { if (it is NbtDoodle) it.doodles else mutableStateListOf(it) }.flatten())
-            }
+        mutableStateListOf<Doodle>().apply {
+            if (!root) parent!!.virtual.let { if (it is EditionDoodle && it.from.path == path) add(it) else add(this@NbtDoodle) }
+
+            if (!expanded) return@apply
+
+            virtual?.let { if (it is CreationDoodle) add(it) }
+            addAll(children.map { if (it is NbtDoodle) it.doodles else mutableStateListOf(it) }.flatten())
+        }
     }
 
     fun value(): String = if (tag.canHaveChildren) valueSuffix(tag) else tag.value.toString()
