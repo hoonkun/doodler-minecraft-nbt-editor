@@ -37,7 +37,7 @@ import doodler.logger.DoodlerLogger
 import java.io.File
 
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.Selector(onSelect: (File) -> Unit = { }, validate: (File) -> Boolean = { true }) {
     DoodlerLogger.recomposition("Selector")
@@ -225,10 +225,13 @@ fun ColumnScope.CandidateFiles(
     val calculateRange: SnapshotStateList<StateFile>.() -> IntRange = {
         this.indexOf(filteredTargets.find { it == completeTarget })
             .coerceAtLeast(0)
-            .mod(columns).minus(1)
-            .coerceIn(0, (filteredTargets.size - 3).coerceAtLeast(0))
-            .times(columns)
-            .let { it until ((it + 3) * columns).coerceAtMost(size) }
+            .div(columns).minus(1).coerceAtLeast(0).times(columns)
+            .let {
+                val minFirstRow = ((size + size.mod(columns)).div(columns) - 3).coerceAtLeast(0)
+                val minInclusive = it.coerceAtMost(minFirstRow * columns)
+                val maxExclusive = (minInclusive + 3 * columns).coerceAtMost(size)
+                minInclusive until maxExclusive
+            }
     }
 
     val calculateRemains: (
