@@ -17,11 +17,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import doodler.extensions.toRanges
 import composables.global.*
-import doodler.doodle.ActualDoodle
-import doodler.doodle.NbtDoodle
-import doodler.doodle.VirtualDoodle
+import doodler.doodle.*
 import doodler.doodle.structures.CannotBePasted
-import doodler.doodle.toItemUi
 import doodler.editor.*
 import doodler.editor.states.NbtState
 import doodler.logger.DoodlerLogger
@@ -128,7 +125,7 @@ fun BoxScope.NbtEditor(
         }
     }
 
-    SelectedInWholeFileIndicator(doodles.filterIsInstance<ActualDoodle>(), uiState.selected) {
+    SelectedInWholeFileIndicator(doodles.filterIsInstance<ActualDoodle>(), uiState) {
         coroutineScope.launch { lazyColumnState.scrollToItem(doodles.indexOf(it)) }
     }
 
@@ -162,7 +159,7 @@ fun BoxScope.NbtEditor(
             Spacer(modifier = Modifier.height(20.dp))
             NormalActionColumn(state)
             Spacer(modifier = Modifier.height(20.dp))
-            CreateActionColumn(state, uiState.selected.firstOrNull() as? NbtDoodle)
+            CreateActionColumn(state)
         }
     }
 
@@ -229,13 +226,12 @@ fun ColumnScope.IndexChangeActionColumn(
 
 @Composable
 fun ColumnScope.CreateActionColumn(
-    state: NbtState,
-    selected: NbtDoodle?
+    state: NbtState
 ) {
     DoodlerLogger.recomposition("CreateActionColumn")
 
     val actions = state.actions
-    val tag = selected?.tag ?: state.rootDoodle.tag
+    val tag = state.ui.selected.firstOrNull().let { (it as? NbtDoodle)?.tag ?: state.rootDoodle.tag }
 
     Column(
         modifier = Modifier
@@ -326,7 +322,9 @@ fun ColumnScope.NormalActionColumn(
 }
 
 @Composable
-private fun BoxScope.SelectedInWholeFileIndicator(doodles: List<ActualDoodle>, selected: List<ActualDoodle>, scrollTo: (ActualDoodle) -> Unit) {
+private fun BoxScope.SelectedInWholeFileIndicator(doodles: List<ActualDoodle>, state: DoodleUi, scrollTo: (ActualDoodle) -> Unit) {
+    val selected = state.selected
+
     val size = 1f / doodles.size
     val indexed = 1f / (doodles.size - 1)
 
