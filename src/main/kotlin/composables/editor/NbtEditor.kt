@@ -21,6 +21,7 @@ import doodler.doodle.ActualDoodle
 import doodler.doodle.NbtDoodle
 import doodler.doodle.VirtualDoodle
 import doodler.doodle.structures.CannotBePasted
+import doodler.doodle.toItemUi
 import doodler.editor.*
 import doodler.editor.states.NbtState
 import doodler.logger.DoodlerLogger
@@ -93,14 +94,14 @@ fun BoxScope.NbtEditor(
 
     val treeViewTarget = if (uiState.focusedTree == null) uiState.focusedTreeView else uiState.focusedTree
     if (treeViewTarget != null && lazyColumnState.firstVisibleItemIndex > doodles.indexOf(treeViewTarget)) {
-        DepthPreviewNbtItem(treeViewTarget, uiState) {
+        DepthPreviewNbtItem(treeViewTarget, uiState.toItemUi(treeViewTarget)) {
             val index = doodles.indexOf(treeViewTarget)
             coroutineScope.launch {
                 lazyColumnState.scrollToItem(index)
             }
-            uiState.unFocusTreeView(treeViewTarget)
-            uiState.unFocusTree(treeViewTarget)
-            uiState.focusDirectly(treeViewTarget)
+            uiState.treeViewBlur(treeViewTarget)
+            uiState.treeBlur(treeViewTarget)
+            uiState.directFocus(treeViewTarget)
         }
     }
 
@@ -117,13 +118,13 @@ fun BoxScope.NbtEditor(
             if (item is ActualDoodle)
                 ActualNbtItem(
                     item,
-                    uiState,
+                    uiState.toItemUi(item),
                     onToggle, onSelect, treeCollapse,
                     creation != null,
                     creation != null && item != creation!!.parent
                 )
             else if (item is VirtualDoodle)
-                VirtualNbtItem(item, state)
+                VirtualNbtItem(item, uiState.toItemUi(item), state.actions)
         }
     }
 

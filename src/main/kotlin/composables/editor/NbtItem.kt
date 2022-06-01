@@ -253,7 +253,7 @@ private fun RowScope.KeyValue(doodle: NbtDoodle, selected: Boolean) {
 @Composable
 fun DepthPreviewNbtItem(
     doodle: ActualDoodle,
-    state: DoodleUi,
+    state: DoodleItemUi,
     scrollTo: () -> Unit
 ) {
     DoodlerLogger.recomposition("DepthPreviewNbtItem")
@@ -268,8 +268,8 @@ fun DepthPreviewNbtItem(
     ) {
         Box(modifier = Modifier
             .border(2.dp, ThemedColor.Editor.TreeBorder)
-            .onPointerEvent(PointerEventType.Enter) { focused = true; state.focusTreeView(doodle) }
-            .onPointerEvent(PointerEventType.Exit) { focused = false; state.unFocusTreeView(doodle) }
+            .onPointerEvent(PointerEventType.Enter) { focused = true; state.functions.treeViewFocus(doodle) }
+            .onPointerEvent(PointerEventType.Exit) { focused = false; state.functions.treeViewBlur(doodle) }
             .onPointerEvent(PointerEventType.Press) { pressed = true }
             .onPointerEvent(PointerEventType.Release) { pressed = false }
             .mouseClickable(onClick = { scrollTo() })
@@ -292,7 +292,7 @@ fun DepthPreviewNbtItem(
 @Composable
 fun ActualNbtItem(
     doodle: ActualDoodle,
-    state: DoodleUi,
+    state: DoodleItemUi,
     toggle: (ActualDoodle) -> Unit,
     select: (ActualDoodle) -> Unit,
     treeCollapse: (NbtDoodle) -> Unit,
@@ -301,9 +301,7 @@ fun ActualNbtItem(
 ) {
     DoodlerLogger.recomposition("ActualNbtItem")
 
-    val hierarchy = getHierarchy(doodle)
-
-    val selected = state.selected.contains(doodle)
+    val selected = state.selected
 
     ItemRoot(
         modifier = Modifier
@@ -311,8 +309,8 @@ fun ActualNbtItem(
             .background(
                 ThemedColor.Editor.item(
                 selected = selected,
-                pressed = state.pressed == doodle,
-                focused = state.focusedDirectly == doodle || state.focusedTree == doodle,
+                pressed = state.pressed,
+                focused = state.focusedDirectly || state.focusedTree,
                 onCreationMode = onCreationMode,
                 alphaMultiplier = if (onCreationMode) 0.6f else 1.0f
             )
@@ -323,16 +321,17 @@ fun ActualNbtItem(
             modifier = Modifier.padding(start = 20.dp).height(50.dp)
         ) {
             for (i in 0 until doodle.depth) {
-                val current = hierarchy[i]
-                val focused = state.focusedDirectly == current || state.focusedTree == current
+                val parent = state.hierarchy.parents[i]
+                val current = state.hierarchy.parentUiStates[i]
+                val focused = current.focusedDirectly || current.focusedTree
                 Box (modifier = Modifier
                     .fillMaxHeight()
                     .wrapContentWidth()
                     .let {
                         if (!disabled) it
-                                .onPointerEvent(PointerEventType.Enter) { state.focusTree(current) }
-                                .onPointerEvent(PointerEventType.Exit) { state.unFocusTree(current) }
-                                .onPointerEvent(PointerEventType.Release) { treeCollapse(current) }
+                                .onPointerEvent(PointerEventType.Enter) { state.functions.treeFocus(parent) }
+                                .onPointerEvent(PointerEventType.Exit) { state.functions.treeBlur(parent) }
+                                .onPointerEvent(PointerEventType.Release) { treeCollapse(parent) }
                         else it
                     }
                 ) {
@@ -344,7 +343,7 @@ fun ActualNbtItem(
                             .background(
                                 ThemedColor.Editor.depthLine(
                                     selected,
-                                    focused || state.focusedTreeView == current
+                                    focused || current.focusedTreeView
                                 )
                             )
                     ) { }
@@ -354,10 +353,10 @@ fun ActualNbtItem(
                 modifier = Modifier.weight(1f)
                     .let {
                         if (!disabled) it
-                            .onPointerEvent(PointerEventType.Enter) { state.focusDirectly(doodle); state.focusedTree = null }
-                            .onPointerEvent(PointerEventType.Exit) { state.unFocusDirectly(doodle) }
-                            .onPointerEvent(PointerEventType.Press) { state.press(doodle) }
-                            .onPointerEvent(PointerEventType.Release) { state.unPress(doodle) }
+                            .onPointerEvent(PointerEventType.Enter) { state.functions.directFocus(doodle); state.functions.treeBlur(null) }
+                            .onPointerEvent(PointerEventType.Exit) { state.functions.directBlur(doodle) }
+                            .onPointerEvent(PointerEventType.Press) { state.functions.press(doodle) }
+                            .onPointerEvent(PointerEventType.Release) { state.functions.release(doodle) }
                             .mouseClickable(onClick = {
                                 if (buttons.isPrimaryPressed) toggle(doodle)
                                 else if (buttons.isSecondaryPressed) select(doodle)
@@ -379,10 +378,8 @@ fun ActualNbtItem(
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun VirtualNbtItem(virtual: VirtualDoodle, state: NbtState) {
+fun VirtualNbtItem(virtual: VirtualDoodle, state: DoodleItemUi, actions: NbtState.Actions) {
     DoodlerLogger.recomposition("VirtualNbtItem")
-
-    val hierarchy = getHierarchy(virtual)
 
     ItemRoot(
         modifier = Modifier
@@ -400,13 +397,14 @@ fun VirtualNbtItem(virtual: VirtualDoodle, state: NbtState) {
             modifier = Modifier.padding(start = 20.dp).height(50.dp)
         ) {
             for (i in 0 until virtual.depth) {
-                val current = hierarchy[i]
-                val focused = state.ui.focusedDirectly == current || state.ui.focusedTree == current
+                val parent = state.hierarchy.parents[i]
+                val current = state.hierarchy.parentUiStates[i]
+                val focused = current.focusedDirectly || current.focusedTree
                 Box (modifier = Modifier
                     .fillMaxHeight()
                     .wrapContentWidth()
-                    .onPointerEvent(PointerEventType.Enter) { state.ui.focusTree(current) }
-                    .onPointerEvent(PointerEventType.Exit) { state.ui.unFocusTree(current) }
+                    .onPointerEvent(PointerEventType.Enter) { state.functions.treeFocus(parent) }
+                    .onPointerEvent(PointerEventType.Exit) { state.functions.treeBlur(parent) }
                 ) {
                     Spacer(modifier = Modifier.width(40.dp))
                     Box (
@@ -427,7 +425,7 @@ fun VirtualNbtItem(virtual: VirtualDoodle, state: NbtState) {
                     modifier = Modifier
                         .fillMaxHeight()
                 ) {
-                    DoodleCreationContent(state.actions, virtual)
+                    DoodleCreationContent(actions, virtual)
                 }
             }
         }
@@ -628,15 +626,4 @@ fun RowScope.ActualNbtItemContent(doodle: ActualDoodle, selected: Boolean) {
             NumberValue(doodle.value)
         }
     }
-}
-
-fun getHierarchy(doodle: Doodle): List<NbtDoodle> {
-    val result = mutableListOf<NbtDoodle>()
-    var parent = if (doodle is ActualDoodle) doodle.parent else if (doodle is VirtualDoodle) doodle.parent else null
-    while (parent != null && parent.depth >= 0) {
-        result.add(parent)
-        parent = parent.parent
-    }
-    result.reverse()
-    return result
 }
