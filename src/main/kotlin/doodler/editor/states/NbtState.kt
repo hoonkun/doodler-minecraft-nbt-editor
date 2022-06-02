@@ -47,12 +47,15 @@ class NbtState (
     val lazyState = LazyListState()
 
     val doodles get() = rootDoodle.doodles
+    val virtual by derivedStateOf { doodles.find { it is VirtualDoodle } as? VirtualDoodle? }
 
     val actions = Actions()
 
     var lastSaveUid by mutableStateOf(0L)
 
-    var virtualScrollInfo by mutableStateOf<Int?>(null)
+    private val virtualScrollTo by derivedStateOf {
+        virtual.let { if (it == null) null else checkVirtualIsInvisible(it) }
+    }
 
     init {
         rootDoodle.expand()
@@ -81,7 +84,7 @@ class NbtState (
         )
     }
 
-    fun checkVirtualIsInvisible(newVirtual: VirtualDoodle): Int? {
+    private fun checkVirtualIsInvisible(newVirtual: VirtualDoodle): Int? {
         val index = doodles.indexOf(newVirtual)
         val firstIndex = lazyState.firstVisibleItemIndex
         val windowSize = lazyState.layoutInfo.visibleItemsInfo.size
@@ -90,10 +93,10 @@ class NbtState (
         return if (invisible) (index - windowSize / 2).coerceAtLeast(0) else null
     }
 
-    fun scrollToVirtual(scope: CoroutineScope, toProvider: () -> Int?) {
-        val to = toProvider() ?: return
-        scope.launch {
-            lazyState.scrollToItem(to)
+    fun scrollToVirtual(scope: CoroutineScope) {
+        virtualScrollTo.let {
+            if (it == null) return
+            scope.launch { lazyState.scrollToItem(it) }
         }
     }
 
@@ -477,7 +480,6 @@ class NbtState (
                 }
 
             into.virtual = newVirtual
-            virtualScrollInfo = checkVirtualIsInvisible(newVirtual)
         }
 
         fun cancel() {
@@ -543,7 +545,6 @@ class NbtState (
             }
 
             target.parent?.virtual = newVirtual
-            virtualScrollInfo = checkVirtualIsInvisible(newVirtual)
         }
 
         fun cancel() {

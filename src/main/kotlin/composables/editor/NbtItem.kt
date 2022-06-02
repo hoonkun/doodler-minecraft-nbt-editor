@@ -11,6 +11,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -327,25 +328,31 @@ fun ActualNbtItem(
     toggle: (ActualDoodle) -> Unit,
     select: (ActualDoodle) -> Unit,
     treeCollapse: (NbtDoodle) -> Unit,
-    onCreationMode: Boolean = false,
-    disabled: Boolean = false
+    onCreationMode: () -> Boolean = { false },
+    disabled: () -> Boolean = { false }
 ) {
     DoodlerLogger.recomposition("ActualNbtItem")
 
     ItemRoot(
         modifier = Modifier
-            .alpha(if (disabled) 0.4f else 1f)
-            .drawBehind {
+            .drawWithContent {
+                val creationMode = onCreationMode()
                 val state = stateProvider()
-                drawRect(
-                    ThemedColor.Editor.item(
-                        selected = state.selected,
-                        pressed = state.pressed,
-                        focused = state.focusedDirectly || state.focusedTree,
-                        onCreationMode = onCreationMode,
-                        alphaMultiplier = if (onCreationMode) 0.6f else 1.0f
+                if (creationMode && disabled()) {
+                    drawContent()
+                    drawRect(ThemedColor.from(ThemedColor.EditorArea, alpha = 175))
+                } else {
+                    drawRect(
+                        ThemedColor.Editor.item(
+                            selected = state.selected,
+                            pressed = state.pressed,
+                            focused = state.focusedDirectly || state.focusedTree,
+                            onCreationMode = true,
+                            alphaMultiplier = 0.6f
+                        )
                     )
-                )
+                    drawContent()
+                }
             }
     ) {
         Row (
@@ -358,13 +365,9 @@ fun ActualNbtItem(
                 Box (modifier = Modifier
                     .fillMaxHeight()
                     .wrapContentWidth()
-                    .let {
-                        if (!disabled) it
-                                .onPointerEvent(PointerEventType.Enter) { stateProvider().functions.treeFocus(parent()) }
-                                .onPointerEvent(PointerEventType.Exit) { stateProvider().functions.treeBlur(parent()) }
-                                .onPointerEvent(PointerEventType.Release) { treeCollapse(parent()) }
-                        else it
-                    }
+                    .onPointerEvent(PointerEventType.Enter) { if (!disabled()) stateProvider().functions.treeFocus(parent()) }
+                    .onPointerEvent(PointerEventType.Exit) { if (!disabled()) stateProvider().functions.treeBlur(parent()) }
+                    .onPointerEvent(PointerEventType.Release) { if (!disabled()) treeCollapse(parent()) }
                 ) {
                     Spacer(modifier = Modifier.width(40.dp))
                     Box (
@@ -386,21 +389,19 @@ fun ActualNbtItem(
             }
             Box (
                 modifier = Modifier.weight(1f)
-                    .let {
-                        if (!disabled) it
-                            .onPointerEvent(PointerEventType.Enter) {
-                                stateProvider().functions.directFocus(doodle)
-                                stateProvider().functions.treeBlur(null)
-                            }
-                            .onPointerEvent(PointerEventType.Exit) { stateProvider().functions.directBlur(doodle) }
-                            .onPointerEvent(PointerEventType.Press) { stateProvider().functions.press(doodle) }
-                            .onPointerEvent(PointerEventType.Release) { stateProvider().functions.release(doodle) }
-                            .mouseClickable(onClick = {
-                                if (buttons.isPrimaryPressed) toggle(doodle)
-                                else if (buttons.isSecondaryPressed) select(doodle)
-                            })
-                        else it
+                    .onPointerEvent(PointerEventType.Enter) {
+                        if (disabled()) return@onPointerEvent
+                        stateProvider().functions.directFocus(doodle)
+                        stateProvider().functions.treeBlur(null)
                     }
+                    .onPointerEvent(PointerEventType.Exit) { if (!disabled()) stateProvider().functions.directBlur(doodle) }
+                    .onPointerEvent(PointerEventType.Press) { if (!disabled()) stateProvider().functions.press(doodle) }
+                    .onPointerEvent(PointerEventType.Release) { if (!disabled()) stateProvider().functions.release(doodle) }
+                    .mouseClickable(onClick = {
+                        if (disabled()) return@mouseClickable
+                        if (buttons.isPrimaryPressed) toggle(doodle)
+                        else if (buttons.isSecondaryPressed) select(doodle)
+                    })
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

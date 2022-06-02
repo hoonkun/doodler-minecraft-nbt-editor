@@ -26,6 +26,7 @@ import doodler.nbt.AnyTag
 import keys
 import kotlinx.coroutines.launch
 import doodler.nbt.TagType
+import kotlinx.coroutines.CoroutineScope
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -37,9 +38,6 @@ fun BoxScope.NbtEditor(
     val coroutineScope = rememberCoroutineScope()
 
     val state = species.state
-
-    val doodles = state.doodles
-    val creation by remember(doodles) { mutableStateOf(doodles.find { it is VirtualDoodle } as? VirtualDoodle?) }
 
     val uiState = state.ui
     val lazyColumnState = remember { state.lazyState }
@@ -53,6 +51,7 @@ fun BoxScope.NbtEditor(
     }
 
     val onSelect: (ActualDoodle) -> Unit = { doodle ->
+        val doodles = state.doodles
         if (!uiState.selected.contains(doodle)) {
             if (keys.contains(androidx.compose.ui.input.key.Key.CtrlLeft)) uiState.addToSelected(doodle)
             else if (keys.contains(androidx.compose.ui.input.key.Key.ShiftLeft)) {
@@ -76,6 +75,7 @@ fun BoxScope.NbtEditor(
     }
 
     val treeCollapse: (NbtDoodle) -> Unit = { target ->
+        val doodles = state.doodles
         target.collapse(state.ui.selected)
         val baseIndex = doodles.indexOf(target)
         if (lazyColumnState.firstVisibleItemIndex > baseIndex) {
@@ -83,33 +83,29 @@ fun BoxScope.NbtEditor(
         }
     }
 
-    SideEffect {
-        if (creation == null) return@SideEffect
-
-        state.scrollToVirtual(coroutineScope) { state.virtualScrollInfo }
-    }
-
-    DepthPreviewNbtItem({ doodles.indexOf(it) }, { uiState }) {
+    DepthPreviewNbtItem({ state.doodles.indexOf(it) }, { uiState }) {
         coroutineScope.launch { lazyColumnState.scrollToItem(it) }
     }
 
     LazyColumn (state = lazyColumnState) {
-        items(doodles, key = { item -> item.path }) { item ->
+        items(state.doodles, key = { item -> item.path }) { item ->
             if (item is ActualDoodle)
                 ActualNbtItem(
                     item,
                     { uiState.toItemUi(item) },
                     onToggle, onSelect, treeCollapse,
-                    creation != null,
-                    creation != null && item != creation!!.parent
+                    { state.virtual != null },
+                    { state.virtual != null && item != state.virtual!!.parent }
                 )
             else if (item is VirtualDoodle)
                 VirtualNbtItem(item, uiState.toItemUi(item), state.actions)
         }
     }
 
-    SelectedInWholeFileIndicator(doodles.filterIsInstance<ActualDoodle>(), { uiState.selected }) {
-        coroutineScope.launch { lazyColumnState.scrollToItem(doodles.indexOf(it)) }
+    ListScroller(coroutineScope) { state }
+
+    SelectedInWholeFileIndicator({ state.doodles.filterIsInstance<ActualDoodle>() }, { uiState.selected }) {
+        coroutineScope.launch { lazyColumnState.scrollToItem(state.doodles.indexOf(it)) }
     }
 
     Column(
@@ -120,7 +116,28 @@ fun BoxScope.NbtEditor(
         }
     }
 
-    if (creation != null) return
+    ActionColumns { state }
+
+}
+
+@Composable
+fun ListScroller(
+    scope: CoroutineScope,
+    stateProvider: () -> NbtState
+) {
+    DoodlerLogger.recomposition("ListScroller")
+
+    val state = stateProvider()
+
+    if (state.virtual != null) {
+        state.scrollToVirtual(scope)
+    }
+}
+
+@Composable
+fun BoxScope.ActionColumns(stateProvider: () -> NbtState) {
+    val state = stateProvider()
+    if (state.virtual != null) return
 
     Row(
         modifier = Modifier.align(Alignment.TopEnd).padding(30.dp)
@@ -147,7 +164,6 @@ fun BoxScope.NbtEditor(
             }
         }
     }
-
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -309,12 +325,14 @@ fun ColumnScope.NormalActionColumn(
 
 @Composable
 private fun BoxScope.SelectedInWholeFileIndicator(
-    doodles: List<ActualDoodle>,
+    doodlesProvider: () -> List<ActualDoodle>,
     selected: () -> List<ActualDoodle>,
     scrollTo: (ActualDoodle) -> Unit
 ) {
 
     val items = selected()
+
+    val doodles = doodlesProvider()
 
     val size = 1f / doodles.size
     val indexed = 1f / (doodles.size - 1)
