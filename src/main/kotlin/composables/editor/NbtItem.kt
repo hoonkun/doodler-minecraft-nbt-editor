@@ -270,14 +270,27 @@ private fun RowScope.KeyValue(doodle: NbtDoodle, selected: () -> Boolean) {
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun DepthPreviewNbtItem(
-    doodle: ActualDoodle,
-    state: DoodleItemUi,
-    scrollTo: () -> Unit
+    indexProvider: (Doodle) -> Int,
+    stateProvider: () -> DoodleUi,
+    scrollTo: (Int) -> Unit
 ) {
     DoodlerLogger.recomposition("DepthPreviewNbtItem")
 
     var focused by remember { mutableStateOf(false) }
     var pressed by remember { mutableStateOf(false) }
+
+    val state = stateProvider()
+    val doodle = (if (state.focusedTree == null) state.focusedTreeView else state.focusedTree) ?: return
+
+    val itemState = state.toItemUi(doodle)
+
+    val scroll = {
+        val index = indexProvider(doodle)
+        scrollTo(index)
+        state.treeViewBlur(doodle)
+        state.treeBlur(doodle)
+        state.directFocus(doodle)
+    }
 
     Box (modifier = Modifier
         .background(ThemedColor.EditorArea)
@@ -286,11 +299,11 @@ fun DepthPreviewNbtItem(
     ) {
         Box(modifier = Modifier
             .border(2.dp, ThemedColor.Editor.TreeBorder)
-            .onPointerEvent(PointerEventType.Enter) { focused = true; state.functions.treeViewFocus(doodle) }
-            .onPointerEvent(PointerEventType.Exit) { focused = false; state.functions.treeViewBlur(doodle) }
+            .onPointerEvent(PointerEventType.Enter) { focused = true; itemState.functions.treeViewFocus(doodle) }
+            .onPointerEvent(PointerEventType.Exit) { focused = false; itemState.functions.treeViewBlur(doodle) }
             .onPointerEvent(PointerEventType.Press) { pressed = true }
             .onPointerEvent(PointerEventType.Release) { pressed = false }
-            .mouseClickable(onClick = { scrollTo() })
+            .mouseClickable(onClick = { scroll() })
             .background(ThemedColor.Editor.normalItem(pressed, focused))
         ) {
             Row(

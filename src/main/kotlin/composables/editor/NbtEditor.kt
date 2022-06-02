@@ -83,23 +83,14 @@ fun BoxScope.NbtEditor(
         }
     }
 
-    val treeViewTarget = if (uiState.focusedTree == null) uiState.focusedTreeView else uiState.focusedTree
-    if (treeViewTarget != null && lazyColumnState.firstVisibleItemIndex > doodles.indexOf(treeViewTarget)) {
-        DepthPreviewNbtItem(treeViewTarget, uiState.toItemUi(treeViewTarget)) {
-            val index = doodles.indexOf(treeViewTarget)
-            coroutineScope.launch {
-                lazyColumnState.scrollToItem(index)
-            }
-            uiState.treeViewBlur(treeViewTarget)
-            uiState.treeBlur(treeViewTarget)
-            uiState.directFocus(treeViewTarget)
-        }
-    }
-
     SideEffect {
         if (creation == null) return@SideEffect
 
         state.scrollToVirtual(coroutineScope) { state.virtualScrollInfo }
+    }
+
+    DepthPreviewNbtItem({ doodles.indexOf(it) }, { uiState }) {
+        coroutineScope.launch { lazyColumnState.scrollToItem(it) }
     }
 
     LazyColumn (state = lazyColumnState) {
