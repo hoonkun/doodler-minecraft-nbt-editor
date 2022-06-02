@@ -2,6 +2,7 @@ package composables.editor
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Text
@@ -277,21 +278,20 @@ private fun RowScope.KeyValue(doodle: NbtDoodle, selected: () -> Boolean) {
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun DepthPreviewNbtItem(
+    lazyColumnStateProvider: () -> LazyListState,
     indexProvider: (Doodle) -> Int,
+    previewProvider: () -> Pair<ActualDoodle, DoodleItemUi>?,
     stateProvider: () -> DoodleUi,
     scrollTo: (Int) -> Unit
 ) {
     DoodlerLogger.recomposition("DepthPreviewNbtItem")
 
-    var focused by remember { mutableStateOf(false) }
     var pressed by remember { mutableStateOf(false) }
 
-    val state = stateProvider()
-    val doodle = (if (state.focusedTree == null) state.focusedTreeView else state.focusedTree) ?: return
-
-    val itemState = state.toItemUi(doodle)
+    val (doodle, itemState) = previewProvider() ?: return
 
     val scroll = {
+        val state = stateProvider()
         val index = indexProvider(doodle)
         scrollTo(index)
         state.treeViewBlur(doodle)
@@ -300,18 +300,26 @@ fun DepthPreviewNbtItem(
     }
 
     Box (modifier = Modifier
-        .background(ThemedColor.EditorArea)
         .wrapContentSize()
+        .drawWithContent {
+            val enabled = lazyColumnStateProvider().firstVisibleItemIndex > indexProvider(doodle)
+            if (enabled) {
+                drawRect(ThemedColor.EditorArea)
+                drawContent()
+            }
+        }
         .zIndex(999f)
     ) {
         Box(modifier = Modifier
             .border(2.dp, ThemedColor.Editor.TreeBorder)
-            .onPointerEvent(PointerEventType.Enter) { focused = true; itemState.functions.treeViewFocus(doodle) }
-            .onPointerEvent(PointerEventType.Exit) { focused = false; itemState.functions.treeViewBlur(doodle) }
+            .onPointerEvent(PointerEventType.Enter) { itemState.functions.treeViewFocus(doodle) }
+            .onPointerEvent(PointerEventType.Exit) { itemState.functions.treeViewBlur(doodle) }
             .onPointerEvent(PointerEventType.Press) { pressed = true }
             .onPointerEvent(PointerEventType.Release) { pressed = false }
             .mouseClickable(onClick = { scroll() })
-            .background(ThemedColor.Editor.normalItem(pressed, focused))
+            .drawBehind {
+                drawRect(ThemedColor.Editor.normalItem(pressed, itemState.focusedTreeView))
+            }
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

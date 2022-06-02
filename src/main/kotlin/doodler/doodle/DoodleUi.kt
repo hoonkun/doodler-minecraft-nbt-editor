@@ -15,6 +15,13 @@ class DoodleUi {
     var focusedTree by mutableStateOf<ActualDoodle?>(null)
     var focusedTreeView by mutableStateOf<ActualDoodle?>(null)
 
+    val focusedPreview by derivedStateOf {
+        if (focusedTree == null) focusedTreeView else focusedTree
+    }
+    val focusedPreviewUi by derivedStateOf {
+        focusedPreview.let { if (it == null) null else toItemUi(it) }
+    }
+
     val press: UiFunctionType = { pressed = it }
     val release: UiFunctionType = { if (pressed == it) pressed = null }
 

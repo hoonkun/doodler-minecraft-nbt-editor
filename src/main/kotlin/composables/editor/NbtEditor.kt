@@ -21,6 +21,7 @@ import doodler.doodle.*
 import doodler.doodle.structures.CannotBePasted
 import doodler.editor.*
 import doodler.editor.states.NbtState
+import doodler.extensions.nullable
 import doodler.logger.DoodlerLogger
 import doodler.nbt.AnyTag
 import keys
@@ -83,7 +84,12 @@ fun BoxScope.NbtEditor(
         }
     }
 
-    DepthPreviewNbtItem({ state.doodles.indexOf(it) }, { uiState }) {
+    DepthPreviewNbtItem(
+        lazyColumnStateProvider = { lazyColumnState },
+        indexProvider = { state.doodles.indexOf(it) },
+        previewProvider = { Pair(state.ui.focusedPreview, state.ui.focusedPreviewUi).nullable() },
+        stateProvider = { uiState }
+    ) {
         coroutineScope.launch { lazyColumnState.scrollToItem(it) }
     }
 
