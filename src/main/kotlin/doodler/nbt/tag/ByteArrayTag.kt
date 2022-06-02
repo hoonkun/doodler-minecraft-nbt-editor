@@ -1,27 +1,27 @@
 package doodler.nbt.tag
 
+import androidx.compose.runtime.Stable
 import doodler.nbt.AnyTag
 import doodler.nbt.Tag
 import doodler.nbt.TagType.*
 import java.nio.ByteBuffer
 
-class ByteArrayTag private constructor(name: String? = null, parent: AnyTag?): Tag<ByteArray>(TAG_BYTE_ARRAY, name, parent) {
+@Stable
+class ByteArrayTag(
+    name: String? = null,
+    parent: AnyTag?,
+    value: ByteArray? = null,
+    buffer: ByteBuffer? = null
+): Tag<ByteArray>(TAG_BYTE_ARRAY, name, parent, value, buffer) {
 
     override val sizeInBytes get() = Int.SIZE_BYTES + value.size
 
-    constructor(value: ByteArray, name: String? = null, parent: AnyTag?): this(name, parent) {
-        this.value = value
-    }
-
-    constructor(buffer: ByteBuffer, name: String? = null, parent: AnyTag?): this(name, parent) {
-        read(buffer)
-    }
-
-    override fun read(buffer: ByteBuffer) {
+    override fun read(buffer: ByteBuffer, vararg extras: Any?): ByteArray {
         val length = buffer.int
 
-        value = ByteArray(length)
-        buffer.get(value, 0, length)
+        val newValue = ByteArray(length)
+        buffer.get(newValue, 0, length)
+        return newValue
     }
 
     override fun write(buffer: ByteBuffer) {
@@ -29,8 +29,18 @@ class ByteArrayTag private constructor(name: String? = null, parent: AnyTag?): T
         buffer.put(value)
     }
 
-    override fun clone(name: String?) = ByteArrayTag(value, name, parent)
+    override fun clone(name: String?) = ByteArrayTag(name, parent, value = value)
 
     override fun valueToString(): String = "[ ${value.joinToString(", ")} ]"
+
+    override fun valueEquals(other: AnyTag): Boolean {
+        if (javaClass != other.javaClass) return false
+
+        other as ByteArrayTag
+
+        return value.contentEquals(other.value)
+    }
+
+    override fun valueHashcode(): Int = value.contentHashCode()
 
 }

@@ -2,6 +2,7 @@ package composables.editor
 
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Text
@@ -11,6 +12,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -37,7 +39,6 @@ import doodler.doodle.extensions.transformer
 import doodler.doodle.*
 import doodler.editor.states.NbtState
 import doodler.logger.DoodlerLogger
-import doodler.nbt.AnyTag
 import doodler.nbt.TagType
 
 @Composable
@@ -50,15 +51,14 @@ private fun ItemRoot(
             content()
         }
     }
-
 }
 
 @Composable
-private fun TagTypeIndicatorWrapper(selected: Boolean, content: @Composable BoxScope.() -> Unit) {
+private fun TagTypeIndicatorWrapper(selected: () -> Boolean, content: @Composable BoxScope.() -> Unit) {
     Box (
         modifier = Modifier
             .wrapContentSize()
-            .background(ThemedColor.Editor.indicator(selected), RoundedCornerShape(5.dp))
+            .background(ThemedColor.Editor.indicator(selected()), RoundedCornerShape(5.dp))
             .padding(top = 2.dp, bottom = 2.dp, start = 3.dp, end = 3.dp),
         content = content
     )
@@ -67,21 +67,21 @@ private fun TagTypeIndicatorWrapper(selected: Boolean, content: @Composable BoxS
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun NbtActionButtonWrapper(
-    disabled: Boolean,
+    disabled: () -> Boolean,
     onClick: MouseClickScope.() -> Unit,
     onRightClick: MouseClickScope.() -> Unit = { },
     content: @Composable BoxScope.() -> Unit
 ) {
     var hover by remember { mutableStateOf(false) }
-    if (disabled) hover = false
+    if (disabled()) hover = false
 
     Box (
         modifier = Modifier
             .wrapContentSize()
-            .onPointerEvent(PointerEventType.Enter) { if (!disabled) hover = true }
-            .onPointerEvent(PointerEventType.Exit) { if (!disabled) hover = false }
+            .onPointerEvent(PointerEventType.Enter) { if (!disabled()) hover = true }
+            .onPointerEvent(PointerEventType.Exit) { if (!disabled()) hover = false }
             .mouseClickable {
-                if (buttons.isPrimaryPressed && !disabled) onClick()
+                if (buttons.isPrimaryPressed && !disabled()) onClick()
                 else if (buttons.isSecondaryPressed) onRightClick()
             }
             .padding(top = 5.dp, bottom = 5.dp)
@@ -89,7 +89,7 @@ private fun NbtActionButtonWrapper(
                 if (hover) ThemedColor.from(Color.Black, alpha = 30)
                 else Color.Transparent, RoundedCornerShape(3.dp)
             )
-            .alpha(if (disabled) 0.3f else 1f)
+            .alpha(if (disabled()) 0.3f else 1f)
     ) {
         Box(
             modifier = Modifier
@@ -108,7 +108,7 @@ private fun NbtActionButtonWrapper(
 
 @Composable
 fun NbtText(text: String, color: Color, fontSize: TextUnit = 18.sp, rotate: Float = 0f, multiplier: Int = 0) {
-    DoodlerLogger.recomposition("NbtText")
+    DoodlerLogger.recomposition("NbtText: String")
 
     val offset = if (rotate == 0f) 0 else (5 * multiplier)
     Text(
@@ -124,7 +124,7 @@ fun NbtText(text: String, color: Color, fontSize: TextUnit = 18.sp, rotate: Floa
 
 @Composable
 fun NbtText(text: AnnotatedString, fontSize: TextUnit = 18.sp, rotate: Float = 0f, multiplier: Int = 0) {
-    DoodlerLogger.recomposition("NbtText")
+    DoodlerLogger.recomposition("NbtText: AnnotatedString")
 
     val offset = if (rotate == 0f) 0 else (5 * multiplier)
     Text(
@@ -144,38 +144,54 @@ private fun NbtContentText(text: String, color: Color, fontSize: TextUnit = 20.s
 
 @Composable
 private fun TagTypeIndicatorText(type: TagType, disabled: Boolean, fontSize: TextUnit = 18.sp) {
-    val text = if (type.isArray()) {
-        AnnotatedString(type.shorten(), listOf(
-            AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.NumberArray), 0, 1),
-            AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.Number), 1, 2),
-            AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.NumberArray), 2, 3),
-        ))
-    } else {
-        val string = type.shorten()
-        val color = if (disabled) ThemedColor.Editor.Tag.General else type.color()
-        AnnotatedString(string, listOf(
-            AnnotatedString.Range(SpanStyle(color = color), 0, string.length),
-        ))
-    }
+    TagTypeIndicatorText(type, { disabled }, fontSize)
+}
+
+@Composable
+private fun TagTypeIndicatorText(type: TagType, disabled: () -> Boolean, fontSize: TextUnit = 18.sp) {
+    val text =
+        if (type.isArray()) {
+            val spans =
+                if (disabled()) {
+                    listOf(AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.General), 0, 3))
+                } else {
+                    listOf(
+                        AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.NumberArray), 0, 1),
+                        AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.Number), 1, 2),
+                        AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.NumberArray), 2, 3),
+                    )
+                }
+            AnnotatedString(type.shorten(), spans)
+        } else {
+            val string = type.shorten()
+            val color = if (disabled()) ThemedColor.Editor.Tag.General else type.color()
+            AnnotatedString(string, listOf(
+                AnnotatedString.Range(SpanStyle(color = color), 0, string.length),
+            ))
+        }
     NbtText(text, fontSize = fontSize)
 }
 
 @Composable
-private fun TagTypeIndicator(type: TagType, selected: Boolean) {
+private fun TagTypeIndicator(type: TagType, selected: () -> Boolean) {
     TagTypeIndicatorWrapper (selected) {
         TagTypeIndicatorText(type, false)
     }
 }
 
+@Composable
+private fun TagTypeIndicator(type: TagType) {
+    TagTypeIndicator(type) { true }
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun TagCreationButton(holderTag: AnyTag?, type: TagType, actions: NbtState.Actions) {
+fun TagCreationButton(type: TagType, actionsProvider: () -> NbtState.Actions, disabled: () -> Boolean) {
     DoodlerLogger.recomposition("TagCreationButton")
 
-    val disabled = holderTag?.canHold(type) != true
     NbtActionButtonWrapper (
         disabled = disabled,
-        onClick = { actions.withLog { creator.prepare(type) } }
+        onClick = { actionsProvider().withLog { creator.prepare(type) } }
     ) {
         TagTypeIndicatorText(type, disabled, 16.sp)
     }
@@ -184,7 +200,7 @@ fun TagCreationButton(holderTag: AnyTag?, type: TagType, actions: NbtState.Actio
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NbtActionButton(
-    disabled: Boolean,
+    disabled: () -> Boolean,
     onClick: MouseClickScope.() -> Unit = { },
     onRightClick: MouseClickScope.() -> Unit = { },
     content: @Composable () -> Unit
@@ -207,73 +223,103 @@ private fun StringValue(value: String) {
 }
 
 @Composable
-private fun RowScope.ExpandableValue(value: String, selected: Boolean) {
+private fun RowScope.ExpandableValue(value: String, selected: () -> Boolean) {
     Box (
         modifier = Modifier
             .wrapContentSize()
-            .background(ThemedColor.Editor.indicator(selected), RoundedCornerShape(5.dp))
+            .background(ThemedColor.Editor.indicator(selected()), RoundedCornerShape(5.dp))
             .padding(top = 2.dp, bottom = 2.dp, start = 10.dp, end = 10.dp)
     ) {
-        NbtContentText(value, ThemedColor.Editor.indicatorText(selected), 18.sp)
+        NbtContentText(value, ThemedColor.Editor.indicatorText(selected()), 18.sp)
     }
 }
 
 @Composable
-private fun Index(index: Int, selected: Boolean) {
+private fun RowScope.ExpandableValue(value: String, selected: Boolean) {
+    ExpandableValue(value) { selected }
+}
+
+@Composable
+private fun Index(index: Int, selected: () -> Boolean) {
     Box (
         modifier = Modifier
             .wrapContentSize()
-            .background(ThemedColor.Editor.indicator(selected), shape = RoundedCornerShape(5.dp))
+            .background(ThemedColor.Editor.indicator(selected()), shape = RoundedCornerShape(5.dp))
             .padding(top = 2.dp, bottom = 2.dp, start = 5.dp, end = 5.dp)
     ) {
-        NbtContentText("$index:", ThemedColor.Editor.indicatorText(selected), 18.sp)
+        NbtContentText("$index:", ThemedColor.Editor.indicatorText(selected()), 18.sp)
     }
 }
 
 @Composable
-private fun RowScope.KeyValue(doodle: NbtDoodle, selected: Boolean) {
-    val key = doodle.name
+private fun Index(index: Int) {
+    Index(index) { true }
+}
+
+@Composable
+private fun RowScope.KeyValue(doodle: NbtDoodle, selected: () -> Boolean) {
+    val key = doodle.tag.name
     if (key != null) {
         NbtContentText(key, ThemedColor.Editor.Tag.General)
         Spacer(modifier = Modifier.width(20.dp))
     }
-    if ((doodle.parent?.tag?.type ?: TagType.TAG_COMPOUND) != TagType.TAG_COMPOUND && doodle.index >= 0) {
-        Index(doodle.index, selected)
+    if ((doodle.parent?.tag?.type ?: TagType.TAG_COMPOUND) != TagType.TAG_COMPOUND && doodle.index() >= 0) {
+        Index(doodle.index(), selected)
         Spacer(modifier = Modifier.width(10.dp))
     }
     if (doodle.tag.type.isNumber())
-        NumberValue(doodle.value)
+        NumberValue(doodle.value())
     else if (doodle.tag.type.isString())
-        StringValue(doodle.value)
+        StringValue(doodle.value())
     else if (doodle.tag.type.canHaveChildren())
-        ExpandableValue(doodle.value, selected)
+        ExpandableValue(doodle.value(), selected)
 }
 
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun DepthPreviewNbtItem(
-    doodle: ActualDoodle,
-    state: DoodleUi,
-    scrollTo: () -> Unit
+    lazyColumnStateProvider: () -> LazyListState,
+    indexProvider: (Doodle) -> Int,
+    previewProvider: () -> Pair<ActualDoodle, DoodleItemUi>?,
+    stateProvider: () -> DoodleUi,
+    scrollTo: (Int) -> Unit
 ) {
     DoodlerLogger.recomposition("DepthPreviewNbtItem")
 
-    var focused by remember { mutableStateOf(false) }
     var pressed by remember { mutableStateOf(false) }
 
+    val (doodle, itemState) = previewProvider() ?: return
+
+    val scroll = {
+        val state = stateProvider()
+        val index = indexProvider(doodle)
+        scrollTo(index)
+        state.treeViewBlur(doodle)
+        state.treeBlur(doodle)
+        state.directFocus(doodle)
+    }
+
     Box (modifier = Modifier
-        .background(ThemedColor.EditorArea)
         .wrapContentSize()
+        .drawWithContent {
+            val enabled = lazyColumnStateProvider().firstVisibleItemIndex > indexProvider(doodle)
+            if (enabled) {
+                drawRect(ThemedColor.EditorArea)
+                drawContent()
+            }
+        }
         .zIndex(999f)
     ) {
         Box(modifier = Modifier
             .border(2.dp, ThemedColor.Editor.TreeBorder)
-            .onPointerEvent(PointerEventType.Enter) { focused = true; state.focusTreeView(doodle) }
-            .onPointerEvent(PointerEventType.Exit) { focused = false; state.unFocusTreeView(doodle) }
+            .onPointerEvent(PointerEventType.Enter) { itemState.functions.treeViewFocus(doodle) }
+            .onPointerEvent(PointerEventType.Exit) { itemState.functions.treeViewBlur(doodle) }
             .onPointerEvent(PointerEventType.Press) { pressed = true }
             .onPointerEvent(PointerEventType.Release) { pressed = false }
-            .mouseClickable(onClick = { scrollTo() })
-            .background(ThemedColor.Editor.normalItem(pressed, focused))
+            .mouseClickable(onClick = { scroll() })
+            .drawBehind {
+                drawRect(ThemedColor.Editor.normalItem(pressed, itemState.focusedTreeView))
+            }
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -282,7 +328,7 @@ fun DepthPreviewNbtItem(
                     .fillMaxWidth()
                     .height(50.dp)
             ) {
-                ActualNbtItemContent(doodle, false)
+                ActualNbtItemContent(doodle)
             }
         }
     }
@@ -292,85 +338,90 @@ fun DepthPreviewNbtItem(
 @Composable
 fun ActualNbtItem(
     doodle: ActualDoodle,
-    state: DoodleUi,
     toggle: (ActualDoodle) -> Unit,
     select: (ActualDoodle) -> Unit,
     treeCollapse: (NbtDoodle) -> Unit,
-    onCreationMode: Boolean = false,
-    disabled: Boolean = false
+    stateProvider: () -> DoodleItemUi,
+    onCreationMode: () -> Boolean = { false },
+    disabled: () -> Boolean = { false }
 ) {
     DoodlerLogger.recomposition("ActualNbtItem")
 
-    val hierarchy = getHierarchy(doodle)
-
-    val selected = state.selected.contains(doodle)
-
     ItemRoot(
         modifier = Modifier
-            .alpha(if (disabled) 0.4f else 1f)
-            .background(
-                ThemedColor.Editor.item(
-                selected = selected,
-                pressed = state.pressed == doodle,
-                focused = state.focusedDirectly == doodle || state.focusedTree == doodle,
-                onCreationMode = onCreationMode,
-                alphaMultiplier = if (onCreationMode) 0.6f else 1.0f
-            )
-            )
+            .drawWithContent {
+                val creationMode = onCreationMode()
+                val state = stateProvider()
+                if (creationMode && disabled()) {
+                    drawContent()
+                    drawRect(ThemedColor.from(ThemedColor.EditorArea, alpha = 175))
+                } else {
+                    drawRect(
+                        ThemedColor.Editor.item(
+                            selected = state.selected,
+                            pressed = state.pressed,
+                            focused = state.focusedDirectly || state.focusedTree,
+                            onCreationMode = creationMode,
+                            alphaMultiplier = if (creationMode) 0.6f else 1f
+                        )
+                    )
+                    drawContent()
+                }
+            }
     ) {
         Row (
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(start = 20.dp).height(50.dp)
         ) {
             for (i in 0 until doodle.depth) {
-                val current = hierarchy[i]
-                val focused = state.focusedDirectly == current || state.focusedTree == current
+                val parent = { stateProvider().hierarchy.parents[i] }
+                val current = { stateProvider().hierarchy.parentUiStates[i] }
                 Box (modifier = Modifier
                     .fillMaxHeight()
                     .wrapContentWidth()
-                    .let {
-                        if (!disabled) it
-                                .onPointerEvent(PointerEventType.Enter) { state.focusTree(current) }
-                                .onPointerEvent(PointerEventType.Exit) { state.unFocusTree(current) }
-                                .onPointerEvent(PointerEventType.Release) { treeCollapse(current) }
-                        else it
-                    }
+                    .onPointerEvent(PointerEventType.Enter) { if (!disabled()) stateProvider().functions.treeFocus(parent()) }
+                    .onPointerEvent(PointerEventType.Exit) { if (!disabled()) stateProvider().functions.treeBlur(parent()) }
+                    .onPointerEvent(PointerEventType.Release) { if (!disabled()) treeCollapse(parent()) }
                 ) {
                     Spacer(modifier = Modifier.width(40.dp))
                     Box (
                         modifier = Modifier
                             .width(1.dp)
                             .fillMaxHeight()
-                            .background(
-                                ThemedColor.Editor.depthLine(
-                                    selected,
-                                    focused || state.focusedTreeView == current
-                                )
-                            )
+                            .drawBehind {
+                                current().let {
+                                    drawRect(
+                                        ThemedColor.Editor.depthLine(
+                                            stateProvider().selected,
+                                            it.focusedDirectly || it.focusedTree || it.focusedTreeView
+                                        )
+                                    )
+                                }
+                            }
                     ) { }
                 }
             }
             Box (
                 modifier = Modifier.weight(1f)
-                    .let {
-                        if (!disabled) it
-                            .onPointerEvent(PointerEventType.Enter) { state.focusDirectly(doodle); state.focusedTree = null }
-                            .onPointerEvent(PointerEventType.Exit) { state.unFocusDirectly(doodle) }
-                            .onPointerEvent(PointerEventType.Press) { state.press(doodle) }
-                            .onPointerEvent(PointerEventType.Release) { state.unPress(doodle) }
-                            .mouseClickable(onClick = {
-                                if (buttons.isPrimaryPressed) toggle(doodle)
-                                else if (buttons.isSecondaryPressed) select(doodle)
-                            })
-                        else it
+                    .onPointerEvent(PointerEventType.Enter) {
+                        if (disabled()) return@onPointerEvent
+                        stateProvider().functions.directFocus(doodle)
+                        stateProvider().functions.treeBlur(null)
                     }
+                    .onPointerEvent(PointerEventType.Exit) { if (!disabled()) stateProvider().functions.directBlur(doodle) }
+                    .onPointerEvent(PointerEventType.Press) { if (!disabled()) stateProvider().functions.press(doodle) }
+                    .onPointerEvent(PointerEventType.Release) { if (!disabled()) stateProvider().functions.release(doodle) }
+                    .mouseClickable(onClick = {
+                        if (disabled()) return@mouseClickable
+                        if (buttons.isPrimaryPressed) toggle(doodle)
+                        else if (buttons.isSecondaryPressed) select(doodle)
+                    })
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxHeight()
+                    modifier = Modifier.fillMaxHeight()
                 ) {
-                    ActualNbtItemContent(doodle, selected)
+                    ActualNbtItemContent(doodle) { stateProvider().selected }
                 }
             }
         }
@@ -379,10 +430,8 @@ fun ActualNbtItem(
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun VirtualNbtItem(virtual: VirtualDoodle, state: NbtState) {
+fun VirtualNbtItem(virtual: VirtualDoodle, state: DoodleItemUi, actions: NbtState.Actions) {
     DoodlerLogger.recomposition("VirtualNbtItem")
-
-    val hierarchy = getHierarchy(virtual)
 
     ItemRoot(
         modifier = Modifier
@@ -400,13 +449,14 @@ fun VirtualNbtItem(virtual: VirtualDoodle, state: NbtState) {
             modifier = Modifier.padding(start = 20.dp).height(50.dp)
         ) {
             for (i in 0 until virtual.depth) {
-                val current = hierarchy[i]
-                val focused = state.ui.focusedDirectly == current || state.ui.focusedTree == current
+                val parent = state.hierarchy.parents[i]
+                val current = state.hierarchy.parentUiStates[i]
+                val focused = current.focusedDirectly || current.focusedTree
                 Box (modifier = Modifier
                     .fillMaxHeight()
                     .wrapContentWidth()
-                    .onPointerEvent(PointerEventType.Enter) { state.ui.focusTree(current) }
-                    .onPointerEvent(PointerEventType.Exit) { state.ui.unFocusTree(current) }
+                    .onPointerEvent(PointerEventType.Enter) { state.functions.treeFocus(parent) }
+                    .onPointerEvent(PointerEventType.Exit) { state.functions.treeBlur(parent) }
                 ) {
                     Spacer(modifier = Modifier.width(40.dp))
                     Box (
@@ -427,7 +477,7 @@ fun VirtualNbtItem(virtual: VirtualDoodle, state: NbtState) {
                     modifier = Modifier
                         .fillMaxHeight()
                 ) {
-                    DoodleCreationContent(state.actions, virtual)
+                    DoodleCreationContent(actions, virtual)
                 }
             }
         }
@@ -439,21 +489,20 @@ fun VirtualNbtItem(virtual: VirtualDoodle, state: NbtState) {
 fun RowScope.DoodleCreationContent(actions: NbtState.Actions, doodle: VirtualDoodle) {
     DoodlerLogger.recomposition("DoodleCreationContent")
 
-
-    val intoIndex =
-        if (!doodle.mode.isEdit()) doodle.parent.expandedItems.size.coerceAtLeast(doodle.parent.collapsedItems.size)
-        else doodle.index
-
-    val nameState = remember { mutableStateOf(
-        if (doodle.mode.isEdit()) doodle.from.let { if (it is NbtDoodle) it.tag.name else null } ?: ""
-        else ""
-    ) }
-    val valueState = remember { mutableStateOf(
-        if (doodle.mode.isEdit()) doodle.from.let {
-            if (it is NbtDoodle) it.value else if (it is ValueDoodle) it.value else null
-        } ?: ""
-        else ""
-    ) }
+    val nameState = remember {
+        mutableStateOf(
+            if (doodle is EditionDoodle) doodle.from.let { if (it is NbtDoodle) it.tag.name else null } ?: ""
+            else ""
+        )
+    }
+    val valueState = remember {
+        mutableStateOf(
+            if (doodle is EditionDoodle) doodle.from.let {
+                if (it is NbtDoodle) it.value() else if (it is ValueDoodle) it.value else null
+            } ?: ""
+            else ""
+        )
+    }
 
     val nameValidState = remember { mutableStateOf(doodle.parent.tag.type.isList()) }
     val valueValidState = remember { mutableStateOf(doodle !is NbtCreationDoodle || doodle.type.canHaveChildren()) }
@@ -465,44 +514,45 @@ fun RowScope.DoodleCreationContent(actions: NbtState.Actions, doodle: VirtualDoo
     val valueValid by valueValidState
 
     val cancel: MouseClickScope.() -> Unit = {
-        if (doodle.mode == VirtualDoodle.VirtualMode.CREATE) actions.withLog { creator.cancel() }
-        else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT) actions.withLog { editor.cancel() }
+        if (doodle is CreationDoodle) actions.withLog { creator.cancel() }
+        else if (doodle is EditionDoodle) actions.withLog { editor.cancel() }
     }
 
     val ok: MouseClickScope.() -> Unit = {
-        if (doodle.mode == VirtualDoodle.VirtualMode.CREATE)
-            actions.withLog { creator.create(doodle.actualize(name, value, intoIndex), doodle.parent) }
-        else if (doodle.mode == VirtualDoodle.VirtualMode.EDIT)
-            actions.withLog { editor.edit(doodle.from, doodle.actualize(name, value, intoIndex)) }
+        if (doodle is CreationDoodle)
+            actions.withLog { creator.create(doodle.actualize(name, value), doodle.parent, doodle.parent.children.size) }
+        else if (doodle is EditionDoodle)
+            actions.withLog { editor.edit(doodle.from, doodle.actualize(name, value)) }
     }
 
-    if (doodle is NbtCreationDoodle) {
-        TagTypeIndicator(doodle.type, true)
+    if (doodle is NbtCreationDoodle || doodle is NbtEditionDoodle) {
+        val type = if (doodle is NbtCreationDoodle) doodle.type else (doodle as NbtEditionDoodle).from.tag.type
+        TagTypeIndicator(type)
         Spacer(modifier = Modifier.width(20.dp))
         if (!doodle.parent.tag.type.isList()) {
             CreationField(nameState, nameValidState) {
-                if (doodle.type.isNumber() || doodle.type.isString())
-                    ValueField(valueState, valueValidState, doodle.type, true)
+                if (type.isNumber() || type.isString())
+                    ValueField(valueState, valueValidState, type, true)
                 else
-                    ExpandableValue(if (doodle.mode.isEdit()) value else doodle.type.creationHint(), true)
+                    ExpandableValue(if (doodle is EditionDoodle) value else type.creationHint(), true)
             }
         } else {
-            if (doodle.type.isNumber() || doodle.type.isString())
-                ValueField(valueState, valueValidState, doodle.type, wide = true, focus = true)
+            if (type.isNumber() || type.isString())
+                ValueField(valueState, valueValidState, type, wide = true, focus = true)
             else
-                ExpandableValue(if (doodle.mode.isEdit()) value else doodle.type.creationHint(), true)
+                ExpandableValue(if (doodle is EditionDoodle) value else type.creationHint(), true)
         }
     } else if (doodle is ValueCreationDoodle) {
-        Index(intoIndex, true)
+        Index(doodle.parent.children.size)
         Spacer(modifier = Modifier.width(10.dp))
         ValueField(valueState, valueValidState, doodle.parent.tag.type.arrayElementType(), wide = false, focus = true)
     }
     Spacer(modifier = Modifier.weight(1f))
-    NbtActionButtonWrapper(false, cancel) {
+    NbtActionButtonWrapper({ false }, cancel) {
         NbtText("CANCEL", ThemedColor.Editor.Action.Delete)
     }
     Spacer(modifier = Modifier.width(20.dp))
-    NbtActionButtonWrapper(!(nameValid && valueValid), ok) {
+    NbtActionButtonWrapper({ !(nameValid && valueValid) }, ok) {
         NbtText("OK", ThemedColor.Editor.Action.Create)
     }
     Spacer(modifier = Modifier.width(50.dp))
@@ -613,7 +663,7 @@ fun RowScope.CreationField(
 }
 
 @Composable
-fun RowScope.ActualNbtItemContent(doodle: ActualDoodle, selected: Boolean) {
+fun RowScope.ActualNbtItemContent(doodle: ActualDoodle, selected: () -> Boolean) {
     DoodlerLogger.recomposition("ActualNbtItemContent")
 
     when (doodle) {
@@ -623,20 +673,14 @@ fun RowScope.ActualNbtItemContent(doodle: ActualDoodle, selected: Boolean) {
             KeyValue(doodle, selected)
         }
         is ValueDoodle -> {
-            Index(doodle.index, selected)
+            Index(doodle.index(), selected)
             Spacer(modifier = Modifier.width(10.dp))
             NumberValue(doodle.value)
         }
     }
 }
 
-fun getHierarchy(doodle: Doodle): List<NbtDoodle> {
-    val result = mutableListOf<NbtDoodle>()
-    var parent = if (doodle is ActualDoodle) doodle.parent else if (doodle is VirtualDoodle) doodle.parent else null
-    while (parent != null && parent.depth >= 0) {
-        result.add(parent)
-        parent = parent.parent
-    }
-    result.reverse()
-    return result
+@Composable
+fun RowScope.ActualNbtItemContent(doodle: ActualDoodle) {
+    ActualNbtItemContent(doodle) { false }
 }

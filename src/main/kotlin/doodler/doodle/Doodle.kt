@@ -4,110 +4,151 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import doodler.doodle.extensions.displayName
 import doodler.doodle.extensions.doodle
-import doodler.extensions.replaceAt
 import doodler.nbt.AnyTag
 import doodler.nbt.TagType
 import doodler.nbt.tag.*
 
 
+@Stable
 sealed class Doodle(
-    var depth: Int,
-    var index: Int,
-) {
+    val depth: Int,
+){
     abstract val path: String
 }
 
+@Stable
 abstract class VirtualDoodle(
     depth: Int,
-    index: Int,
     val parent: NbtDoodle,
-    val mode: VirtualMode
-): Doodle(depth, index) {
+): Doodle(depth) {
     override val path: String = "_DOODLE_CREATOR_"
 
-    lateinit var from: ActualDoodle
-    
-    fun actualize(rawName: String, value: String, intoIndex: Int): ActualDoodle {
-        val name = rawName.ifEmpty { null }
+    fun primitiveActualize(rawName: String, type: TagType, value: String): AnyTag {
         val parentTag = parent.tag
-        return if (this is NbtCreationDoodle) {
-            val tag = when (type) {
-                TagType.TAG_BYTE -> ByteTag(value.toByte(), name, parentTag)
-                TagType.TAG_SHORT -> ShortTag(value.toShort(), name, parentTag)
-                TagType.TAG_INT -> IntTag(value.toInt(), name, parentTag)
-                TagType.TAG_LONG -> LongTag(value.toLong(), name, parentTag)
-                TagType.TAG_FLOAT -> FloatTag(value.toFloat(), name, parentTag)
-                TagType.TAG_DOUBLE -> DoubleTag(value.toDouble(), name, parentTag)
-                TagType.TAG_STRING -> StringTag(value, name, parentTag)
-                TagType.TAG_BYTE_ARRAY -> ByteArrayTag(
-                    if (mode.isEdit()) (from as NbtDoodle).tag.getAs<ByteArrayTag>().value else ByteArray(0),
-                    name, parentTag
-                )
-                TagType.TAG_INT_ARRAY -> IntArrayTag(
-                    if (mode.isEdit()) (from as NbtDoodle).tag.getAs<IntArrayTag>().value else IntArray(0),
-                    name, parentTag
-                )
-                TagType.TAG_LONG_ARRAY -> LongArrayTag(
-                    if (mode.isEdit()) (from as NbtDoodle).tag.getAs<LongArrayTag>().value else LongArray(0),
-                    name, parentTag
-                )
-                TagType.TAG_LIST -> ListTag(
-                    TagType.TAG_END,
-                    if (mode.isEdit()) (from as NbtDoodle).tag.getAs<ListTag>().value else listOf(),
-                    true, name, parentTag
-                )
-                TagType.TAG_COMPOUND -> CompoundTag(
-                    if (mode.isEdit()) (from as NbtDoodle).tag.getAs<CompoundTag>().value else mutableListOf(),
-                    name, parentTag
-                )
-                TagType.TAG_END -> throw EndCreationException()
-            }
-            NbtDoodle(tag, depth, intoIndex, parent)
-        } else {
-            ValueDoodle(value, depth, intoIndex, parent)
+        val name = rawName.ifEmpty { null }
+
+        return when (type) {
+            TagType.TAG_BYTE -> ByteTag(name, parentTag, value = value.toByte())
+            TagType.TAG_SHORT -> ShortTag(name, parentTag, value = value.toShort())
+            TagType.TAG_INT -> IntTag(name, parentTag, value = value.toInt())
+            TagType.TAG_LONG -> LongTag(name, parentTag, value = value.toLong())
+            TagType.TAG_FLOAT -> FloatTag(name, parentTag, value = value.toFloat())
+            TagType.TAG_DOUBLE -> DoubleTag(name, parentTag, value = value.toDouble())
+            TagType.TAG_STRING -> StringTag(name, parentTag, value = value)
+            else -> throw DoodleException("Internal Error", null, "Non-Primitive Tag Creation is not handled by this function!")
         }
     }
 
-    enum class VirtualMode {
-        CREATE, EDIT;
+    abstract fun actualize(rawName: String, value: String): ActualDoodle
 
-        fun isEdit() = this == EDIT
-    }
 }
 
+@Stable
+sealed class CreationDoodle(
+    depth: Int,
+    parent: NbtDoodle
+): VirtualDoodle(depth, parent)
+
+@Stable
 class NbtCreationDoodle(
     val type: TagType,
     depth: Int,
-    index: Int,
     parent: NbtDoodle,
-    mode: VirtualMode
-): VirtualDoodle(depth, index, parent, mode) {
-    constructor(from: NbtDoodle, mode: VirtualMode):
-            this(from.tag.type, from.depth, from.index, from.parent!!, mode) {
-                this.from = from
-            }
+): CreationDoodle(depth, parent) {
+
+    override fun actualize(rawName: String, value: String): ActualDoodle {
+        val parentTag = parent.tag
+        val name = rawName.ifEmpty { null }
+
+        if (type.isPrimitive())
+            return NbtDoodle(primitiveActualize(rawName, type, value), depth, parent)
+
+        val tag = when (type) {
+            TagType.TAG_BYTE_ARRAY -> ByteArrayTag(name, parentTag, value = ByteArray(0))
+            TagType.TAG_INT_ARRAY -> IntArrayTag(name, parentTag, value = IntArray(0))
+            TagType.TAG_LONG_ARRAY -> LongArrayTag(name, parentTag, value = LongArray(0))
+            TagType.TAG_LIST -> ListTag(name, parentTag, TagType.TAG_END, value = mutableStateListOf())
+            TagType.TAG_COMPOUND -> CompoundTag(name, parentTag, value = mutableStateListOf())
+            TagType.TAG_END -> throw EndCreationException()
+            else -> throw DoodleException("Internal Error", null, "Primitive Tag Creation is not handled by this function.")
+        }
+        return NbtDoodle(tag, depth, parent)
+    }
+
 }
 
+@Stable
 class ValueCreationDoodle(
     depth: Int,
-    index: Int,
     parent: NbtDoodle,
-    mode: VirtualMode
-): VirtualDoodle(depth, index, parent, mode) {
-    constructor(from: ValueDoodle, mode: VirtualMode):
-            this(from.depth, from.index, from.parent!!, mode) {
-                this.from = from
-            }
+): CreationDoodle(depth, parent) {
+
+    override fun actualize(rawName: String, value: String): ActualDoodle =
+        ValueDoodle(value, depth, parent)
+
 }
 
+@Stable
+sealed class EditionDoodle(
+    open val from: ActualDoodle,
+    depth: Int,
+    parent: NbtDoodle
+): VirtualDoodle(depth, parent)
+
+@Stable
+class NbtEditionDoodle(
+    override val from: NbtDoodle
+): EditionDoodle(from, from.depth, from.parent!!) {
+
+    override fun actualize(rawName: String, value: String): ActualDoodle {
+        val parentTag = parent.tag
+        val name = rawName.ifEmpty { null }
+
+        val type = from.tag.type
+
+        if (type.isPrimitive())
+            return NbtDoodle(primitiveActualize(rawName, type, value), depth, parent)
+
+        val tag = when (type) {
+            TagType.TAG_BYTE_ARRAY -> ByteArrayTag(name, parentTag, value = from.tag.getAs<ByteArrayTag>().value)
+            TagType.TAG_INT_ARRAY -> IntArrayTag(name, parentTag, value = from.tag.getAs<IntArrayTag>().value)
+            TagType.TAG_LONG_ARRAY -> LongArrayTag(name, parentTag, value = from.tag.getAs<LongArrayTag>().value)
+            TagType.TAG_LIST -> ListTag(name, parentTag, TagType.TAG_END, value = from.tag.getAs<ListTag>().value)
+            TagType.TAG_COMPOUND -> CompoundTag(name, parentTag, value = from.tag.getAs<CompoundTag>().value)
+            TagType.TAG_END -> throw EndCreationException()
+            else -> throw DoodleException("Internal Error", null, "Primitive Tag Creation is not handled by this function.")
+        }
+        return NbtDoodle(tag, depth, parent)
+    }
+
+}
+
+@Stable
+class ValueEditionDoodle(
+    override val from: ValueDoodle,
+): EditionDoodle(from, from.depth, from.parent!!) {
+
+    override fun actualize(rawName: String, value: String): ActualDoodle =
+        ValueDoodle(value, depth, parent)
+
+}
+
+
+@Stable
 sealed class ActualDoodle(
     depth: Int,
-    index: Int,
-    var parent: NbtDoodle?
-): Doodle(depth, index) {
+    parent: NbtDoodle?
+): Doodle(depth) {
+
+    var parent by mutableStateOf(parent)
+
+    abstract fun index(): Int
+
     abstract fun delete(): ActualDoodle?
 
-    abstract fun clone(parent: NbtDoodle?): ActualDoodle
+    abstract fun clone(parent: NbtDoodle?, newDepth: Int = depth): ActualDoodle
+
+    abstract fun cloneAsChild(parent: NbtDoodle): ActualDoodle
 
     fun checkNameConflict(): Pair<Boolean, Int> {
         if (this !is NbtDoodle) return Pair(false, -1)
@@ -115,7 +156,7 @@ sealed class ActualDoodle(
         val into = this.parent ?: return Pair(false, -1)
         if (into.tag.type.isCompound()) {
             val tag = into.tag.getAs<CompoundTag>()
-            val conflictTag = tag.value.find { it.name == this.name }
+            val conflictTag = tag.value.find { it.name == this.tag.name }
             if (conflictTag != null)
                 return Pair(true, tag.value.indexOf(conflictTag))
         }
@@ -123,72 +164,56 @@ sealed class ActualDoodle(
     }
 }
 
+@Stable
 class NbtDoodle (
     val tag: AnyTag,
     depth: Int,
-    index: Int = -1,
-    parent: NbtDoodle? = null
-): ActualDoodle(depth, index, parent) {
+    parent: NbtDoodle? = null,
+): ActualDoodle(depth, parent) {
 
     override val path: String get() = parent?.let {
         when (it.tag.type) {
             TagType.TAG_COMPOUND -> "${it.path}.${tag.name}"
-            TagType.TAG_LIST -> "${it.path}[${index}]"
+            TagType.TAG_LIST -> "${it.path}[${it.tag.getAs<ListTag>().value.indexOf(tag)}]"
             else -> "" // no-op
         }
     } ?: "root"
 
-    var name by mutableStateOf(tag.name)
-        private set
-    var value by mutableStateOf(if (this.tag.canHaveChildren) valueSuffix(tag) else tag.valueToString())
-        private set
+    private val root = parent == null
 
-    var expanded = false
+    var expanded by mutableStateOf(false)
 
-    var creator: VirtualDoodle? by mutableStateOf(null)
-    val expandedItems: SnapshotStateList<ActualDoodle> = mutableStateListOf()
-    val collapsedItems: MutableList<ActualDoodle> = mutableListOf()
+    var virtual by mutableStateOf<VirtualDoodle?>(null)
+    val children = mutableStateListOf<ActualDoodle>()
 
-    fun update(vararg targets: UpdateTarget) {
-        if (targets.contains(UpdateTarget.NAME))
-            name = tag.name
-        if (targets.contains(UpdateTarget.VALUE))
-            value = if (this.tag.canHaveChildren) valueSuffix(tag) else tag.valueToString()
-        if (targets.contains(UpdateTarget.INDEX)) {
-            if (expanded) {
-                expandedItems.forEach { it.index = expandedItems.indexOf(it) }
-            } else {
-                collapsedItems.forEach { it.index = collapsedItems.indexOf(it) }
-            }
+    val doodles: SnapshotStateList<Doodle> by derivedStateOf {
+        mutableStateListOf<Doodle>().apply {
+            if (!root) parent!!.virtual.let { if (it is EditionDoodle && it.from.path == path) add(it) else add(this@NbtDoodle) }
+
+            if (!expanded) return@apply
+
+            virtual?.let { if (it is CreationDoodle) add(it) }
+            addAll(children.map { if (it is NbtDoodle) it.doodles else mutableStateListOf(it) }.flatten())
         }
     }
 
-    fun sizeOfChildren(root: Boolean = false): Int {
-        var size = 0
-        if (!root) size++
-        size += expandedItems.sumOf { if (it is NbtDoodle) it.sizeOfChildren() else 1 }
-        size += if (creator?.mode == VirtualDoodle.VirtualMode.CREATE) 1 else 0
-        return size
-    }
+    fun value(): String = if (tag.canHaveChildren) valueSuffix(tag) else tag.value.toString()
 
-    fun children(root: Boolean = false): List<Doodle> {
-        return mutableListOf<Doodle>().apply {
-            if (!root) add(this@NbtDoodle)
-            addAll(expandedItems.map { if (it is NbtDoodle) it.children() else listOf(it) }.flatten())
-            creator?.let {
-                when (it.mode) {
-                    VirtualDoodle.VirtualMode.CREATE -> add(it.index + if (!root) 1 else 0, it)
-                    VirtualDoodle.VirtualMode.EDIT -> replaceAt(it.index + if (!root) 1 else 0, it)
-                }
-            }
+    override fun index(): Int {
+        val parent = parent ?: return 0
+
+        return when (parent.tag.type) {
+            TagType.TAG_LIST -> parent.tag.getAs<ListTag>().value.indexOf(tag)
+            TagType.TAG_COMPOUND -> parent.tag.getAs<CompoundTag>().value.indexOf(tag)
+            else -> 0
         }
     }
 
     private fun initializeChildren() {
-        if (collapsedItems.isNotEmpty() || expandedItems.isNotEmpty()) return
+        if (children.isNotEmpty()) return
 
         val newDepth = depth + 1
-        collapsedItems.addAll(
+        children.addAll(
             when (tag) {
                 is CompoundTag -> tag.doodle(this, newDepth)
                 is ListTag -> tag.doodle(this, newDepth)
@@ -206,12 +231,9 @@ class NbtDoodle (
 
         parent?.let { if (!it.expanded) it.expand() }
 
-        expanded = true
-
         initializeChildren()
 
-        expandedItems.addAll(collapsedItems)
-        collapsedItems.clear()
+        expanded = true
     }
 
     fun collapse(selected: MutableList<ActualDoodle>) {
@@ -220,13 +242,10 @@ class NbtDoodle (
 
         expanded = false
 
-        expandedItems.forEach {
+        children.forEach {
             selected.remove(it)
             if (it is NbtDoodle && it.tag.canHaveChildren && it.expanded) it.collapse(selected)
         }
-
-        collapsedItems.addAll(expandedItems)
-        expandedItems.clear()
     }
 
     override fun delete(): NbtDoodle? {
@@ -243,38 +262,32 @@ class NbtDoodle (
             else -> { /* no-op */ }
         }
 
-        parent.expandedItems.remove(this)
-        parent.collapsedItems.remove(this)
+        parent.children.remove(this)
 
         return this
     }
 
-    override fun clone(parent: NbtDoodle?): NbtDoodle {
-        return NbtDoodle(tag.clone(tag.name), depth, index, parent)
+    override fun clone(parent: NbtDoodle?, newDepth: Int): NbtDoodle {
+        return NbtDoodle(tag.clone(tag.name), newDepth, parent)
             .apply {
                 expanded = this@NbtDoodle.expanded
-                expandedItems.addAll(this@NbtDoodle.expandedItems.map { it.clone(this) })
-                collapsedItems.addAll(this@NbtDoodle.collapsedItems.map { it.clone(this) })
+                children.addAll(this@NbtDoodle.children.map { it.clone(this, newDepth + 1) })
             }
     }
 
-    fun create(new: ActualDoodle, useIndex: Boolean = true): ActualDoodle {
-        initializeChildren()
+    override fun cloneAsChild(parent: NbtDoodle): ActualDoodle {
+        return clone(parent, depth + 1)
+    }
 
-        new.depth = depth + 1
-        if (new is NbtDoodle) {
-            new.expandedItems.forEach { it.depth = new.depth + 1 }
-            new.collapsedItems.forEach { it.depth = new.depth + 1 }
-        }
+    fun create(new: ActualDoodle, index: Int? = null): ActualDoodle {
+        initializeChildren()
 
         when (tag.type) {
             TagType.TAG_COMPOUND -> {
                 new as? NbtDoodle ?: throw InternalAssertionException(NbtDoodle::class.java.simpleName, new.javaClass.name)
 
-                if (useIndex) tag.getAs<CompoundTag>().insert(new.index, new.tag)
+                if (index != null) tag.getAs<CompoundTag>().insert(index, new.tag)
                 else tag.getAs<CompoundTag>().add(new.tag)
-
-                if (!useIndex) new.index = tag.getAs<CompoundTag>().value.size - 1
             }
             TagType.TAG_LIST -> {
                 new as? NbtDoodle ?: throw InternalAssertionException(NbtDoodle::class.java.simpleName, new.javaClass.name)
@@ -284,13 +297,11 @@ class NbtDoodle (
                 if (list.elementsType != new.tag.type && list.elementsType != TagType.TAG_END)
                     throw ListElementsTypeMismatchException(list.elementsType, new.tag.type)
                 else {
-                    if (useIndex) list.value.add(new.index, new.tag)
+                    if (index != null) list.value.add(index, new.tag)
                     else list.value.add(new.tag)
 
                     if (list.elementsType == TagType.TAG_END) list.elementsType = new.tag.type
                 }
-
-                if (!useIndex) new.index = list.value.size - 1
             }
             TagType.TAG_BYTE_ARRAY -> {
                 new as? ValueDoodle ?: throw InternalAssertionException(ValueDoodle::class.java.simpleName, new.javaClass.name)
@@ -299,11 +310,9 @@ class NbtDoodle (
 
                 val array = tag.getAs<ByteArrayTag>()
                 array.value = array.value.toMutableList().apply {
-                    if (useIndex) add(new.index, value)
+                    if (index != null) add(index, value)
                     else add(value)
                 }.toByteArray()
-
-                if (!useIndex) new.index = array.value.size - 1
             }
             TagType.TAG_INT_ARRAY -> {
                 new as? ValueDoodle ?: throw InternalAssertionException(ValueDoodle::class.java.simpleName, new.javaClass.name)
@@ -312,11 +321,9 @@ class NbtDoodle (
 
                 val array = tag.getAs<IntArrayTag>()
                 array.value = array.value.toMutableList().apply {
-                    if (useIndex) add(new.index, value)
+                    if (index != null) add(index, value)
                     else add(value)
                 }.toIntArray()
-
-                if (!useIndex) new.index = array.value.size - 1
             }
             TagType.TAG_LONG_ARRAY -> {
                 new as? ValueDoodle ?: throw InternalAssertionException(ValueDoodle::class.java.simpleName, new.javaClass.name)
@@ -325,28 +332,17 @@ class NbtDoodle (
 
                 val array = tag.getAs<LongArrayTag>()
                 array.value = array.value.toMutableList().apply {
-                    if (useIndex) add(new.index, value)
+                    if (index != null) add(index, value)
                     else add(value)
                 }.toLongArray()
-
-                if (!useIndex) new.index = array.value.size - 1
             }
             else -> throw InvalidCreationException(tag.type)
         }
 
-        if (expanded) {
-            if (new.index == -1 || !useIndex) expandedItems.add(new)
-            else expandedItems.add(new.index, new)
-        } else {
-            if (new.index == -1 || !useIndex) collapsedItems.add(new)
-            else collapsedItems.add(new.index, new)
-        }
+        if (index == null) children.add(new)
+        else children.add(index, new)
 
         return new
-    }
-
-    enum class UpdateTarget {
-        NAME, VALUE, INDEX
     }
 
     companion object {
@@ -374,25 +370,38 @@ class NbtDoodle (
 
 }
 
+@Stable
 class ValueDoodle (
     val value: String,
     depth: Int,
-    index: Int,
     parent: NbtDoodle?
-): ActualDoodle(depth, index, parent) {
+): ActualDoodle(depth, parent) {
 
     override val path: String
         get() = parent?.let {
             when (it.tag.type) {
                 TagType.TAG_BYTE_ARRAY,
                 TagType.TAG_INT_ARRAY,
-                TagType.TAG_LONG_ARRAY -> "${it.path}[${index}]"
+                TagType.TAG_LONG_ARRAY -> "${it.path}[${index()}]"
                 else -> "" // no-op
             }
         } ?: "" // no-op
 
+    override fun index(): Int {
+        val parent = parent ?: return 0
+        return when (parent.tag.type) {
+            TagType.TAG_BYTE_ARRAY, TagType.TAG_INT_ARRAY, TagType.TAG_LONG_ARRAY -> parent.children.indexOf(this)
+            else -> 0
+        }
+    }
+
+    override fun cloneAsChild(parent: NbtDoodle): ActualDoodle =
+        clone(parent, depth + 1)
+
     override fun delete(): ValueDoodle? {
         val parent = parent ?: return null
+
+        val index = index()
 
         when (parent.tag.type) {
             TagType.TAG_BYTE_ARRAY -> {
@@ -410,14 +419,13 @@ class ValueDoodle (
             else -> { /* no-op */ }
         }
 
-        parent.expandedItems.remove(this)
-        parent.collapsedItems.remove(this)
+        parent.children.remove(this)
 
         return this
     }
 
-    override fun clone(parent: NbtDoodle?): ValueDoodle {
-        return ValueDoodle(value, depth, index, parent)
+    override fun clone(parent: NbtDoodle?, newDepth: Int): ValueDoodle {
+        return ValueDoodle(value, newDepth, parent)
     }
 
 }

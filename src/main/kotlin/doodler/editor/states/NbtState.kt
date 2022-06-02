@@ -7,6 +7,7 @@ import doodler.doodle.*
 import doodler.doodle.structures.*
 import doodler.extensions.removeRange
 import doodler.extensions.toRanges
+import doodler.files.StateFile
 import doodler.minecraft.DatWorker
 import doodler.minecraft.McaWorker
 import doodler.minecraft.structures.DatFileType
@@ -14,14 +15,14 @@ import doodler.minecraft.structures.McaFileType
 import doodler.minecraft.structures.WorldFileType
 import doodler.nbt.TagType
 import doodler.nbt.tag.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import java.io.File
 
+@Stable
 class NbtState (
     val rootDoodle: NbtDoodle,
-    ui: MutableState<DoodleUi>,
-    val lazyState: LazyListState,
-    private val logs: SnapshotStateList<DoodleLog>,
-    private val file: File,
+    private val file: StateFile,
     private val fileType: WorldFileType
 ) {
 
@@ -29,37 +30,46 @@ class NbtState (
         fun new(
             rootTag: CompoundTag,
             file: File,
-            fileType: WorldFileType,
-            ui: MutableState<DoodleUi> = mutableStateOf(DoodleUi.new()),
-            lazyState: LazyListState = LazyListState(),
-            logs: SnapshotStateList<DoodleLog> = mutableStateListOf()
-        ) = NbtState(NbtDoodle(rootTag, -1, -1), ui, lazyState, logs, file, fileType)
+            fileType: WorldFileType
+        ) = NbtState(
+            NbtDoodle(rootTag, -1),
+            StateFile(file.name, file.absolutePath, file.isDirectory, file.isFile),
+            fileType
+        )
     }
 
-    var ui by ui
+    private val logs = mutableStateListOf<DoodleLog>()
 
-    val doodles: DoodleManager = DoodleManager(rootDoodle)
+    val currentLogState: MutableState<DoodleLog?> = mutableStateOf(null)
+    private var currentLog by currentLogState
+
+    val ui by mutableStateOf(DoodleUi())
+    val lazyState = LazyListState()
+
+    val doodles get() = rootDoodle.doodles
+    val virtual by derivedStateOf { doodles.find { it is VirtualDoodle } as? VirtualDoodle? }
 
     val actions = Actions()
 
-    val currentLogState: MutableState<DoodleLog?> = mutableStateOf(null)
-    var currentLog by currentLogState
-
     var lastSaveUid by mutableStateOf(0L)
+
+    private val virtualScrollTo by derivedStateOf {
+        virtual.let { if (it == null) null else checkVirtualIsInvisible(it) }
+    }
 
     init {
         rootDoodle.expand()
 
-        val hasOnlyChild = rootDoodle.expandedItems
+        val hasOnlyExpandableChild = rootDoodle.children
             .let { children -> children.size == 1 && children[0].let { it is NbtDoodle && it.tag.canHaveChildren } }
 
-        if (hasOnlyChild) (rootDoodle.expandedItems[0] as NbtDoodle).expand()
+        if (hasOnlyExpandableChild) (rootDoodle.children[0] as NbtDoodle).expand()
     }
 
     fun save() {
         when (fileType) {
-            DatFileType -> DatWorker.write(rootDoodle.tag.getAs(), file)
-            is McaFileType -> McaWorker.writeChunk(file, rootDoodle.tag.getAs(), fileType.location)
+            DatFileType -> DatWorker.write(rootDoodle.tag.getAs(), File(file.absolutePath))
+            is McaFileType -> McaWorker.writeChunk(File(file.absolutePath), rootDoodle.tag.getAs(), fileType.location)
         }
 
         lastSaveUid = actions.history.lastActionUid
@@ -74,12 +84,29 @@ class NbtState (
         )
     }
 
+    private fun checkVirtualIsInvisible(newVirtual: VirtualDoodle): Int? {
+        val index = doodles.indexOf(newVirtual)
+        val firstIndex = lazyState.firstVisibleItemIndex
+        val windowSize = lazyState.layoutInfo.visibleItemsInfo.size
+        val invisible = index < firstIndex || index >= firstIndex + windowSize
+
+        return if (invisible) (index - windowSize / 2).coerceAtLeast(0) else null
+    }
+
+    fun scrollToVirtual(scope: CoroutineScope) {
+        virtualScrollTo.let {
+            if (it == null) return
+            scope.launch { lazyState.scrollToItem(it) }
+        }
+    }
+
     fun newLog(new: DoodleLog) {
         if (logs.size > 10) logs.removeFirst()
         logs.add(new)
         currentLog = new
     }
 
+    @Stable
     inner class Actions {
 
         val history = HistoryAction()
@@ -107,17 +134,19 @@ class NbtState (
 
     }
 
+    @Stable
     open inner class Action {
         fun uid(): Long = System.currentTimeMillis()
     }
 
+    @Stable
     inner class HistoryAction: Action() {
 
-        private val undoStack: MutableList<DoodleAction> = mutableStateListOf()
-        private val redoStack: MutableList<DoodleAction> = mutableStateListOf()
+        private val undoStack: SnapshotStateList<DoodleAction> = mutableStateListOf()
+        private val redoStack: SnapshotStateList<DoodleAction> = mutableStateListOf()
 
-        var canBeUndo: Boolean by mutableStateOf(false)
-        var canBeRedo: Boolean by mutableStateOf(false)
+        val canBeUndo: Boolean by derivedStateOf { undoStack.isNotEmpty() }
+        val canBeRedo: Boolean by derivedStateOf { redoStack.isNotEmpty() }
 
         var lastActionUid by mutableStateOf(0L)
 
@@ -125,7 +154,7 @@ class NbtState (
             lastActionUid = action.uid
             redoStack.clear()
             undoStack.add(action)
-            updateFlags()
+            updateLastAction()
         }
 
         fun undo() {
@@ -133,7 +162,7 @@ class NbtState (
 
             val action = undoStack.removeLast()
             redoStack.add(action)
-            updateFlags()
+            updateLastAction()
 
             when (action) {
                 is DeleteDoodleAction -> undoDelete(action)
@@ -150,7 +179,7 @@ class NbtState (
             val action = redoStack.removeLast()
 
             undoStack.add(action)
-            updateFlags()
+            updateLastAction()
 
             when (action) {
                 is DeleteDoodleAction -> redoDelete(action)
@@ -161,10 +190,7 @@ class NbtState (
             }
         }
 
-        private fun updateFlags() {
-            canBeUndo = undoStack.isNotEmpty()
-            canBeRedo = redoStack.isNotEmpty()
-
+        private fun updateLastAction() {
             lastActionUid = undoStack.lastOrNull()?.uid ?: 0L
         }
 
@@ -218,22 +244,24 @@ class NbtState (
 
     }
 
+    @Stable
     inner class MoveAction: Action() {
 
         val internal = Internal()
 
-        fun moveUp(targets: List<ActualDoodle>) {
+        fun moveUp(targets: SnapshotStateList<ActualDoodle>) {
             internal.moveUp(targets)
 
             actions.history.newAction(MoveDoodleAction(uid(), MoveDoodleAction.DoodleMoveDirection.UP, targets))
         }
 
-        fun moveDown(targets: List<ActualDoodle>) {
+        fun moveDown(targets: SnapshotStateList<ActualDoodle>) {
             internal.moveDown(targets)
 
             actions.history.newAction(MoveDoodleAction(uid(), MoveDoodleAction.DoodleMoveDirection.DOWN, targets))
         }
 
+        @Stable
         inner class Internal {
 
             fun moveUp(targets: List<ActualDoodle>) {
@@ -245,11 +273,11 @@ class NbtState (
             }
 
             private fun move(targets: List<ActualDoodle>, into: (IntRange) -> Int) {
-                val targetsRange = targets.map { it.index }.toRanges()
+                val targetsRange = targets.map { it.index() }.toRanges()
                 if (targetsRange.size > 1)
-                    throw InvalidOperationException("Cannot move up", "Selection range is invalid. Only continuous range is available for this action.")
+                    throw InvalidOperationException("Cannot move", "Selection range is invalid. Only continuous range is available for this action.")
                 if (targetsRange.isEmpty())
-                    throw InvalidOperationException("Cannot move up", "No targets selected.")
+                    throw InvalidOperationException("Cannot move", "No targets selected.")
 
                 val range = targetsRange[0]
 
@@ -260,7 +288,7 @@ class NbtState (
                 val parent = targets.first().parent ?: throw ParentNotFoundException()
                 val parentTag = parent.tag
 
-                parent.expandedItems.addAll(into(range), parent.expandedItems.removeRange(range))
+                parent.children.addAll(into(range), parent.children.removeRange(range))
 
                 if (variants[0] == "nbt") {
                     when (parentTag) {
@@ -301,14 +329,13 @@ class NbtState (
                         }
                     }
                 }
-
-                parent.update(NbtDoodle.UpdateTarget.INDEX)
             }
 
         }
 
     }
 
+    @Stable
     inner class ClipboardAction: Action() {
 
         val stack: SnapshotStateList<Pair<PasteTarget, List<ActualDoodle>>> = mutableStateListOf()
@@ -365,7 +392,7 @@ class NbtState (
                     if (!selected.tag.type.isCompound()) false
                     else {
                         val tag = selected.tag.getAs<CompoundTag>().value.find { tag ->
-                            items.find { it is NbtDoodle && it.name == tag.name } != null
+                            items.find { it is NbtDoodle && it.tag.name == tag.name } != null
                         }
                         tag == null
                     }
@@ -420,9 +447,8 @@ class NbtState (
                 }
             }
 
-            val created = doodles.map { selected.create(it.clone(selected), false) }
+            val created = doodles.map { selected.create(it.cloneAsChild(selected)) }.toMutableStateList()
 
-            selected.update(NbtDoodle.UpdateTarget.VALUE)
             selected.expand()
 
             ui.selected.clear()
@@ -433,6 +459,7 @@ class NbtState (
 
     }
 
+    @Stable
     inner class CreateAction: Action() {
 
         val internal = Internal()
@@ -445,15 +472,14 @@ class NbtState (
 
             into.expand()
 
-            if (into.tag.type.isArray()) {
-                into.creator = ValueCreationDoodle(
-                    into.depth + 1, 0, into, VirtualDoodle.VirtualMode.CREATE
-                )
-            } else {
-                into.creator = NbtCreationDoodle(
-                    type, into.depth + 1, 0, into, VirtualDoodle.VirtualMode.CREATE
-                )
-            }
+            val newVirtual =
+                if (into.tag.type.isArray()) {
+                    ValueCreationDoodle(into.depth + 1, into)
+                } else {
+                    NbtCreationDoodle(type, into.depth + 1, into)
+                }
+
+            into.virtual = newVirtual
         }
 
         fun cancel() {
@@ -462,21 +488,20 @@ class NbtState (
             val into = ui.selected.firstOrNull() ?: rootDoodle
             if (into !is NbtDoodle) throw InternalAssertionException(NbtDoodle::class.java.simpleName, into.javaClass.name)
 
-            into.creator = null
+            into.virtual = null
         }
 
-        fun create(new: ActualDoodle, into: NbtDoodle) {
+        fun create(new: ActualDoodle, into: NbtDoodle, where: Int) {
             val (conflict, index) = new.checkNameConflict()
-            if (conflict) throw NameConflictException("create", (new as NbtDoodle).name!!, index)
+            if (conflict) throw NameConflictException("create", (new as NbtDoodle).tag.name!!, index)
 
             new.parent = into
 
             if (!into.expanded) into.expand()
 
-            into.create(new)
-            into.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX)
+            into.create(new, where)
 
-            into.creator = null
+            into.virtual = null
 
             ui.selected.clear()
             ui.selected.add(new)
@@ -484,6 +509,7 @@ class NbtState (
             actions.history.newAction(CreateDoodleAction(uid(), new))
         }
 
+        @Stable
         inner class Internal {
 
             fun create(targets: List<ActualDoodle>) {
@@ -493,10 +519,8 @@ class NbtState (
                     if (!eachParent.expanded)
                         eachParent.expand()
 
-                    eachParent.create(it)
+                    eachParent.create(it, it.index())
                 }
-                targets.map { it.parent }.toSet()
-                    .forEach { it?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
                 ui.selected.clear()
                 ui.selected.addAll(targets)
             }
@@ -505,6 +529,7 @@ class NbtState (
 
     }
 
+    @Stable
     inner class EditAction: Action() {
 
         val internal = Internal()
@@ -513,18 +538,20 @@ class NbtState (
             if (ui.selected.isEmpty()) throw NoSelectedItemsException("edit")
             if (ui.selected.size > 1) throw AttemptToEditMultipleTagsException()
 
-            when (val target = ui.selected[0]) {
-                is NbtDoodle -> target.parent?.creator = NbtCreationDoodle(target, VirtualDoodle.VirtualMode.EDIT)
-                is ValueDoodle ->
-                    target.parent?.creator = ValueCreationDoodle(target, VirtualDoodle.VirtualMode.EDIT)
+            val target = ui.selected[0]
+            val newVirtual = when (target) {
+                is NbtDoodle -> NbtEditionDoodle(target)
+                is ValueDoodle -> ValueEditionDoodle(target)
             }
+
+            target.parent?.virtual = newVirtual
         }
 
         fun cancel() {
             if (ui.selected.isEmpty() || ui.selected.size > 1) throw VirtualActionCancelException("edition")
 
             val targetParent = ui.selected[0].parent ?: throw ParentNotFoundException()
-            targetParent.creator = null
+            targetParent.virtual = null
         }
 
         fun edit(oldActual: ActualDoodle, newActual: ActualDoodle) {
@@ -533,20 +560,21 @@ class NbtState (
             actions.history.newAction(EditDoodleAction(uid(), oldActual, newActual))
         }
 
+        @Stable
         inner class Internal {
 
             fun edit(oldActual: ActualDoodle, newActual: ActualDoodle) {
                 val into = oldActual.parent ?: throw ParentNotFoundException()
 
                 val (conflict, index) = newActual.checkNameConflict()
-                if (conflict) throw NameConflictException("edit", (newActual as NbtDoodle).name!!, index)
+                if (conflict) throw NameConflictException("edit", (newActual as NbtDoodle).tag.name!!, index)
 
                 newActual.parent = into
 
                 actions.deleter.internal.delete(listOf(oldActual))
                 actions.creator.internal.create(listOf(newActual))
 
-                into.creator = null
+                into.virtual = null
 
                 ui.selected.clear()
                 ui.selected.add(newActual)
@@ -556,29 +584,24 @@ class NbtState (
 
     }
 
+    @Stable
     inner class DeleteAction: Action() {
 
         val internal = Internal()
 
         fun delete() {
-            ui.selected.sortBy { doodles.cached.indexOf(it) }
-
-            val deleted = ui.selected.mapNotNull { it.delete() }
-            deleted.forEach { it.parent?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
+            ui.selected.sortBy { doodles.indexOf(it) }
 
             ui.selected.clear()
 
-            actions.history.newAction(DeleteDoodleAction(uid(), deleted))
+            actions.history.newAction(DeleteDoodleAction(uid(), ui.selected.mapNotNull { it.delete() }.toMutableStateList()))
         }
 
+        @Stable
         inner class Internal {
 
             fun delete(targets: List<ActualDoodle>) {
-                targets.forEach {
-                    it.delete()
-                }
-                targets.map { it.parent }.toSet()
-                    .forEach { it?.update(NbtDoodle.UpdateTarget.VALUE, NbtDoodle.UpdateTarget.INDEX) }
+                targets.forEach { it.delete() }
                 ui.selected.clear()
             }
 

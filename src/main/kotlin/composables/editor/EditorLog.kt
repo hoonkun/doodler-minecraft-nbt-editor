@@ -31,17 +31,18 @@ import kotlinx.coroutines.delay
 //  추후에 발생했던 로그 중 최근 N개를 볼 수 있는 창도 만들면 좋을 것 같음
 @Composable
 fun ColumnScope.Log(
-    logState: MutableState<DoodleLog?>,
+    logState: () -> MutableState<DoodleLog?>,
 ) {
     DoodlerLogger.recomposition("Log")
 
+    var currentLog by logState()
 
-    var currentLog by logState
+    val log = currentLog ?: return
 
     var disabled by remember { mutableStateOf(true) }
     val alpha by animateFloatAsState(if (disabled) 0f else 1f, tween(if (disabled) 250 else 100, 0, LinearEasing))
 
-    LaunchedEffect(currentLog) {
+    LaunchedEffect(log) {
         disabled = false
         delay(5000)
         disabled = true
@@ -49,7 +50,6 @@ fun ColumnScope.Log(
         currentLog = null
     }
 
-    val log = currentLog ?: return
     Box (
         modifier = Modifier
             .fillMaxWidth()

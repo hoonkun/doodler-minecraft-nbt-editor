@@ -1,31 +1,38 @@
 package doodler.nbt.tag
 
+import androidx.compose.runtime.Stable
 import doodler.nbt.AnyTag
 import doodler.nbt.Tag
 import doodler.nbt.TagType.*
 
 import java.nio.ByteBuffer
 
-class DoubleTag private constructor(name: String? = null, parent: AnyTag?): Tag<Double>(TAG_DOUBLE, name, parent) {
+@Stable
+class DoubleTag(
+    name: String? = null,
+    parent: AnyTag?,
+    value: Double? = null,
+    buffer: ByteBuffer? = null
+): Tag<Double>(TAG_DOUBLE, name, parent, value, buffer) {
 
     override val sizeInBytes get() = Double.SIZE_BYTES
 
-    constructor(value: Double, name: String? = null, parent: AnyTag?): this(name, parent) {
-        this.value = value
-    }
-
-    constructor(buffer: ByteBuffer, name: String? = null, parent: AnyTag?): this(name, parent) {
-        read(buffer)
-    }
-
-    override fun read(buffer: ByteBuffer) {
-        value = buffer.double
-    }
+    override fun read(buffer: ByteBuffer, vararg extras: Any?) = buffer.double
 
     override fun write(buffer: ByteBuffer) {
         buffer.putDouble(value)
     }
 
-    override fun clone(name: String?) = DoubleTag(value, name, parent)
+    override fun clone(name: String?) = DoubleTag(name, parent, value = value)
+
+    override fun valueEquals(other: AnyTag): Boolean {
+        if (javaClass != other.javaClass) return false
+
+        other as DoubleTag
+
+        return value == other.value
+    }
+
+    override fun valueHashcode(): Int = value.hashCode()
 
 }
