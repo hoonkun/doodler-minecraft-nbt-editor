@@ -15,6 +15,8 @@ import doodler.minecraft.structures.McaFileType
 import doodler.minecraft.structures.WorldFileType
 import doodler.nbt.TagType
 import doodler.nbt.tag.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import java.io.File
 
 @Stable
@@ -50,6 +52,8 @@ class NbtState (
 
     var lastSaveUid by mutableStateOf(0L)
 
+    var virtualScrollInfo by mutableStateOf<Int?>(null)
+
     init {
         rootDoodle.expand()
 
@@ -75,6 +79,22 @@ class NbtState (
                 "Successfully saved nbt into file '${file.name}'"
             )
         )
+    }
+
+    fun checkVirtualIsInvisible(newVirtual: VirtualDoodle): Int? {
+        val index = doodles.indexOf(newVirtual)
+        val firstIndex = lazyState.firstVisibleItemIndex
+        val windowSize = lazyState.layoutInfo.visibleItemsInfo.size
+        val invisible = index < firstIndex || index >= firstIndex + windowSize
+
+        return if (invisible) (index - windowSize / 2).coerceAtLeast(0) else null
+    }
+
+    fun scrollToVirtual(scope: CoroutineScope, toProvider: () -> Int?) {
+        val to = toProvider() ?: return
+        scope.launch {
+            lazyState.scrollToItem(to)
+        }
     }
 
     fun newLog(new: DoodleLog) {
@@ -449,11 +469,15 @@ class NbtState (
 
             into.expand()
 
-            if (into.tag.type.isArray()) {
-                into.virtual = ValueCreationDoodle(into.depth + 1, into)
-            } else {
-                into.virtual = NbtCreationDoodle(type, into.depth + 1, into)
-            }
+            val newVirtual =
+                if (into.tag.type.isArray()) {
+                    ValueCreationDoodle(into.depth + 1, into)
+                } else {
+                    NbtCreationDoodle(type, into.depth + 1, into)
+                }
+
+            into.virtual = newVirtual
+            virtualScrollInfo = checkVirtualIsInvisible(newVirtual)
         }
 
         fun cancel() {
@@ -512,10 +536,14 @@ class NbtState (
             if (ui.selected.isEmpty()) throw NoSelectedItemsException("edit")
             if (ui.selected.size > 1) throw AttemptToEditMultipleTagsException()
 
-            when (val target = ui.selected[0]) {
-                is NbtDoodle -> target.parent?.virtual = NbtEditionDoodle(target)
-                is ValueDoodle -> target.parent?.virtual = ValueEditionDoodle(target)
+            val target = ui.selected[0]
+            val newVirtual = when (target) {
+                is NbtDoodle -> NbtEditionDoodle(target)
+                is ValueDoodle -> ValueEditionDoodle(target)
             }
+
+            target.parent?.virtual = newVirtual
+            virtualScrollInfo = checkVirtualIsInvisible(newVirtual)
         }
 
         fun cancel() {

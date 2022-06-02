@@ -42,14 +42,7 @@ fun BoxScope.NbtEditor(
     val creation by remember(doodles) { mutableStateOf(doodles.find { it is VirtualDoodle } as? VirtualDoodle?) }
 
     val uiState = state.ui
-    val lazyColumnState = state.lazyState
-
-    val firstIndex by remember(lazyColumnState.firstVisibleItemIndex) {
-        mutableStateOf(lazyColumnState.firstVisibleItemIndex)
-    }
-    val windowSize by remember(lazyColumnState.firstVisibleItemIndex) {
-        mutableStateOf(lazyColumnState.layoutInfo.visibleItemsInfo.size)
-    }
+    val lazyColumnState = remember { state.lazyState }
 
     val onToggle: (ActualDoodle) -> Unit = click@ { doodle ->
         if (doodle !is NbtDoodle) return@click
@@ -103,12 +96,10 @@ fun BoxScope.NbtEditor(
         }
     }
 
-    if (creation != null) {
-        val index = doodles.indexOf(creation!!)
-        val invisible = index < firstIndex || index >= firstIndex + windowSize
-        if (invisible) coroutineScope.launch {
-            lazyColumnState.scrollToItem((index - windowSize / 2).coerceAtLeast(0))
-        }
+    SideEffect {
+        if (creation == null) return@SideEffect
+
+        state.scrollToVirtual(coroutineScope) { state.virtualScrollInfo }
     }
 
     LazyColumn (state = lazyColumnState) {
@@ -231,7 +222,7 @@ fun ColumnScope.IndexChangeActionColumn(
 fun ColumnScope.CreateActionColumn(
     actionsProvider: () -> NbtState.Actions,
     disabled: () -> Boolean,
-    selectedProvider: () -> AnyTag
+    selectedProvider: () -> AnyTag,
 ) {
     DoodlerLogger.recomposition("CreateActionColumn")
 
