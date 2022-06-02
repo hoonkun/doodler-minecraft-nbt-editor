@@ -181,10 +181,10 @@ fun ColumnScope.UndoRedoActionColumn(
             .wrapContentSize()
             .padding(5.dp)
     ) {
-        NbtActionButton(disabled = !actions.history.canBeUndo, onClick = { actions.withLog { history.undo() } }) {
+        NbtActionButton(disabled = { !actions.history.canBeUndo }, onClick = { actions.withLog { history.undo() } }) {
             NbtText("UND", ThemedColor.Editor.Tag.General, 16.sp)
         }
-        NbtActionButton(disabled = !actions.history.canBeRedo, onClick = { actions.withLog { history.redo() } }) {
+        NbtActionButton(disabled = { !actions.history.canBeRedo }, onClick = { actions.withLog { history.redo() } }) {
             NbtText("RED", ThemedColor.Editor.Tag.General, 16.sp)
         }
     }
@@ -197,12 +197,16 @@ fun ColumnScope.IndexChangeActionColumn(
 ) {
     DoodlerLogger.recomposition("IndexChangeActionColumn")
 
-    val available =
-        state.ui.selected.map { it.index() }.toRanges().size == 1 &&
-        state.ui.selected.map { it.parent }.toSet().size == 1
+    val available by derivedStateOf {
+        state.ui.selected.map { it.index() }.toRanges().size == 1 && state.ui.selected.map { it.parent }.toSet().size == 1
+    }
 
-    val canMoveUp = (state.ui.selected.firstOrNull()?.index() ?: 0) != 0
-    val canMoveDown = (state.ui.selected.lastOrNull()?.let { it.index() == it.parent?.children?.size?.minus(1) }) != true
+    val canMoveUp by derivedStateOf {
+        (state.ui.selected.firstOrNull()?.index() ?: 0) != 0
+    }
+    val canMoveDown by derivedStateOf {
+        (state.ui.selected.lastOrNull()?.let { it.index() == it.parent?.children?.size?.minus(1) }) != true
+    }
 
     Column(
         modifier = Modifier
@@ -211,13 +215,13 @@ fun ColumnScope.IndexChangeActionColumn(
             .padding(5.dp)
     ) {
         NbtActionButton(
-            disabled = !(available && canMoveUp),
+            disabled = { !(available && canMoveUp) },
             onClick = { state.actions.elevator.moveUp(state.ui.selected) }
         ) {
             NbtText("<- ", ThemedColor.Editor.Tag.General, 16.sp, rotate = 90f, multiplier = 1)
         }
         NbtActionButton(
-            disabled = !(available && canMoveDown),
+            disabled = { !(available && canMoveDown) },
             onClick = { state.actions.elevator.moveDown(state.ui.selected) }
         ) {
             NbtText(" ->", ThemedColor.Editor.Tag.General, 16.sp, rotate = 90f, multiplier = -1)
@@ -270,7 +274,7 @@ fun ColumnScope.SaveActionColumn(
             .padding(5.dp)
     ) actionColumn@{
         NbtActionButton(
-            disabled = state.actions.history.lastActionUid == state.lastSaveUid,
+            disabled = { state.actions.history.lastActionUid == state.lastSaveUid },
             onClick = { state.actions.withLog { state.save() } },
             onRightClick = { state.actions.withLog { state.save() } }
         ) {
@@ -288,7 +292,7 @@ fun ColumnScope.NormalActionColumn(
 
     val actions = state.actions
 
-    val available = state.ui.selected.isNotEmpty()
+    val available by derivedStateOf { state.ui.selected.isNotEmpty() }
 
     Column(
         modifier = Modifier
@@ -297,25 +301,25 @@ fun ColumnScope.NormalActionColumn(
             .padding(5.dp)
     ) actionColumn@{
         NbtActionButton(
-            disabled = !available,
+            disabled = { !available },
             onClick = { state.actions.withLog { deleter.delete() } }
         ) {
             NbtText("DEL", ThemedColor.Editor.Action.Delete)
         }
         NbtActionButton(
-            disabled = !available || actions.clipboard.pasteTarget == CannotBePasted,
+            disabled = { !available || actions.clipboard.pasteTarget == CannotBePasted },
             onClick = { actions.withLog { clipboard.yank() } }
         ) {
             NbtText("CPY", ThemedColor.Editor.Tag.General)
         }
         NbtActionButton(
-            disabled = !available || (actions.clipboard.stack.size == 0 || !actions.clipboard.pasteEnabled()),
+            disabled = { !available || (actions.clipboard.stack.size == 0 || !actions.clipboard.pasteEnabled()) },
             onClick = { actions.withLog { clipboard.paste() } }
         ) {
             NbtText("PST", ThemedColor.Editor.Tag.General)
         }
         NbtActionButton(
-            disabled = !available || (state.ui.selected.firstOrNull() as? NbtDoodle?)?.let { it.tag.name != null || it.tag.canHaveChildren } != true,
+            disabled = { !available || (state.ui.selected.firstOrNull() as? NbtDoodle?)?.let { it.tag.name != null || it.tag.canHaveChildren } != true },
             onClick = { actions.withLog { editor.prepare() } }
         ) {
             NbtText("EDT", ThemedColor.Editor.Tag.General)

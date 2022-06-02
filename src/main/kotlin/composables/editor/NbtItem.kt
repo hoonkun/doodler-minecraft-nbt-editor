@@ -50,7 +50,6 @@ private fun ItemRoot(
             content()
         }
     }
-
 }
 
 @Composable
@@ -149,19 +148,26 @@ private fun TagTypeIndicatorText(type: TagType, disabled: Boolean, fontSize: Tex
 
 @Composable
 private fun TagTypeIndicatorText(type: TagType, disabled: () -> Boolean, fontSize: TextUnit = 18.sp) {
-    val text = if (type.isArray()) {
-        AnnotatedString(type.shorten(), listOf(
-            AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.NumberArray), 0, 1),
-            AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.Number), 1, 2),
-            AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.NumberArray), 2, 3),
-        ))
-    } else {
-        val string = type.shorten()
-        val color = if (disabled()) ThemedColor.Editor.Tag.General else type.color()
-        AnnotatedString(string, listOf(
-            AnnotatedString.Range(SpanStyle(color = color), 0, string.length),
-        ))
-    }
+    val text =
+        if (type.isArray()) {
+            val spans =
+                if (disabled()) {
+                    listOf(AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.General), 0, 3))
+                } else {
+                    listOf(
+                        AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.NumberArray), 0, 1),
+                        AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.Number), 1, 2),
+                        AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Tag.NumberArray), 2, 3),
+                    )
+                }
+            AnnotatedString(type.shorten(), spans)
+        } else {
+            val string = type.shorten()
+            val color = if (disabled()) ThemedColor.Editor.Tag.General else type.color()
+            AnnotatedString(string, listOf(
+                AnnotatedString.Range(SpanStyle(color = color), 0, string.length),
+            ))
+        }
     NbtText(text, fontSize = fontSize)
 }
 
@@ -193,14 +199,14 @@ fun TagCreationButton(type: TagType, actionsProvider: () -> NbtState.Actions, di
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NbtActionButton(
-    disabled: Boolean,
+    disabled: () -> Boolean,
     onClick: MouseClickScope.() -> Unit = { },
     onRightClick: MouseClickScope.() -> Unit = { },
     content: @Composable () -> Unit
 ) {
     DoodlerLogger.recomposition("NbtActionButton")
 
-    NbtActionButtonWrapper ({ disabled }, onClick, onRightClick) {
+    NbtActionButtonWrapper (disabled, onClick, onRightClick) {
         content()
     }
 }
