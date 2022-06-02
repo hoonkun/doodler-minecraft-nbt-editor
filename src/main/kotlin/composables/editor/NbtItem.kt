@@ -338,10 +338,10 @@ fun DepthPreviewNbtItem(
 @Composable
 fun ActualNbtItem(
     doodle: ActualDoodle,
-    stateProvider: () -> DoodleItemUi,
     toggle: (ActualDoodle) -> Unit,
     select: (ActualDoodle) -> Unit,
     treeCollapse: (NbtDoodle) -> Unit,
+    stateProvider: () -> DoodleItemUi,
     onCreationMode: () -> Boolean = { false },
     disabled: () -> Boolean = { false }
 ) {

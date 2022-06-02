@@ -98,8 +98,8 @@ fun BoxScope.NbtEditor(
             if (item is ActualDoodle)
                 ActualNbtItem(
                     item,
-                    { uiState.toItemUi(item) },
                     onToggle, onSelect, treeCollapse,
+                    { uiState.toItemUi(item) },
                     { state.virtual != null },
                     { state.virtual != null && item != state.virtual!!.parent }
                 )
