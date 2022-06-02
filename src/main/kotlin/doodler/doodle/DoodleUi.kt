@@ -26,7 +26,7 @@ class DoodleUi {
     val release: UiFunctionType = { if (pressed == it) pressed = null }
 
     val directFocus: UiFunctionType = { if (focusedDirectly != it) focusedDirectly = it }
-    val directBlur: UiFunctionType = { if (focusedDirectly == it) focusedDirectly = null }
+    val directBlur: (ActualDoodle?) -> Unit = { if (focusedDirectly == it || it == null) focusedDirectly = null }
 
     val treeFocus: UiFunctionType = { if (focusedTree != it) focusedTree = it }
     val treeBlur: (ActualDoodle?) -> Unit = { if (focusedTree == it || it == null) focusedTree = null }

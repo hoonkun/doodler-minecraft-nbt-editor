@@ -93,7 +93,15 @@ fun BoxScope.NbtEditor(
         coroutineScope.launch { lazyColumnState.scrollToItem(it) }
     }
 
-    LazyColumn (state = lazyColumnState) {
+    LazyColumn (
+        state = lazyColumnState,
+        modifier = Modifier.onPointerEvent(PointerEventType.Scroll) {
+            val last = lazyColumnState.firstVisibleItemIndex + lazyColumnState.layoutInfo.visibleItemsInfo.size == state.doodles.size
+            val first = lazyColumnState.firstVisibleItemIndex == 0
+            if (first || last) return@onPointerEvent
+            uiState.directBlur(null)
+        }
+    ) {
         items(state.doodles, key = { item -> item.path }) { item ->
             if (item is ActualDoodle)
                 ActualNbtItem(
