@@ -22,6 +22,7 @@ import doodler.doodle.structures.CannotBePasted
 import doodler.editor.*
 import doodler.editor.states.NbtState
 import doodler.logger.DoodlerLogger
+import doodler.nbt.AnyTag
 import keys
 import kotlinx.coroutines.launch
 import doodler.nbt.TagType
@@ -115,7 +116,7 @@ fun BoxScope.NbtEditor(
             if (item is ActualDoodle)
                 ActualNbtItem(
                     item,
-                    uiState.toItemUi(item),
+                    { uiState.toItemUi(item) },
                     onToggle, onSelect, treeCollapse,
                     creation != null,
                     creation != null && item != creation!!.parent
@@ -125,7 +126,7 @@ fun BoxScope.NbtEditor(
         }
     }
 
-    SelectedInWholeFileIndicator(doodles.filterIsInstance<ActualDoodle>(), uiState) {
+    SelectedInWholeFileIndicator(doodles.filterIsInstance<ActualDoodle>(), { uiState.selected }) {
         coroutineScope.launch { lazyColumnState.scrollToItem(doodles.indexOf(it)) }
     }
 
@@ -159,7 +160,9 @@ fun BoxScope.NbtEditor(
             Spacer(modifier = Modifier.height(20.dp))
             NormalActionColumn(state)
             Spacer(modifier = Modifier.height(20.dp))
-            CreateActionColumn(state)
+            CreateActionColumn({ state.actions }, { state.ui.selected.size > 1 }) {
+                state.ui.selected.firstOrNull().let { (it as? NbtDoodle)?.tag ?: state.rootDoodle.tag }
+            }
         }
     }
 
@@ -226,12 +229,20 @@ fun ColumnScope.IndexChangeActionColumn(
 
 @Composable
 fun ColumnScope.CreateActionColumn(
-    state: NbtState
+    actionsProvider: () -> NbtState.Actions,
+    disabled: () -> Boolean,
+    selectedProvider: () -> AnyTag
 ) {
     DoodlerLogger.recomposition("CreateActionColumn")
 
-    val actions = state.actions
-    val tag = state.ui.selected.firstOrNull().let { (it as? NbtDoodle)?.tag ?: state.rootDoodle.tag }
+    val types = remember {
+        listOf(
+            TagType.TAG_BYTE, TagType.TAG_SHORT, TagType.TAG_INT, TagType.TAG_LONG,
+            TagType.TAG_FLOAT, TagType.TAG_DOUBLE,
+            TagType.TAG_BYTE_ARRAY, TagType.TAG_INT_ARRAY, TagType.TAG_LONG_ARRAY, TagType.TAG_STRING,
+            TagType.TAG_LIST, TagType.TAG_COMPOUND
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -239,18 +250,11 @@ fun ColumnScope.CreateActionColumn(
             .wrapContentSize()
             .padding(5.dp)
     ) {
-        TagCreationButton(tag, TagType.TAG_BYTE, actions)
-        TagCreationButton(tag, TagType.TAG_SHORT, actions)
-        TagCreationButton(tag, TagType.TAG_INT, actions)
-        TagCreationButton(tag, TagType.TAG_LONG, actions)
-        TagCreationButton(tag, TagType.TAG_FLOAT, actions)
-        TagCreationButton(tag, TagType.TAG_DOUBLE, actions)
-        TagCreationButton(tag, TagType.TAG_BYTE_ARRAY, actions)
-        TagCreationButton(tag, TagType.TAG_INT_ARRAY, actions)
-        TagCreationButton(tag, TagType.TAG_LONG_ARRAY, actions)
-        TagCreationButton(tag, TagType.TAG_STRING, actions)
-        TagCreationButton(tag, TagType.TAG_LIST, actions)
-        TagCreationButton(tag, TagType.TAG_COMPOUND, actions)
+        for (type in types) {
+            TagCreationButton(type, actionsProvider) {
+                disabled() || !selectedProvider().canHold(type)
+            }
+        }
     }
 }
 
@@ -322,8 +326,13 @@ fun ColumnScope.NormalActionColumn(
 }
 
 @Composable
-private fun BoxScope.SelectedInWholeFileIndicator(doodles: List<ActualDoodle>, state: DoodleUi, scrollTo: (ActualDoodle) -> Unit) {
-    val selected = state.selected
+private fun BoxScope.SelectedInWholeFileIndicator(
+    doodles: List<ActualDoodle>,
+    selected: () -> List<ActualDoodle>,
+    scrollTo: (ActualDoodle) -> Unit
+) {
+
+    val items = selected()
 
     val size = 1f / doodles.size
     val indexed = 1f / (doodles.size - 1)
@@ -331,7 +340,7 @@ private fun BoxScope.SelectedInWholeFileIndicator(doodles: List<ActualDoodle>, s
     Box (
         modifier = Modifier.align(Alignment.TopEnd).fillMaxHeight().wrapContentWidth()
     ) {
-        for (item in selected) {
+        for (item in items) {
             val top = doodles.indexOf(item) * indexed
             SelectedEach(item, top, size, scrollTo)
         }
@@ -340,7 +349,7 @@ private fun BoxScope.SelectedInWholeFileIndicator(doodles: List<ActualDoodle>, s
     Box (
         modifier = Modifier.align(Alignment.TopEnd).fillMaxHeight().wrapContentWidth().alpha(0.5f)
     ) {
-        for (item in selected) {
+        for (item in items) {
             val top = doodles.indexOf(item) * indexed
             Column (modifier = Modifier.zIndex(1000f).width(20.dp).align(Alignment.TopEnd)) {
                 if (top > 0) Spacer(modifier = Modifier.weight(top))
@@ -405,7 +414,7 @@ private fun BoxScope.SelectedEach(
                         .padding(start = 20.dp, end = 20.dp)
                         .height(50.dp)
                 ) {
-                    ActualNbtItemContent(item, false)
+                    ActualNbtItemContent(item)
                 }
             }
         }
