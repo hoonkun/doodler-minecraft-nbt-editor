@@ -117,9 +117,7 @@ fun BoxScope.NbtEditor(
     Column(
         modifier = Modifier.align(Alignment.BottomStart)
     ) {
-        if (state.currentLogState.value != null) {
-            Log(state.currentLogState)
-        }
+        Log { state.currentLogState }
     }
 
     ActionColumns { state }
