@@ -347,8 +347,8 @@ fun ActualNbtItem(
                             selected = state.selected,
                             pressed = state.pressed,
                             focused = state.focusedDirectly || state.focusedTree,
-                            onCreationMode = true,
-                            alphaMultiplier = 0.6f
+                            onCreationMode = creationMode,
+                            alphaMultiplier = if (creationMode) 0.6f else 1f
                         )
                     )
                     drawContent()
