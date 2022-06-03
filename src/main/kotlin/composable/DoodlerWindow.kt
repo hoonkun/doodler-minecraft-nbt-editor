@@ -2,7 +2,9 @@ package composable
 
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Typography
+import androidx.compose.material.ripple.LocalRippleTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.unit.DpSize
 import doodler.unit.dp
 import androidx.compose.ui.window.Window
@@ -35,10 +37,14 @@ fun DoodlerWindow(
     MaterialTheme(
         typography = Typography(defaultFontFamily = DoodlerTheme.Fonts.JetbrainsMono)
     ) {
-        when (window) {
-            is IntroDoodlerWindow -> Intro { }
-            is SelectorDoodlerWindow -> {}
-            is EditorDoodlerWindow -> {}
+        CompositionLocalProvider(
+            LocalRippleTheme provides DoodlerTheme.ClearRippleTheme
+        ) {
+            when (window) {
+                is IntroDoodlerWindow -> Intro { }
+                is SelectorDoodlerWindow -> {}
+                is EditorDoodlerWindow -> {}
+            }
         }
     }
 }
