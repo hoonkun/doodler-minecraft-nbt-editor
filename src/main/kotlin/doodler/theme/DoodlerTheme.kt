@@ -24,6 +24,8 @@ class DoodlerTheme {
             val OnSecondary = Color(0xffffffff)
 
             val SecondaryBackground = Color(0xff3c3f41)
+
+            val ExternalLink = Color(0xff64b5f6)
         }
 
     }
