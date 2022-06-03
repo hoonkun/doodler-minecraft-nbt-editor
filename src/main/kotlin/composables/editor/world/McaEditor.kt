@@ -3,10 +3,7 @@ package composables.editor.world
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import doodler.doodle.DoodleException
 import doodler.editor.McaEditor
@@ -30,11 +27,9 @@ fun BoxScope.McaEditor(
 ) {
     DoodlerLogger.recomposition("McaEditor")
 
-    val request = selector.from
-
-    val data by remember(request) {
-        mutableStateOf(
-            when (request) {
+    val data by remember {
+        derivedStateOf {
+            when (val request = selector.from) {
                 is McaAnvilRequest -> {
                     val file = request.file
                     val location = request.location
@@ -116,12 +111,10 @@ fun BoxScope.McaEditor(
                     throw DoodleException("Internal Error", null, "Cannot initialize McaInfo.")
                 }
             }
-        )
+        }
     }
 
-    val (chunks, payload) = data
-
     Column(modifier = Modifier.fillMaxSize()) {
-        ChunkSelector(chunks, tree, selector, payload, onOpenRequest, onUpdateRequest)
+        ChunkSelector(data.first, tree, selector, data.second, onOpenRequest, onUpdateRequest)
     }
 }

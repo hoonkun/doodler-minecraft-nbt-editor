@@ -49,7 +49,7 @@ import doodler.minecraft.structures.*
 import kotlinx.coroutines.delay
 import java.io.File
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ColumnScope.ChunkSelector(
     chunks: List<ChunkLocation>,
@@ -61,48 +61,37 @@ fun ColumnScope.ChunkSelector(
 ) {
     DoodlerLogger.recomposition("ChunkSelector")
 
-
-    val dimension = payload.dimension
-    val type = payload.type
-
-    val state by remember(payload) {
-        mutableStateOf(
-            when (payload.request) {
-                is McaAnvilRequest -> selector.mcaState[payload]
-                    ?: SelectorState.new(chunks.firstOrNull { it.toAnvilLocation() == payload.location })
-                        .also { newState -> selector.mcaState[payload] = newState }
-                is GlobalAnvilInitRequest -> selector.globalState[payload.dimension]
-                    ?: SelectorState.new(payload.initial)
-                        .also { newState -> selector.globalState[payload.dimension] = newState }
-                is GlobalAnvilUpdateRequest -> selector.globalState[payload.dimension]
-                    ?: SelectorState.new(initialChunk = null)
-                        .also { newState -> selector.globalState[payload.dimension] = newState }
-            }
-        )
+    val state = remember(payload) {
+        when (payload.request) {
+            is McaAnvilRequest -> selector.mcaState[payload]
+                ?: SelectorState.new(chunks.firstOrNull { it.toAnvilLocation() == payload.location })
+                    .also { newState -> selector.mcaState[payload] = newState }
+            is GlobalAnvilInitRequest -> selector.globalState[payload.dimension]
+                ?: SelectorState.new(payload.initial)
+                    .also { newState -> selector.globalState[payload.dimension] = newState }
+            is GlobalAnvilUpdateRequest -> selector.globalState[payload.dimension]
+                ?: SelectorState.new(initialChunk = null)
+                    .also { newState -> selector.globalState[payload.dimension] = newState }
+        }
     }
 
-    val validChunkX = chunks.map { chunk -> chunk.x }
-    val validChunkZ = chunks.map { chunk -> chunk.z }
+    val validChunkX = remember(chunks) { chunks.map { chunk -> chunk.x } }
+    val validChunkZ = remember(chunks) { chunks.map { chunk -> chunk.z } }
 
-    val anvil by remember(state.selectedChunk, payload.location) {
-        mutableStateOf(
-            state.selectedChunk?.toAnvilLocation() ?: payload.location
-        )
+    val anvil = remember(state.selectedChunk, payload.location) {
+        state.selectedChunk?.toAnvilLocation() ?: payload.location
     }
-    val anvils by remember(chunks) {
-        mutableStateOf(
-            chunks.map { it.toAnvilLocation() }.toSet().toList().sortedBy { "${it.x}.${it.z}" })
+    val anvils = remember(chunks) {
+        chunks.map { it.toAnvilLocation() }.toSet().toList().sortedBy { "${it.x}.${it.z}" }
     }
 
-    val surroundings by remember(anvil, anvils) {
-        mutableStateOf(
-            AnvilLocationSurroundings(
-                base = anvil,
-                left = AnvilLocation(anvil.x, anvil.z - 1).validate(anvils),
-                right = AnvilLocation(anvil.x, anvil.z + 1).validate(anvils),
-                above = AnvilLocation(anvil.x + 1, anvil.z).validate(anvils),
-                below = AnvilLocation(anvil.x - 1, anvil.z).validate(anvils),
-            )
+    val surroundings = remember(anvil, anvils) {
+        AnvilLocationSurroundings(
+            base = anvil,
+            left = AnvilLocation(anvil.x, anvil.z - 1).validate(anvils),
+            right = AnvilLocation(anvil.x, anvil.z + 1).validate(anvils),
+            above = AnvilLocation(anvil.x + 1, anvil.z).validate(anvils),
+            below = AnvilLocation(anvil.x - 1, anvil.z).validate(anvils),
         )
     }
 
@@ -189,21 +178,11 @@ fun ColumnScope.ChunkSelector(
         if (state.selectedChunk != chunk && chunkExists) state.selectedChunk = chunk
     }
 
-    var openPressed by remember { mutableStateOf(false) }
-    var openFocused by remember { mutableStateOf(false) }
-
     var regionPopupPos by remember { mutableStateOf(Offset.Zero) }
     var typePopupPos by remember { mutableStateOf(Offset.Zero) }
     var dimensionPopupPos by remember { mutableStateOf(Offset.Zero) }
 
     var popup by remember { mutableStateOf<String?>(null) }
-
-    val maxYLimit = (if (dimension == WorldDimension.OVERWORLD) 319 else 128).toShort()
-    val minYLimit = (if (dimension == WorldDimension.OVERWORLD) -64 else 0).toShort()
-
-    val defaultYLimit = (if (dimension == WorldDimension.OVERWORLD) 319 else 89).toShort()
-
-    val previewerYLimit = remember(dimension) { mutableStateOf(defaultYLimit) }
 
     Row(
         modifier = Modifier
@@ -299,7 +278,7 @@ fun ColumnScope.ChunkSelector(
                     typePopupPos = it.positionInParent()
                 }
             ) {
-                CoordinateText(type.name)
+                CoordinateText { payload.type.name }
             }
             Spacer(modifier = Modifier.width(10.dp))
             ChunkSelectorDropdown(
@@ -313,64 +292,41 @@ fun ColumnScope.ChunkSelector(
                     dimensionPopupPos = it.positionInParent()
                 }
             ) {
-                CoordinateText(dimension.name)
+                CoordinateText { payload.dimension.name }
             }
         }
         Spacer(modifier = Modifier.weight(1f))
-        Row(
-            modifier = Modifier
-                .background(
-                    if (state.selectedChunk == null) Color.Transparent
-                    else ThemedColor.clickable(openPressed, openFocused)
-                )
-                .onPointerEvent(PointerEventType.Enter) { openFocused = true }
-                .onPointerEvent(PointerEventType.Exit) { openFocused = false }
-                .onPointerEvent(PointerEventType.Press) { openPressed = true }
-                .onPointerEvent(PointerEventType.Release) { openPressed = false }
-                .height(60.dp)
-                .width(60.dp)
-                .alpha(if (state.selectedChunk == null) 0.5f else 1f)
-                .mouseClickable {
-                    val chunk = state.selectedChunk
-                    val file =
-                        if (chunk != null)
-                            tree[dimension][type.pathName].find { it.name == "r.${chunk.toAnvilLocation().x}.${chunk.toAnvilLocation().z}.mca" }
-                        else null
-                    if (chunk != null && file != null) {
-                        onSelectChunk(chunk, file)
-                    }
+        NbtOpenButton(
+            disabled = { state.selectedChunk == null },
+            onClick = {
+                val chunk = state.selectedChunk
+                val file =
+                    if (chunk != null)
+                        tree[payload.dimension][payload.type.pathName].find { it.name == "r.${chunk.toAnvilLocation().x}.${chunk.toAnvilLocation().z}.mca" }
+                    else null
+                if (chunk != null && file != null) {
+                    onSelectChunk(chunk, file)
                 }
-                .height(45.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Text(
-                "->",
-                fontSize = 21.sp,
-                fontWeight = FontWeight.Bold,
-                color = ThemedColor.Editor.Selector.ButtonText,
-                fontFamily = JetBrainsMono
-            )
-        }
+            }
+        )
     }
 
     Box(
         modifier = Modifier.fillMaxSize().zIndex(3f)
     ) {
         ChunkSelectorProperties(
-            yRange = minYLimit..maxYLimit,
-            yLimit = previewerYLimit,
+            dimensionProvider = { payload.dimension },
             surroundings = surroundings,
             onMoveSurroundings = {
                 resetChunk()
                 onUpdateRequest(GlobalAnvilUpdateRequest(region = it))
             },
             invalidateCache = {
-                tree[dimension].cachedTerrains.filter { it.key.location == anvil }.keys.forEach {
-                    tree[dimension].cachedTerrains.remove(it)
+                tree[payload.dimension].cachedTerrains.filter { it.key.location == anvil }.keys.forEach {
+                    tree[payload.dimension].cachedTerrains.remove(it)
                 }
             }
-        ) { visibleState, loadState ->
+        ) { visibleState, loadState, dimension, (minYLimit, maxYLimit, previewerYLimit) ->
             ChunksPreview(
                 tree = tree[dimension],
                 yRange = minYLimit until maxYLimit,
@@ -396,8 +352,10 @@ fun ColumnScope.ChunkSelector(
 
         SelectorDropdown(
             ident = "region",
-            items = anvils.toMutableList().apply {
-                remove(state.selectedChunk?.toAnvilLocation() ?: payload.location)
+            items = {
+                anvils.toMutableList().apply {
+                    remove(state.selectedChunk?.toAnvilLocation() ?: payload.location)
+                }
             },
             indent = 3,
             current = popup,
@@ -411,7 +369,7 @@ fun ColumnScope.ChunkSelector(
 
         SelectorDropdown(
             ident = "type",
-            items = McaType.values().toMutableList().apply { remove(type) },
+            items = { McaType.values().toMutableList().apply { remove(payload.type) } },
             indent = 1,
             current = popup,
             onCloseRequest = { popup = null },
@@ -424,7 +382,7 @@ fun ColumnScope.ChunkSelector(
 
         SelectorDropdown(
             ident = "dimension",
-            items = WorldDimension.values().toMutableList().apply { remove(dimension) },
+            items = { WorldDimension.values().toMutableList().apply { remove(payload.dimension) } },
             indent = 0,
             current = popup,
             onCloseRequest = { popup = null },
@@ -441,15 +399,22 @@ fun ColumnScope.ChunkSelector(
 @OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun BoxScope.ChunkSelectorProperties(
-    yRange: IntRange,
-    yLimit: MutableState<Short>,
+    dimensionProvider: () -> WorldDimension,
     surroundings: AnvilLocationSurroundings,
     onMoveSurroundings: (AnvilLocation) -> Unit,
     invalidateCache: () -> Unit,
-    content: @Composable BoxScope.(MutableState<Boolean>, MutableState<Boolean>) -> Unit
+    content: @Composable BoxScope.(MutableState<Boolean>, MutableState<Boolean>, WorldDimension, Triple<Short, Short, MutableState<Short>>) -> Unit
 ) {
     DoodlerLogger.recomposition("ChunkSelectorProperties")
 
+    val dimension = dimensionProvider()
+
+    val maxYLimit = remember(dimension) { (if (dimension == WorldDimension.OVERWORLD) 319 else 128).toShort() }
+    val minYLimit = remember(dimension) { (if (dimension == WorldDimension.OVERWORLD) -64 else 0).toShort() }
+
+    val defaultYLimit = remember(dimension) { (if (dimension == WorldDimension.OVERWORLD) 319 else 89).toShort() }
+
+    val previewerYLimit = remember(defaultYLimit) { mutableStateOf(defaultYLimit) }
 
     val alignment = Alignment.TopStart
 
@@ -461,7 +426,7 @@ fun BoxScope.ChunkSelectorProperties(
     val offset = -1 * size * (1f - scaleY)
 
     Box(modifier = Modifier.wrapContentSize().requiredSizeIn(minWidth = size.dp, minHeight = size.dp).align(Alignment.Center)) {
-        content(visibleState, loadState)
+        content(visibleState, loadState, dimension, Triple(minYLimit, maxYLimit, previewerYLimit))
 
         AnimatedVisibility(
             visible = visibleState.value,
@@ -510,11 +475,13 @@ fun BoxScope.ChunkSelectorProperties(
                             Box(
                                 modifier = Modifier
                                     .onPointerEvent(PointerEventType.Scroll) {
-                                        yLimit.value = (yLimit.value - this.currentEvent.changes[0].scrollDelta.y.toInt()).coerceIn(yRange).toShort()
+                                        previewerYLimit.value =
+                                            (previewerYLimit.value - this.currentEvent.changes[0].scrollDelta.y.toInt())
+                                                .coerceIn(minYLimit..maxYLimit).toShort()
                                     }
                                     .padding(top = 3.dp, bottom = 3.dp)
                             ) {
-                                val text = "${yLimit.value}".padStart(3, '_')
+                                val text = "${previewerYLimit.value}".padStart(3, '_')
                                 Text(
                                     AnnotatedString(
                                         text,
@@ -524,7 +491,7 @@ fun BoxScope.ChunkSelectorProperties(
                                                     color = ThemedColor.from(ThemedColor.Editor.Tag.General, alpha = 75)
                                                 ),
                                                 start = 0,
-                                                end = 3 - "${yLimit.value}".length
+                                                end = 3 - "${previewerYLimit.value}".length
                                             )
                                         )
                                     ),
@@ -614,7 +581,7 @@ fun PopupBackground(
 @Composable
 fun <T>SelectorDropdown(
     ident: String,
-    items: List<T>,
+    items: () -> List<T>,
     indent: Int,
     current: String?,
     onCloseRequest: MouseClickScope.() -> Unit,
@@ -648,7 +615,7 @@ fun <T>SelectorDropdown(
                 .verticalScroll(s)
                 .onGloballyPositioned { width = it.size.width }
         ) {
-            for (item in items) {
+            for (item in items()) {
                 ChunkSelectorDropdown(
                     "",
                     onClick = { onClick(item); onCloseRequest() },
@@ -675,6 +642,11 @@ fun RowScope.CoordinateText(text: String, invalid: Boolean = false) {
         fontFamily = JetBrainsMono,
         modifier = Modifier.focusable(false)
     )
+}
+
+@Composable
+fun RowScope.CoordinateText(invalid: Boolean = false, textProvider: () -> String) {
+    CoordinateText(textProvider(), invalid)
 }
 
 @Composable
@@ -754,5 +726,43 @@ fun ChunkSelectorDropdown(
         Spacer(modifier = Modifier.width(8.dp))
         content(disabled)
         Spacer(modifier = Modifier.width(12.dp))
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
+@Composable
+fun NbtOpenButton(
+    disabled: () -> Boolean,
+    onClick: MouseClickScope.() -> Unit
+) {
+
+    var openPressed by remember { mutableStateOf(false) }
+    var openFocused by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier
+            .background(
+                if (disabled()) Color.Transparent
+                else ThemedColor.clickable(openPressed, openFocused)
+            )
+            .onPointerEvent(PointerEventType.Enter) { openFocused = true }
+            .onPointerEvent(PointerEventType.Exit) { openFocused = false }
+            .onPointerEvent(PointerEventType.Press) { openPressed = true }
+            .onPointerEvent(PointerEventType.Release) { openPressed = false }
+            .height(60.dp)
+            .width(60.dp)
+            .alpha(if (disabled()) 0.5f else 1f)
+            .mouseClickable(onClick = onClick)
+            .height(45.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+    ) {
+        Text(
+            "->",
+            fontSize = 21.sp,
+            fontWeight = FontWeight.Bold,
+            color = ThemedColor.Editor.Selector.ButtonText,
+            fontFamily = JetBrainsMono
+        )
     }
 }

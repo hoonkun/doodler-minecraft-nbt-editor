@@ -24,7 +24,6 @@ import org.jetbrains.skia.*
 import org.jetbrains.skiko.toBufferedImage
 
 
-@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.ChunksPreview(
     tree: WorldDimensionHierarchy,
@@ -55,8 +54,6 @@ fun BoxScope.ChunksPreview(
         val newLoc = forceAnvilLocation ?: selected?.toAnvilLocation()
         if (newLoc != null) setLocation(newLoc)
     }
-
-    val nSelected = selected?.normalize(forceAnvilLocation ?: selected.toAnvilLocation())
 
     val load = load@ {
         val bytes = tree[McaType.TERRAIN.pathName]
@@ -140,14 +137,13 @@ fun BoxScope.ChunksPreview(
 
     if (!loaded) return
 
-    var focused by remember { mutableStateOf(Pair(-1, -1)) }
+    val nSelected = selected?.normalize(forceAnvilLocation ?: selected.toAnvilLocation())
 
     Box(
         modifier = Modifier
             .fillMaxHeight()
             .aspectRatio(1f)
             .align(Alignment.Center)
-            .onPointerEvent(PointerEventType.Exit) { focused = Pair(-1, -1) }
             .zIndex(0f)
     ) {
         Image(
@@ -156,6 +152,24 @@ fun BoxScope.ChunksPreview(
             filterQuality = androidx.compose.ui.graphics.FilterQuality.None,
             modifier = Modifier.fillMaxSize()
         )
+        ChunkSelectUi(hasNbt, rightClick, onSelect, nSelected, location)
+    }
+
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun ChunkSelectUi(
+    hasNbt: (ChunkLocation) -> Boolean,
+    rightClick: () -> Unit,
+    onSelect: (ChunkLocation) -> Unit,
+    nSelected: ChunkLocation?,
+    location: AnvilLocation
+) {
+
+    var focused by remember { mutableStateOf(Pair(-1, -1)) }
+
+    Box(modifier = Modifier.onPointerEvent(PointerEventType.Exit) { focused = Pair(-1, -1) }) {
         Column(modifier = Modifier.fillMaxSize()) {
             for (x in 0 until 32) {
                 Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -189,5 +203,4 @@ fun BoxScope.ChunksPreview(
             }
         }
     }
-
 }
