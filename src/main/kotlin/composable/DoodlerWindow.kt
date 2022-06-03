@@ -1,5 +1,6 @@
 package composable
 
+import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -7,6 +8,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import doodler.application.state.DoodlerAppState
 import doodler.application.structure.*
+import doodler.theme.DoodlerTheme
 
 @Composable
 fun DoodlerWindow(
@@ -28,9 +30,14 @@ fun DoodlerWindow(
     ),
     title = window.title
 ) {
-    when(window) {
-        is IntroDoodlerWindow -> { }
-        is SelectorDoodlerWindow -> { }
-        is EditorDoodlerWindow -> { }
+    MaterialTheme(
+        colors = DoodlerTheme.Dark.Colors,
+        typography = DoodlerTheme.Dark.Typography
+    ) {
+        when (window) {
+            is IntroDoodlerWindow -> {}
+            is SelectorDoodlerWindow -> {}
+            is EditorDoodlerWindow -> {}
+        }
     }
 }
