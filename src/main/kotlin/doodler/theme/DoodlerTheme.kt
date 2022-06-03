@@ -1,7 +1,5 @@
 package doodler.theme
 
-import androidx.compose.material.Colors
-import androidx.compose.material.Typography
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
@@ -10,35 +8,7 @@ import androidx.compose.ui.text.platform.Font
 
 class DoodlerTheme {
 
-    class Dark {
-
-        companion object {
-
-            val Colors = Colors(
-                background = DoodlerColors.Background,
-                onBackground = DoodlerColors.OnBackground,
-                primary = DoodlerColors.Primary,
-                onPrimary = DoodlerColors.OnPrimary,
-                primaryVariant = DoodlerColors.PrimaryVariant,
-                secondary = DoodlerColors.Secondary,
-                onSecondary = DoodlerColors.OnSecondary,
-                secondaryVariant = DoodlerColors.SecondaryVariant,
-                surface = DoodlerColors.Background, // NOT USED
-                onSurface = DoodlerColors.Background, // NOT USED
-                error = DoodlerColors.Error,
-                onError = DoodlerColors.OnError,
-                isLight = false
-            )
-
-            val Typography = Typography(
-                defaultFontFamily = DoodlerFonts.JetbrainsMono,
-            )
-
-        }
-
-    }
-
-    private class DoodlerColors {
+    class Colors {
 
         companion object {
             val Background = Color(0xff2b2b2b)
@@ -49,13 +19,13 @@ class DoodlerTheme {
             val Secondary = Color(0xff422819)
             val SecondaryVariant = Color(0xff2e1c12)
             val OnSecondary = Color(0xffffffff)
-            val Error = Color(0xff573f35)
-            val OnError = Color(0xffffffff)
+
+            val SecondaryBackground = Color(0xff3c3f41)
         }
 
     }
 
-    private class DoodlerFonts {
+    class Fonts {
 
         companion object {
             val JetbrainsMono = FontFamily(

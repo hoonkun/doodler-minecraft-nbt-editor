@@ -1,11 +1,13 @@
 package composable
 
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
+import doodler.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
+import composable.intro.Intro
 import doodler.application.state.DoodlerAppState
 import doodler.application.structure.*
 import doodler.theme.DoodlerTheme
@@ -31,11 +33,10 @@ fun DoodlerWindow(
     title = window.title
 ) {
     MaterialTheme(
-        colors = DoodlerTheme.Dark.Colors,
-        typography = DoodlerTheme.Dark.Typography
+        typography = Typography(defaultFontFamily = DoodlerTheme.Fonts.JetbrainsMono)
     ) {
         when (window) {
-            is IntroDoodlerWindow -> {}
+            is IntroDoodlerWindow -> Intro { }
             is SelectorDoodlerWindow -> {}
             is EditorDoodlerWindow -> {}
         }
