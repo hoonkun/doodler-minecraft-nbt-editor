@@ -1,14 +1,12 @@
-import androidx.compose.foundation.layout.Box
-import androidx.compose.material.Text
-import androidx.compose.ui.window.Window
+import androidx.compose.runtime.key
 import androidx.compose.ui.window.application
+import composable.DoodlerWindow
+import doodler.application.state.rememberDoodlerApplicationState
 
 fun main() = application {
+    val doodlerAppState = rememberDoodlerApplicationState()
 
-    Window(onCloseRequest = ::exitApplication) {
-        Box {
-            Text("Hello, Doodler!")
-        }
+    for (window in doodlerAppState.windows) {
+        key(window) { DoodlerWindow(doodlerAppState, window) }
     }
-
 }
