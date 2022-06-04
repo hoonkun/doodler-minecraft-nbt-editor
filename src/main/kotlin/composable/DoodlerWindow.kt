@@ -51,7 +51,7 @@ fun DoodlerWindow(
             LocalRippleTheme provides DoodlerTheme.ClearRippleTheme
         ) {
             when (window) {
-                is IntroDoodlerWindow -> Intro { }
+                is IntroDoodlerWindow -> Intro { appState.sketch(SelectorDoodlerWindow("doodler: open '${it.displayName}'", it)) }
                 is SelectorDoodlerWindow -> {}
                 is EditorDoodlerWindow -> {}
             }
