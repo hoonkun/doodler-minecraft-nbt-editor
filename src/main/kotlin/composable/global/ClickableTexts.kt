@@ -1,5 +1,6 @@
 package composable.global
 
+import activator.composables.global.JetBrainsMono
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -24,6 +25,13 @@ fun ClickableH1(
 ) = ClickableText(text, color = color, fontSize = 25.sp, onClick = onClick)
 
 @Composable
+fun ClickableH5(
+    text: String,
+    color: Color,
+    onClick: () -> Unit
+) = ClickableText(text, color = color, fontSize = 10.sp, onClick = onClick)
+
+@Composable
 fun ClickableH4(
     text: String,
     color: Color,
@@ -44,6 +52,7 @@ fun ClickableText(
         text,
         color = color,
         fontSize = fontSize,
+        fontFamily = JetBrainsMono,
         style = TextStyle(textDecoration = if (hovered) TextDecoration.Underline else TextDecoration.None),
         modifier = Modifier.hoverable(interactionSource).clickable(onClick = onClick)
     )

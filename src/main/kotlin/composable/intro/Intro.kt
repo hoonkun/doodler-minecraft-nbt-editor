@@ -6,7 +6,9 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import composable.global.ClickableH1
+import composable.global.ClickableH5
 import composable.global.ClickableH4
 import doodler.application.structure.DoodlerEditorType
 import doodler.theme.DoodlerTheme
@@ -19,8 +21,14 @@ fun Intro(
 ) {
     IntroRoot {
         IntroContent {
-            OpenWorld()
-            OpenStandalone()
+            Title()
+            PrimaryLinkH1("Select World!")
+            PrimaryLinkH4("...or single NBT file")
+            DefaultH4(
+                "Getting Started?",
+                modifier = Modifier.alpha(0.65f).padding(top = 20.dp, bottom = 5.dp)
+            )
+            ExternalLinkH5("Document")
         }
         IntroFooter("doodler, synced with 1.18.2", "by @hoon_kiwicraft")
     }
@@ -49,18 +57,45 @@ fun ColumnScope.IntroContent(
 }
 
 @Composable
-fun ColumnScope.OpenWorld() {
+fun ColumnScope.Title() {
+    Text(
+        "doodler: Minecraft NBT Editor",
+        color = DoodlerTheme.Colors.OnBackground,
+        modifier = Modifier.alpha(0.75f).padding(bottom = 10.dp)
+    )
+}
+
+@Composable
+fun ColumnScope.DefaultH4(
+    text: String,
+    modifier: Modifier
+) {
+    Text(
+        text,
+        color = DoodlerTheme.Colors.OnBackground,
+        fontSize = 12.sp,
+        modifier = Modifier.then(modifier)
+    )
+}
+
+@Composable
+fun ColumnScope.ExternalLinkH5(text: String) {
+    ClickableH5(text, DoodlerTheme.Colors.ExternalLink) { }
+}
+
+@Composable
+fun ColumnScope.PrimaryLinkH1(text: String) {
     ClickableH1(
-        text = "Select World!",
-        color = DoodlerTheme.Colors.Primary
+        text = text,
+        color = DoodlerTheme.Colors.PrimaryLink
     ) { }
 }
 
 @Composable
-fun ColumnScope.OpenStandalone() {
+fun ColumnScope.PrimaryLinkH4(text: String) {
     ClickableH4(
-        text = "...or single NBT file",
-        color = DoodlerTheme.Colors.Primary
+        text = text,
+        color = DoodlerTheme.Colors.PrimaryLink
     ) { }
 }
 
