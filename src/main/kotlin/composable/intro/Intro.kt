@@ -7,9 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import composable.global.ClickableH1
-import composable.global.ClickableH5
-import composable.global.ClickableH4
+import composable.global.*
 import doodler.application.structure.DoodlerEditorType
 import doodler.theme.DoodlerTheme
 import doodler.unit.dp
@@ -21,16 +19,18 @@ fun Intro(
 ) {
     IntroRoot {
         IntroContent {
-            Title()
-            PrimaryLinkH1("Select World!")
-            PrimaryLinkH4("...or single NBT file")
-            DefaultH4(
-                "Getting Started?",
-                modifier = Modifier.alpha(0.65f).padding(top = 20.dp, bottom = 5.dp)
+            IntroStart {
+                DefaultH4(text = "doodler: Minecraft NBT Editor")
+                PrimaryLinkH1(text = "Select World!") { openSelector(DoodlerEditorType.WORLD) }
+                PrimaryLinkH5(text = "...or single NBT file") { openSelector(DoodlerEditorType.STANDALONE) }
+                Spacer(modifier = Modifier.height(20.dp))
+            }
+            ExternalLinkH5(
+                text = "Getting Started?",
+                modifier = Modifier.alpha(0.65f).padding(top = 20.dp, bottom = 5.dp).align(Alignment.BottomEnd)
             )
-            ExternalLinkH5("Document")
         }
-        IntroFooter("doodler, synced with 1.18.2", "by @hoon_kiwicraft")
+        IntroFooter(startText = "doodler, synced with 1.18.2", endText = "by @hoon_kiwicraft")
     }
 }
 
@@ -46,57 +46,27 @@ fun IntroRoot(
 
 @Composable
 fun ColumnScope.IntroContent(
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable BoxScope.() -> Unit
 ) {
-    Column(
-        modifier = Modifier.weight(1f).fillMaxWidth(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxWidth()
+            .padding(top = 3.dp, bottom = 3.dp, start = 7.dp, end = 7.dp),
         content = content
     )
 }
 
 @Composable
-fun ColumnScope.Title() {
-    Text(
-        "doodler: Minecraft NBT Editor",
-        color = DoodlerTheme.Colors.OnBackground,
-        modifier = Modifier.alpha(0.75f).padding(bottom = 10.dp)
-    )
-}
-
-@Composable
-fun ColumnScope.DefaultH4(
-    text: String,
-    modifier: Modifier
+fun BoxScope.IntroStart(
+    content: @Composable ColumnScope.() -> Unit
 ) {
-    Text(
-        text,
-        color = DoodlerTheme.Colors.OnBackground,
-        fontSize = 12.sp,
-        modifier = Modifier.then(modifier)
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        content = content
     )
-}
-
-@Composable
-fun ColumnScope.ExternalLinkH5(text: String) {
-    ClickableH5(text, DoodlerTheme.Colors.ExternalLink) { }
-}
-
-@Composable
-fun ColumnScope.PrimaryLinkH1(text: String) {
-    ClickableH1(
-        text = text,
-        color = DoodlerTheme.Colors.PrimaryLink
-    ) { }
-}
-
-@Composable
-fun ColumnScope.PrimaryLinkH4(text: String) {
-    ClickableH4(
-        text = text,
-        color = DoodlerTheme.Colors.PrimaryLink
-    ) { }
 }
 
 @Composable

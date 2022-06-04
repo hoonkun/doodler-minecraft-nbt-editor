@@ -5,6 +5,7 @@ import androidx.compose.material.Typography
 import androidx.compose.material.ripple.LocalRippleTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.DpSize
 import doodler.unit.dp
 import androidx.compose.ui.window.Window
@@ -13,6 +14,7 @@ import composable.intro.Intro
 import doodler.application.state.DoodlerAppState
 import doodler.application.structure.*
 import doodler.theme.DoodlerTheme
+import doodler.unit.sp
 
 @Composable
 fun DoodlerWindow(
@@ -35,7 +37,15 @@ fun DoodlerWindow(
     title = window.title
 ) {
     MaterialTheme(
-        typography = Typography(defaultFontFamily = DoodlerTheme.Fonts.JetbrainsMono)
+        typography = Typography(
+            defaultFontFamily = DoodlerTheme.Fonts.JetbrainsMono,
+            h1 = TextStyle(fontSize = 25.sp),
+            h2 = TextStyle(fontSize = 21.sp),
+            h3 = TextStyle(fontSize = 18.sp),
+            h4 = TextStyle(fontSize = 15.sp),
+            h5 = TextStyle(fontSize = 12.sp),
+            h6 = TextStyle(fontSize = 10.sp)
+        )
     ) {
         CompositionLocalProvider(
             LocalRippleTheme provides DoodlerTheme.ClearRippleTheme
