@@ -30,6 +30,29 @@ class DoodlerTheme {
             val PrimaryLink = Color(0xffaed581)
         }
 
+        class Selector {
+
+            companion object {
+                val Directories = Color(0xffffc660)
+                val Files = Color(0xffa9b7c6)
+                val FocusedCandidate = Color(0x30ffffff)
+                val PathInput = Color(0xff202020)
+                val SelectButton = Color(0xff51702e)
+                val SelectButtonHovered = Color(0xff668d3a)
+            }
+
+        }
+
+        class Text {
+
+            companion object {
+                val IdeDocumentation = Color(0xff629755)
+                val IdeFunctionProperty = Color(0xff467cda)
+                val IdeGeneral = Color(0xffa9b7c6)
+            }
+
+        }
+
     }
 
     class Fonts {

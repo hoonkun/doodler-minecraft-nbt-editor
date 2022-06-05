@@ -11,6 +11,7 @@ import doodler.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import composable.intro.Intro
+import composable.selector.Selector
 import doodler.application.state.DoodlerAppState
 import doodler.application.structure.*
 import doodler.theme.DoodlerTheme
@@ -26,7 +27,7 @@ fun DoodlerWindow(
         size =
             when (window) {
                 is IntroDoodlerWindow -> DpSize(350.dp, 325.dp)
-                is SelectorDoodlerWindow -> DpSize(425.dp, 250.dp)
+                is SelectorDoodlerWindow -> DpSize(525.dp, 300.dp)
                 is EditorDoodlerWindow ->
                     when (window.type) {
                         DoodlerEditorType.WORLD -> DpSize(700.dp, 575.dp)
@@ -52,7 +53,7 @@ fun DoodlerWindow(
         ) {
             when (window) {
                 is IntroDoodlerWindow -> Intro { appState.sketch(SelectorDoodlerWindow("doodler: open '${it.displayName}'", it)) }
-                is SelectorDoodlerWindow -> {}
+                is SelectorDoodlerWindow -> Selector(window.targetType) { }
                 is EditorDoodlerWindow -> {}
             }
         }
