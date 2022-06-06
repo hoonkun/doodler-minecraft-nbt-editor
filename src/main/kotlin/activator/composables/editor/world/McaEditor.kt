@@ -9,12 +9,12 @@ import activator.doodler.doodle.DoodleException
 import activator.doodler.editor.McaEditor
 import activator.doodler.editor.McaPayload
 import activator.doodler.logger.DoodlerLogger
-import activator.doodler.minecraft.McaWorker
-import activator.doodler.minecraft.structures.*
-import activator.doodler.nbt.tag.CompoundTag
-import activator.doodler.nbt.tag.DoubleTag
-import activator.doodler.nbt.tag.ListTag
-import activator.doodler.nbt.tag.StringTag
+import doodler.minecraft.McaWorker
+import doodler.minecraft.structures.*
+import doodler.nbt.tag.CompoundTag
+import doodler.nbt.tag.DoubleTag
+import doodler.nbt.tag.ListTag
+import doodler.nbt.tag.StringTag
 import java.io.File
 
 @Composable

@@ -1,8 +1,8 @@
 package composable.selector
 
-import activator.doodler.minecraft.DatWorker
-import activator.doodler.nbt.tag.CompoundTag
-import activator.doodler.nbt.tag.StringTag
+import doodler.minecraft.DatWorker
+import doodler.nbt.tag.CompoundTag
+import doodler.nbt.tag.StringTag
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable

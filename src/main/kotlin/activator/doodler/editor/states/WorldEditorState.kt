@@ -2,7 +2,7 @@ package activator.doodler.editor.states
 
 import androidx.compose.runtime.*
 import activator.doodler.editor.EditorManager
-import activator.doodler.minecraft.structures.WorldSpecification
+import doodler.minecraft.structures.WorldSpecification
 
 class WorldEditorState (
     val manager: EditorManager,

@@ -1,11 +1,11 @@
-package activator.doodler.nbt
+package doodler.nbt
 
 import androidx.compose.runtime.*
 import activator.doodler.doodle.DoodleException
 import activator.doodler.doodle.InternalAssertionException
-import activator.doodler.nbt.tag.*
-import activator.doodler.nbt.TagType.*
-import activator.doodler.nbt.extensions.byte
+import doodler.nbt.tag.*
+import doodler.nbt.TagType.*
+import doodler.nbt.extensions.byte
 
 import java.nio.ByteBuffer
 

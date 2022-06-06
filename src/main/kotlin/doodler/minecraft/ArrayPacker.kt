@@ -1,4 +1,4 @@
-package activator.doodler.minecraft
+package doodler.minecraft
 
 import kotlin.math.pow
 

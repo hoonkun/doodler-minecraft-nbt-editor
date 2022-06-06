@@ -45,7 +45,7 @@ import activator.doodler.editor.McaEditor
 import activator.doodler.editor.McaPayload
 import activator.doodler.editor.states.SelectorState
 import activator.doodler.logger.DoodlerLogger
-import activator.doodler.minecraft.structures.*
+import doodler.minecraft.structures.*
 import kotlinx.coroutines.delay
 import java.io.File
 

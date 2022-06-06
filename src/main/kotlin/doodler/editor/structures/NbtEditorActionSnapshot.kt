@@ -2,7 +2,7 @@ package doodler.editor.structures
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import activator.doodler.nbt.TagType
+import doodler.nbt.TagType
 import doodler.doodle.structures.ReadonlyDoodle
 
 @Stable

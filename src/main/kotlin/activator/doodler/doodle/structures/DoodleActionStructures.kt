@@ -3,7 +3,7 @@ package activator.doodler.doodle.structures
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import activator.doodler.doodle.ActualDoodle
-import activator.doodler.nbt.TagType
+import doodler.nbt.TagType
 
 @Stable
 abstract class DoodleAction(

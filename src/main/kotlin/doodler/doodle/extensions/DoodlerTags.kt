@@ -7,8 +7,8 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import activator.doodler.doodle.InternalAssertionException
 import activator.composables.global.ThemedColor
-import activator.doodler.nbt.TagType
-import activator.doodler.nbt.tag.*
+import doodler.nbt.TagType
+import doodler.nbt.tag.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import doodler.doodle.structures.*

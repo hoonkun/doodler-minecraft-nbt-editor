@@ -13,8 +13,8 @@ import activator.composables.global.ThemedColor
 import activator.doodler.editor.StandaloneNbtEditor
 import activator.doodler.editor.states.NbtState
 import activator.doodler.logger.DoodlerLogger
-import activator.doodler.minecraft.DatWorker
-import activator.doodler.minecraft.structures.DatFileType
+import doodler.minecraft.DatWorker
+import doodler.minecraft.structures.DatFileType
 import java.io.File
 
 @Composable

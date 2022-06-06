@@ -1,16 +1,16 @@
-package activator.doodler.nbt.tag
+package doodler.nbt.tag
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import activator.doodler.extensions.contentEquals
-import activator.doodler.nbt.AnyTag
-import activator.doodler.nbt.Tag
-import activator.doodler.nbt.TagType
-import activator.doodler.nbt.TagType.*
-import activator.doodler.nbt.extensions.byte
-import activator.doodler.nbt.extensions.putString
-import activator.doodler.nbt.extensions.string
+import doodler.nbt.AnyTag
+import doodler.nbt.Tag
+import doodler.nbt.TagType
+import doodler.nbt.TagType.*
+import doodler.nbt.extensions.byte
+import doodler.nbt.extensions.putString
+import doodler.nbt.extensions.string
 import java.nio.ByteBuffer
 
 typealias Compound = SnapshotStateList<AnyTag>

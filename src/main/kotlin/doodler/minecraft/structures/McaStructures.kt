@@ -1,4 +1,4 @@
-package activator.doodler.minecraft.structures
+package doodler.minecraft.structures
 
 import activator.doodler.doodle.DoodleException
 

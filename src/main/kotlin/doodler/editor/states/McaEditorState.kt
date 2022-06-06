@@ -1,7 +1,7 @@
 package doodler.editor.states
 
-import activator.doodler.minecraft.structures.BlockLocation
-import activator.doodler.minecraft.structures.ChunkLocation
+import doodler.minecraft.structures.BlockLocation
+import doodler.minecraft.structures.ChunkLocation
 import androidx.compose.runtime.*
 import androidx.compose.ui.text.input.TextFieldValue
 

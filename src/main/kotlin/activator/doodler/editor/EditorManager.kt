@@ -5,8 +5,8 @@ import androidx.compose.runtime.snapshots.SnapshotStateMap
 import activator.composables.editor.world.AnvilOpenRequest
 import activator.doodler.editor.states.NbtState
 import activator.doodler.editor.states.SelectorState
-import activator.doodler.minecraft.DatWorker
-import activator.doodler.minecraft.structures.*
+import doodler.minecraft.DatWorker
+import doodler.minecraft.structures.*
 import java.io.File
 
 class EditorManager {

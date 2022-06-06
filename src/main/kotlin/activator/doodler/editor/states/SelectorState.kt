@@ -2,8 +2,8 @@ package activator.doodler.editor.states
 
 import androidx.compose.runtime.*
 import androidx.compose.ui.text.input.TextFieldValue
-import activator.doodler.minecraft.structures.BlockLocation
-import activator.doodler.minecraft.structures.ChunkLocation
+import doodler.minecraft.structures.BlockLocation
+import doodler.minecraft.structures.ChunkLocation
 
 @Stable
 class SelectorState (

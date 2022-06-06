@@ -10,9 +10,9 @@ import androidx.compose.ui.unit.dp
 import activator.composables.global.ThemedColor
 import activator.doodler.application.structures.DoodlerWindow
 import activator.doodler.logger.DoodlerLogger
-import activator.doodler.minecraft.DatWorker
-import activator.doodler.nbt.tag.CompoundTag
-import activator.doodler.nbt.tag.StringTag
+import doodler.minecraft.DatWorker
+import doodler.nbt.tag.CompoundTag
+import doodler.nbt.tag.StringTag
 import java.io.File
 
 

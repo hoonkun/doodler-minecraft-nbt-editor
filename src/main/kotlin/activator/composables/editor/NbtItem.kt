@@ -39,7 +39,7 @@ import activator.doodler.doodle.extensions.transformer
 import activator.doodler.doodle.*
 import activator.doodler.editor.states.NbtState
 import activator.doodler.logger.DoodlerLogger
-import activator.doodler.nbt.TagType
+import doodler.nbt.TagType
 
 @Composable
 private fun ItemRoot(

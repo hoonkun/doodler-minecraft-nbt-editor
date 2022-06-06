@@ -11,10 +11,10 @@ import activator.doodler.editor.McaEditor
 import activator.doodler.editor.NbtEditor
 import activator.doodler.editor.states.NbtState
 import activator.doodler.logger.DoodlerLogger
-import activator.doodler.minecraft.McaWorker
-import activator.doodler.minecraft.structures.McaFileType
-import activator.doodler.minecraft.structures.WorldHierarchy
-import activator.doodler.nbt.tag.CompoundTag
+import doodler.minecraft.McaWorker
+import doodler.minecraft.structures.McaFileType
+import doodler.minecraft.structures.WorldHierarchy
+import doodler.nbt.tag.CompoundTag
 
 @Composable
 fun BoxScope.EditorManager(

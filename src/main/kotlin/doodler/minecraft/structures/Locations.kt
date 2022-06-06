@@ -1,4 +1,4 @@
-package activator.doodler.minecraft.structures
+package doodler.minecraft.structures
 
 import kotlin.math.floor
 

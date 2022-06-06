@@ -2,8 +2,8 @@ package doodler.editor
 
 import activator.doodler.editor.StandaloneNbtEditor
 import activator.doodler.editor.states.NbtState
-import activator.doodler.minecraft.DatWorker
-import activator.doodler.minecraft.structures.*
+import doodler.minecraft.DatWorker
+import doodler.minecraft.structures.*
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue

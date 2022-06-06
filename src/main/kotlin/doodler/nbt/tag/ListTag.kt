@@ -1,13 +1,13 @@
-package activator.doodler.nbt.tag
+package doodler.nbt.tag
 
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import activator.doodler.extensions.contentEquals
-import activator.doodler.nbt.AnyTag
-import activator.doodler.nbt.Tag
-import activator.doodler.nbt.TagType
-import activator.doodler.nbt.TagType.*
-import activator.doodler.nbt.extensions.indent
+import doodler.nbt.AnyTag
+import doodler.nbt.Tag
+import doodler.nbt.TagType
+import doodler.nbt.TagType.*
+import doodler.nbt.extensions.indent
 import java.nio.ByteBuffer
 
 @Stable

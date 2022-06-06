@@ -1,9 +1,9 @@
-package activator.doodler.minecraft
+package doodler.minecraft
 
-import activator.doodler.nbt.Tag
-import activator.doodler.nbt.TagType
-import activator.doodler.nbt.extensions.byte
-import activator.doodler.nbt.tag.CompoundTag
+import doodler.nbt.Tag
+import doodler.nbt.TagType
+import doodler.nbt.extensions.byte
+import doodler.nbt.tag.CompoundTag
 import java.io.File
 import java.nio.ByteBuffer
 

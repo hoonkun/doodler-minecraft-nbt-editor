@@ -3,9 +3,9 @@ package doodler.doodle.structures
 import doodler.doodle.extensions.displayName
 import doodler.doodle.extensions.doodle
 import activator.doodler.doodle.*
-import activator.doodler.nbt.AnyTag
-import activator.doodler.nbt.TagType
-import activator.doodler.nbt.tag.*
+import doodler.nbt.AnyTag
+import doodler.nbt.TagType
+import doodler.nbt.tag.*
 import androidx.compose.runtime.*
 
 

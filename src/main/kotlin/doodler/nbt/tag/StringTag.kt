@@ -1,11 +1,11 @@
-package activator.doodler.nbt.tag
+package doodler.nbt.tag
 
 import androidx.compose.runtime.Stable
-import activator.doodler.nbt.AnyTag
-import activator.doodler.nbt.Tag
-import activator.doodler.nbt.TagType.TAG_STRING
-import activator.doodler.nbt.extensions.putString
-import activator.doodler.nbt.extensions.string
+import doodler.nbt.AnyTag
+import doodler.nbt.Tag
+import doodler.nbt.TagType.TAG_STRING
+import doodler.nbt.extensions.putString
+import doodler.nbt.extensions.string
 import java.nio.ByteBuffer
 
 @Stable

@@ -10,8 +10,8 @@ import activator.doodler.doodle.InternalAssertionException
 import activator.doodler.doodle.NbtDoodle
 import activator.doodler.doodle.ValueDoodle
 import activator.composables.global.ThemedColor
-import activator.doodler.nbt.TagType
-import activator.doodler.nbt.tag.*
+import doodler.nbt.TagType
+import doodler.nbt.tag.*
 
 
 fun CompoundTag.doodle(parent: NbtDoodle?, depth: Int): List<ActualDoodle> {

@@ -16,8 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import activator.doodler.extensions.toReversedRange
 import activator.doodler.logger.DoodlerLogger
-import activator.doodler.minecraft.*
-import activator.doodler.minecraft.structures.*
+import doodler.minecraft.*
+import doodler.minecraft.structures.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.skia.*

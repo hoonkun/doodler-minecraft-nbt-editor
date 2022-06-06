@@ -1,4 +1,4 @@
-package activator.doodler.nbt.extensions
+package doodler.nbt.extensions
 
 import java.nio.ByteBuffer
 

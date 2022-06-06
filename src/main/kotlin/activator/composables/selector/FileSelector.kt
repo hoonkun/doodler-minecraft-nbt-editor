@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.dp
 import activator.composables.global.ThemedColor
 import activator.doodler.application.structures.DoodlerWindow
 import activator.doodler.logger.DoodlerLogger
-import activator.doodler.minecraft.DatWorker
+import doodler.minecraft.DatWorker
 import java.io.File
 
 @Composable

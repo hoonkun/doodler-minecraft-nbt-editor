@@ -1,4 +1,4 @@
-package activator.doodler.minecraft.structures
+package doodler.minecraft.structures
 
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateMapOf

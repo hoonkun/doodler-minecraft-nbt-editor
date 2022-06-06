@@ -4,9 +4,9 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import activator.doodler.doodle.extensions.displayName
 import activator.doodler.doodle.extensions.doodle
-import activator.doodler.nbt.AnyTag
-import activator.doodler.nbt.TagType
-import activator.doodler.nbt.tag.*
+import doodler.nbt.AnyTag
+import doodler.nbt.TagType
+import doodler.nbt.tag.*
 
 
 @Stable

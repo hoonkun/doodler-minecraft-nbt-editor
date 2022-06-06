@@ -1,6 +1,6 @@
 package activator.doodler.doodle
 
-import activator.doodler.nbt.TagType
+import doodler.nbt.TagType
 
 open class DoodleException(
     val title: String,

@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.sp
 import activator.composables.global.JetBrainsMono
 import activator.composables.global.ThemedColor
 import activator.doodler.logger.DoodlerLogger
-import activator.doodler.minecraft.structures.*
+import doodler.minecraft.structures.*
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.ColorAlphaType
 import org.jetbrains.skia.ColorType

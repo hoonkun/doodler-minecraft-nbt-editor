@@ -23,10 +23,10 @@ import activator.doodler.editor.*
 import activator.doodler.editor.states.NbtState
 import activator.doodler.extensions.nullable
 import activator.doodler.logger.DoodlerLogger
-import activator.doodler.nbt.AnyTag
+import doodler.nbt.AnyTag
 import activator.keys
 import kotlinx.coroutines.launch
-import activator.doodler.nbt.TagType
+import doodler.nbt.TagType
 import kotlinx.coroutines.CoroutineScope
 
 @OptIn(ExperimentalComposeUiApi::class)

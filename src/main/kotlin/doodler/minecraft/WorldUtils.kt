@@ -1,8 +1,8 @@
-package activator.doodler.minecraft
+package doodler.minecraft
 
-import activator.doodler.minecraft.structures.WorldDimension
-import activator.doodler.minecraft.structures.WorldDimensionHierarchy
-import activator.doodler.minecraft.structures.WorldHierarchy
+import doodler.minecraft.structures.WorldDimension
+import doodler.minecraft.structures.WorldDimensionHierarchy
+import doodler.minecraft.structures.WorldHierarchy
 import java.io.File
 import java.io.FileNotFoundException
 

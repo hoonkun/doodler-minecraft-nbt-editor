@@ -1,11 +1,11 @@
-package activator.doodler.minecraft
+package doodler.minecraft
 
-import activator.doodler.minecraft.ArrayPacker.Companion.unpack
-import activator.doodler.minecraft.structures.ChunkLocation
-import activator.doodler.minecraft.structures.SurfaceSubChunk
-import activator.doodler.minecraft.structures.Surface
-import activator.doodler.minecraft.structures.SurfaceBlock
-import activator.doodler.nbt.tag.*
+import doodler.minecraft.ArrayPacker.Companion.unpack
+import doodler.minecraft.structures.ChunkLocation
+import doodler.minecraft.structures.SurfaceSubChunk
+import doodler.minecraft.structures.Surface
+import doodler.minecraft.structures.SurfaceBlock
+import doodler.nbt.tag.*
 
 class SurfaceWorker {
 

@@ -1,6 +1,6 @@
 package doodler.editor
 
-import activator.doodler.minecraft.structures.WorldSpecification
+import doodler.minecraft.structures.WorldSpecification
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 
