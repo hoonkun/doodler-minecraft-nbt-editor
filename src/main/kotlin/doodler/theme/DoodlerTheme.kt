@@ -8,6 +8,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.platform.Font
+import doodler.extension.offsetRGB
 
 class DoodlerTheme {
 
@@ -43,11 +44,68 @@ class DoodlerTheme {
 
         }
 
+        class DoodleItem {
+
+            companion object {
+                val NormalTagTypeBackground = Color(0xff3c3c3c)
+                val SelectedTagTypeBackground = NormalTagTypeBackground.offsetRGB(0.625f)
+
+                val NormalExpandableValue = Color(0xff969696)
+                val SelectedExpandableValue = NormalExpandableValue.offsetRGB(0.4375f)
+
+                val NormalItemBackground = Color(0xff2b2b2b)
+                val SelectedItemBackground = Color(0xff5b7341)
+                val ActionTargetItemBackground = Color(0xff426bad)
+
+                val NormalDepthLine = Color(0xff3c3c3c)
+                val SelectedDepthLine = NormalDepthLine.offsetRGB(0.0627f)
+                val DepthLineHoverOffset = 0.1568f
+
+                fun TagTypeBackground(selected: Boolean) =
+                    if (!selected) NormalTagTypeBackground else SelectedTagTypeBackground
+
+                fun ExpandableValueTextColor(selected: Boolean) =
+                    if (!selected) NormalExpandableValue else SelectedExpandableValue
+
+                fun Background(
+                    hovered: Boolean,
+                    pressed: Boolean,
+                    selected: Boolean,
+                    highlightAsActionTarget: Boolean
+                ) =
+                    if (selected) {
+                        SelectedItemBackground.FocusableItemBackground(hovered, pressed)
+                    } else if (highlightAsActionTarget) {
+                        ActionTargetItemBackground.FocusableItemBackground(hovered, pressed)
+                    } else {
+                        NormalItemBackground.FocusableItemBackground(hovered, pressed)
+                    }
+
+                fun DepthLine(
+                    selected: Boolean,
+                    hovered: Boolean
+                ) =
+                    if (selected) SelectedDepthLine.offsetRGB(if (hovered) DepthLineHoverOffset else 0f)
+                    else NormalDepthLine.offsetRGB(if (hovered) DepthLineHoverOffset else 0f)
+
+                private fun Color.FocusableItemBackground(
+                    hovered: Boolean,
+                    pressed: Boolean
+                ) =
+                    if (pressed) copy(alpha = 0.0784f)
+                    else if (hovered) copy(alpha = 0.1372f)
+                    else copy(alpha = 0.1960f)
+            }
+
+        }
+
         class Text {
 
             companion object {
                 val IdeDocumentation = Color(0xff629755)
                 val IdeFunctionProperty = Color(0xff467cda)
+                val IdeNumberLiteral = Color(0xff6897bb)
+                val IdeStringLiteral = Color(0xff6a8759)
                 val IdeGeneral = Color(0xffa9b7c6)
             }
 
