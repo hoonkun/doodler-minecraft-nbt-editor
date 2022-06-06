@@ -15,7 +15,7 @@ import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import activator.doodler.extensions.toRanges
+import doodler.extension.toRanges
 import activator.composables.global.*
 import activator.doodler.doodle.*
 import activator.doodler.doodle.structures.CannotBePasted

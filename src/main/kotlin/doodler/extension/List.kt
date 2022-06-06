@@ -7,3 +7,47 @@ fun <T> List<T>.contentEquals(other: List<T>): Boolean {
     }
     return true
 }
+
+fun List<Int>.toRanges(): List<IntRange> {
+    val sorted = sorted()
+    val result = mutableListOf<IntRange>()
+
+    if (isEmpty()) return result
+
+    var start = sorted[0]
+    var current = sorted[0]
+    sorted.slice(1 until size).forEach {
+        if (it == current + 1) {
+            current = it
+            return@forEach
+        }
+        result.add(start..current)
+        start = it
+        current = it
+    }
+
+    result.add(start..current)
+
+    return result
+}
+
+fun List<Int>.toReversedRange(min: Int, max: Int): List<IntRange> {
+    val sorted = sorted()
+    val result = mutableListOf<IntRange>()
+
+    if (isEmpty()) return result
+
+    var current = min
+    sorted.slice(1 until size).forEach {
+        if (it == current + 1) {
+            current = it
+            return@forEach
+        }
+        result.add(current until it)
+        current = it
+    }
+
+    if (current < max) result.add(current..max)
+
+    return result
+}

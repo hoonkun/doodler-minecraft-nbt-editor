@@ -14,7 +14,7 @@ import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import activator.doodler.extensions.toReversedRange
+import doodler.extension.toReversedRange
 import activator.doodler.logger.DoodlerLogger
 import doodler.minecraft.*
 import doodler.minecraft.structures.*

@@ -5,8 +5,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import activator.doodler.doodle.*
 import activator.doodler.doodle.structures.*
-import activator.doodler.extensions.removeRange
-import activator.doodler.extensions.toRanges
+import doodler.extension.removeRange
+import doodler.extension.toRanges
 import activator.doodler.files.StateFile
 import doodler.exceptions.*
 import doodler.exceptions.InternalError

@@ -1,8 +1,8 @@
 package doodler.editor.states
 
 import activator.doodler.doodle.*
-import activator.doodler.extensions.removeRange
-import activator.doodler.extensions.toRanges
+import doodler.extension.removeRange
+import doodler.extension.toRanges
 import doodler.minecraft.DatWorker
 import doodler.minecraft.McaWorker
 import doodler.minecraft.structures.DatFileType
