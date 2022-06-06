@@ -1,6 +1,6 @@
 package doodler.minecraft.structures
 
-import activator.doodler.doodle.DoodleException
+import doodler.exceptions.DoodleException
 
 enum class McaType(val pathName: String) {
     TERRAIN("region"), ENTITY("entities"), POI("poi");

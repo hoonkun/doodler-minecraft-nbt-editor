@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import activator.doodler.doodle.DoodleException
+import doodler.exceptions.DoodleException
 import activator.doodler.editor.McaEditor
 import activator.doodler.editor.McaPayload
 import activator.doodler.logger.DoodlerLogger

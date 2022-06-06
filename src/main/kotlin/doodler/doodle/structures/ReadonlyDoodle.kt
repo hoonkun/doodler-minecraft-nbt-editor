@@ -2,11 +2,11 @@ package doodler.doodle.structures
 
 import doodler.doodle.extensions.displayName
 import doodler.doodle.extensions.doodle
-import activator.doodler.doodle.*
 import doodler.nbt.AnyTag
 import doodler.nbt.TagType
 import doodler.nbt.tag.*
 import androidx.compose.runtime.*
+import doodler.exceptions.*
 
 
 @Stable

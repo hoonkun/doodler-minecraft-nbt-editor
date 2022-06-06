@@ -1,5 +1,6 @@
-package activator.doodler.doodle
+package doodler.exceptions
 
+import activator.doodler.doodle.NbtDoodle
 import doodler.nbt.TagType
 
 open class DoodleException(

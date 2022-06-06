@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import activator.composables.editor.world.DirectoryItem
 import activator.composables.editor.world.FileItem
 import activator.composables.editor.world.WorldTreeItem
-import activator.doodler.doodle.DoodleException
+import doodler.exceptions.DoodleException
 import java.io.File
 
 class WorldHierarchy (

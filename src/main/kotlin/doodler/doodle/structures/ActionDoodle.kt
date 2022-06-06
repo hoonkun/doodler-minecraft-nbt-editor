@@ -1,6 +1,6 @@
 package doodler.doodle.structures
 
-import activator.doodler.doodle.EndCreationException
+import doodler.exceptions.EndCreationException
 import doodler.nbt.AnyTag
 import doodler.nbt.TagType
 import doodler.nbt.tag.*

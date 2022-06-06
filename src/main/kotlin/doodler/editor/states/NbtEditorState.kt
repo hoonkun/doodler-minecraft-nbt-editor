@@ -15,6 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import doodler.doodle.structures.*
 import doodler.editor.structures.*
+import doodler.exceptions.*
 import doodler.file.StateFile
 import java.io.File
 

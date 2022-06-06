@@ -1,7 +1,7 @@
 package doodler.nbt.tag
 
 import androidx.compose.runtime.Stable
-import activator.doodler.doodle.DoodleException
+import doodler.exceptions.DoodleException
 import doodler.nbt.AnyTag
 import doodler.nbt.Tag
 import doodler.nbt.TagType.*

@@ -4,6 +4,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import activator.doodler.doodle.extensions.displayName
 import activator.doodler.doodle.extensions.doodle
+import doodler.exceptions.*
 import doodler.nbt.AnyTag
 import doodler.nbt.TagType
 import doodler.nbt.tag.*

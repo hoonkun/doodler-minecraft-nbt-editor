@@ -8,6 +8,8 @@ import activator.doodler.doodle.structures.*
 import activator.doodler.extensions.removeRange
 import activator.doodler.extensions.toRanges
 import activator.doodler.files.StateFile
+import doodler.exceptions.*
+import doodler.exceptions.InternalError
 import doodler.minecraft.DatWorker
 import doodler.minecraft.McaWorker
 import doodler.minecraft.structures.DatFileType

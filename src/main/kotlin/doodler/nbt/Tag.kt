@@ -1,8 +1,8 @@
 package doodler.nbt
 
 import androidx.compose.runtime.*
-import activator.doodler.doodle.DoodleException
-import activator.doodler.doodle.InternalAssertionException
+import doodler.exceptions.DoodleException
+import doodler.exceptions.InternalAssertionException
 import doodler.nbt.tag.*
 import doodler.nbt.TagType.*
 import doodler.nbt.extensions.byte

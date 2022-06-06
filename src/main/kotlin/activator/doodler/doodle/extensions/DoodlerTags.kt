@@ -6,7 +6,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import activator.doodler.doodle.ActualDoodle
-import activator.doodler.doodle.InternalAssertionException
+import doodler.exceptions.InternalAssertionException
 import activator.doodler.doodle.NbtDoodle
 import activator.doodler.doodle.ValueDoodle
 import activator.composables.global.ThemedColor
