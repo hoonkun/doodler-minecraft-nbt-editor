@@ -104,7 +104,7 @@ class TagDoodle(
         if (into.tag.type.isCompound()) {
             val intoTag = into.tag.getAs<CompoundTag>()
             intoTag.value.find { it.name == this.tag.name }
-                .let { if (it != null) return ConflictInfo(intoTag.value.indexOf(it)) }
+                .let { if (it != null) return ConflictInfo(this.tag.name, intoTag.value.indexOf(it)) }
         }
         return null
     }
@@ -233,6 +233,7 @@ class TagDoodle(
             }
 
     data class ConflictInfo(
+        val name: String?,
         val where: Int
     )
 

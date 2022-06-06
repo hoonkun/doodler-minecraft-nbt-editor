@@ -87,15 +87,13 @@ sealed class EditorDoodle(
 @Stable
 class TagCreatorDoodle(
     val type: TagType,
-    parent: TagDoodle,
-    depth: Int
-): CreatorDoodle(parent, depth)
+    parent: TagDoodle
+): CreatorDoodle(parent, parent.depth + 1)
 
 @Stable
 class ArrayValueCreatorDoodle(
-    parent: TagDoodle,
-    depth: Int
-): CreatorDoodle(parent, depth)
+    parent: TagDoodle
+): CreatorDoodle(parent, parent.depth + 1)
 
 @Stable
 class TagEditorDoodle(

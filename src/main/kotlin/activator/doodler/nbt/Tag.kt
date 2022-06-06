@@ -139,6 +139,8 @@ enum class TagType(val id: Byte) {
 
     fun isCompound() = this == TAG_COMPOUND
 
+    fun isEnd() = this == TAG_END
+
     fun canHaveChildren() =
         this == TAG_BYTE_ARRAY ||
         this == TAG_INT_ARRAY ||
