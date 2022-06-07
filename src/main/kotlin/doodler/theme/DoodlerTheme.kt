@@ -44,6 +44,16 @@ class DoodlerTheme {
 
         }
 
+        class DoodleAction {
+
+            companion object {
+                val CancelAction = Color(0xffe35d30)
+                val OkAction = Color(0xff408fe3)
+                val SaveAction = Color(0xff689f38)
+            }
+
+        }
+
         class DoodleItem {
 
             companion object {
