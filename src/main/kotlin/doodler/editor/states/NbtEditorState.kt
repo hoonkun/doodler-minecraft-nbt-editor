@@ -409,7 +409,7 @@ class NbtEditorState(
             createInto = null
         }
 
-        fun create(new: ReadonlyDoodle, where: Int) {
+        fun create(new: ReadonlyDoodle, where: Int? = null) {
             val into = createInto ?: throw VirtualActionCancelException("creation")
 
             val conflict = (new as? TagDoodle)?.hasConflict()

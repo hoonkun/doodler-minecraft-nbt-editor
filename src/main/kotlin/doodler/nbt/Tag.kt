@@ -137,6 +137,8 @@ enum class TagType(val id: Byte) {
 
     fun isList() = this == TAG_LIST
 
+    fun isUnnamedCollection() = isList() || isArray()
+
     fun isCompound() = this == TAG_COMPOUND
 
     fun isEnd() = this == TAG_END

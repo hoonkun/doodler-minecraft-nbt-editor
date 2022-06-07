@@ -19,6 +19,8 @@ sealed class ReadonlyDoodle(
 
     abstract val index: Int
 
+    abstract val value: String
+
     abstract fun delete()
 
     abstract fun clone(parent: TagDoodle?, depth: Int = this.depth): ReadonlyDoodle
@@ -58,7 +60,7 @@ class TagDoodle(
         }
     }
 
-    val value: String get() = if (tag.type.canHaveChildren()) valueOfExpandable(tag) else "${tag.value}"
+    override val value: String get() = if (tag.type.canHaveChildren()) valueOfExpandable(tag) else "${tag.value}"
 
     override val index: Int
         get() {
@@ -264,7 +266,7 @@ class TagDoodle(
 
 @Stable
 class ArrayValueDoodle(
-    val value: String,
+    override val value: String,
     depth: Int,
     parent: TagDoodle?
 ): ReadonlyDoodle(depth, parent) {

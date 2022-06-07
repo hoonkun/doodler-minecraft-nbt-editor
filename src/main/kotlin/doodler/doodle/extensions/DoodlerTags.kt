@@ -134,6 +134,23 @@ private val doubleTransformer = createTransformer(doubleValidator)
 
 private val stringTransformer = createTransformer { true }
 
+fun NameTransformer(): (AnnotatedString) -> Pair<Boolean, TransformedText> = { string ->
+    val text = string.text
+    val checker = Regex("\\W")
+    val invalids = checker.findAll(text).map {
+        AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Selector.Invalid), it.range.first, it.range.last + 1)
+    }.toList()
+    if (invalids.isNotEmpty()) {
+        Pair(false, TransformedText(AnnotatedString(string.text, invalids), OffsetMapping.Identity))
+    } else {
+        if (text.isEmpty()) {
+            Pair(false, TransformedText(AnnotatedString(string.text, listOf()), OffsetMapping.Identity))
+        } else {
+            Pair(true, TransformedText(AnnotatedString(string.text, listOf()), OffsetMapping.Identity))
+        }
+    }
+}
+
 fun TagType.transformer(): (AnnotatedString) -> Pair<Boolean, TransformedText> {
     return when(this) {
         TagType.TAG_SHORT -> shortTransformer
