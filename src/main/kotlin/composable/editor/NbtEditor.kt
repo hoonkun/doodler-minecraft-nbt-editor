@@ -122,7 +122,7 @@ fun BoxScope.NbtEditor(
 fun LazyScrollEffect(
     coroutine: CoroutineScope,
     stateProvider: Provider<NbtEditorState>
-) = SideEffect {
+) {
     val state = stateProvider()
     if (state.action != null)
         coroutine.launch { state.scrollToAction() }
