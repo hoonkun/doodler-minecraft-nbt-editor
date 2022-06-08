@@ -427,7 +427,12 @@ fun RowScope.ActionDoodleContent(
 
     Spacer(modifier = Modifier.width(12.dp))
 
-    EditorActionButton("Ok", DoodlerTheme.Colors.DoodleAction.OkAction) { commit() }
+    EditorActionButton(
+        text = "Ok",
+        color = DoodlerTheme.Colors.DoodleAction.OkAction,
+        enabled = { isValidName.value && isValidValue.value },
+        onClick = { commit() }
+    )
 
     Spacer(modifier = Modifier.width(30.dp))
 }
