@@ -18,7 +18,6 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -281,7 +280,7 @@ fun ActionDoodleField(
         modifier = Modifier
             .drawBehind {
                 drawLine(
-                    color = DoodlerTheme.Colors.DoodleItem.SelectedItemBackground.copy(alpha = 0.5882f),
+                    color = DoodlerTheme.Colors.DoodleItem.ActionTargetItemBackground.copy(alpha = 0.5882f),
                     start = Offset(0f, size.height),
                     end = Offset(size.width, size.height),
                     strokeWidth = 2f
@@ -305,7 +304,7 @@ fun ActionDoodleField(
                 isValid.value = valid
                 transformedText
             },
-            modifier = Modifier.focusRequester(requester).focusTarget()
+            modifier = Modifier.focusable().focusRequester(requester)
         )
         if (text.value.isEmpty()) {
             Text(

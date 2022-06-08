@@ -95,10 +95,10 @@ class DoodlerTheme {
                     selected: Boolean,
                     highlightAsActionTarget: Boolean
                 ) =
-                    if (selected) {
-                        SelectedItemBackground.FocusableItemBackground(hovered, pressed)
-                    } else if (highlightAsActionTarget) {
+                    if (highlightAsActionTarget) {
                         ActionTargetItemBackground.FocusableItemBackground(hovered, pressed)
+                    } else if (selected) {
+                        SelectedItemBackground.FocusableItemBackground(hovered, pressed)
                     } else {
                         Color.Black.OpaqueFocusableItemBackground(hovered, pressed)
                     }
