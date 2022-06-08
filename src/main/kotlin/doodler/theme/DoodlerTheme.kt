@@ -100,7 +100,7 @@ class DoodlerTheme {
                     } else if (highlightAsActionTarget) {
                         ActionTargetItemBackground.FocusableItemBackground(hovered, pressed)
                     } else {
-                        NormalItemBackground.FocusableItemBackground(hovered, pressed)
+                        Color.Black.OpaqueFocusableItemBackground(hovered, pressed)
                     }
 
                 fun DepthLine(
@@ -117,6 +117,14 @@ class DoodlerTheme {
                     if (pressed) copy(alpha = 0.0784f)
                     else if (hovered) copy(alpha = 0.1372f)
                     else copy(alpha = 0.1960f)
+
+                private fun Color.OpaqueFocusableItemBackground(
+                    hovered: Boolean,
+                    pressed: Boolean
+                ) =
+                    if (pressed) copy(alpha = 0.1372f)
+                    else if (hovered) copy(alpha = 0.0784f)
+                    else copy(alpha = 0f)
             }
 
         }

@@ -3,7 +3,6 @@ package composable.editor
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
-import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,6 +11,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
@@ -22,8 +22,10 @@ import androidx.compose.ui.focus.focusTarget
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.isPrimaryPressed
 import androidx.compose.ui.input.pointer.isSecondaryPressed
+import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -229,17 +231,18 @@ fun ArrayValueDoodleContent(
     NumberTagDoodleValue(value)
 }
 
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun RowScope.ReadonlyDoodleContent(
     doodle: ReadonlyDoodle,
     hoverInteractionSource: MutableInteractionSource,
-    pressInteractionSource: MutableInteractionSource,
+    pressedState: MutableState<Boolean>,
     expand: Boolean = true,
     onClick: MouseClickScope.() -> Unit,
 ) = Box(
     modifier = Modifier.fillMaxHeight()
-        .clickable(pressInteractionSource, null, onClick = EmptyLambda)
+        .onPointerEvent(PointerEventType.Press) { pressedState.value = true }
+        .onPointerEvent(PointerEventType.Release) { pressedState.value = false; }
         .mouseClickable(onClick = onClick)
         .hoverable(hoverInteractionSource)
         .let { if (expand) it.weight(1f) else it },
@@ -252,6 +255,7 @@ fun RowScope.ReadonlyDoodleContent(
                     is TagDoodle -> TagDoodleContent(doodle)
                     is ArrayValueDoodle -> ArrayValueDoodleContent(doodle.index, doodle.value)
                 }
+                Spacer(modifier = Modifier.width(20.dp))
             }
         )
     }
@@ -432,8 +436,7 @@ fun ReadonlyDoodle(
     val hoverInteractionSource = remember { MutableInteractionSource() }
     val hovered by hoverInteractionSource.collectIsHoveredAsState()
 
-    val pressInteractionSource = remember { MutableInteractionSource() }
-    val pressed by pressInteractionSource.collectIsPressedAsState()
+    val pressedState = remember { mutableStateOf(false) }
 
     val hierarchy = remember(doodle) { doodle.hierarchy() }
 
@@ -445,7 +448,12 @@ fun ReadonlyDoodle(
                     drawContent()
                     drawRect(DoodlerTheme.Colors.DoodleItem.NormalItemBackground.copy(alpha = 0.68627f))
                 } else {
-                    drawRect(DoodlerTheme.Colors.DoodleItem.Background(hovered, pressed, selected(), actionTarget()))
+                    drawRect(DoodlerTheme.Colors.DoodleItem.Background(
+                        hovered,
+                        pressedState.value,
+                        selected(),
+                        actionTarget()
+                    ))
                     drawContent()
                 }
             }
@@ -456,7 +464,7 @@ fun ReadonlyDoodle(
         ReadonlyDoodleContent(
             doodle = doodle,
             hoverInteractionSource = hoverInteractionSource,
-            pressInteractionSource = pressInteractionSource,
+            pressedState = pressedState,
             onClick = {
                 if (!enabled()) return@ReadonlyDoodleContent
                 if (buttons.isPrimaryPressed) toggle(doodle)
@@ -519,8 +527,7 @@ fun TagDoodlePreview(
     scrollTo: (ReadonlyDoodle) -> Unit,
     modifier: Modifier = Modifier.fillMaxWidth()
 ) {
-    val pressInteractionSource = remember { MutableInteractionSource() }
-    val pressed by pressInteractionSource.collectIsPressedAsState()
+    val pressedState = remember { mutableStateOf(false) }
 
     val hoverInteractionSource = remember { MutableInteractionSource() }
     val hovered by hoverInteractionSource.collectIsHoveredAsState()
@@ -534,7 +541,7 @@ fun TagDoodlePreview(
                 drawRect(
                     DoodlerTheme.Colors.DoodleItem.Background(
                         hovered = hovered,
-                        pressed = pressed,
+                        pressed = pressedState.value,
                         selected = false,
                         highlightAsActionTarget = false
                     )
@@ -545,7 +552,7 @@ fun TagDoodlePreview(
         ReadonlyDoodleContent(
             doodle = doodleProvider(),
             hoverInteractionSource = hoverInteractionSource,
-            pressInteractionSource = pressInteractionSource,
+            pressedState = pressedState,
             expand = false,
             onClick = {
                 scrollTo(doodleProvider())
