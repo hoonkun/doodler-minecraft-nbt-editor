@@ -60,7 +60,7 @@ fun DoodleText(
     text = text,
     color = color,
     fontSize = fontSize,
-    modifier = Modifier.also { if (rotate != null) it.rotate(rotate.first).absoluteOffset(x = rotate.second.dp) }
+    modifier = Modifier.let { if (rotate != null) it.rotate(rotate.first).absoluteOffset(x = rotate.second.dp) else it }
 )
 
 @Composable
@@ -71,7 +71,7 @@ fun DoodleText(
 ) = Text(
     text = text,
     fontSize = fontSize,
-    modifier = Modifier.also { if (rotate != null) it.rotate(rotate.first).absoluteOffset(x = rotate.second.dp) }
+    modifier = Modifier.let { if (rotate != null) it.rotate(rotate.first).absoluteOffset(x = rotate.second.dp) else it }
 )
 
 val arrayTypeTextSpan = listOf(
