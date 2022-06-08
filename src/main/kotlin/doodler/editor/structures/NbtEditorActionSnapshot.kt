@@ -2,6 +2,7 @@ package doodler.editor.structures
 
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.toMutableStateList
 import doodler.nbt.TagType
 import doodler.doodle.structures.ReadonlyDoodle
 
@@ -22,15 +23,25 @@ abstract class NbtEditorActionSnapshot(
 }
 
 @Stable
+class ReadonlyDoodleSnapshot(
+    val doodle: ReadonlyDoodle,
+    val index: Int
+)
+
+fun ReadonlyDoodle.snapshot() = ReadonlyDoodleSnapshot(this, this.index)
+
+fun SnapshotStateList<ReadonlyDoodle>.snapshot() = map { it.snapshot() }.toMutableStateList()
+
+@Stable
 class DeleteActionSnapshot(
     uid: Long,
-    val deleted: SnapshotStateList<ReadonlyDoodle>
+    val deleted: SnapshotStateList<ReadonlyDoodleSnapshot>
 ): NbtEditorActionSnapshot(uid)
 
 @Stable
 class PasteActionSnapshot(
     uid: Long,
-    val created: SnapshotStateList<ReadonlyDoodle>
+    val created: SnapshotStateList<ReadonlyDoodleSnapshot>
 ): NbtEditorActionSnapshot(uid)
 
 @Stable
@@ -55,14 +66,14 @@ enum class TagAttribute {
 @Stable
 class CreateActionSnapshot(
     uid: Long,
-    val created: ReadonlyDoodle
+    val created: ReadonlyDoodleSnapshot
 ): NbtEditorActionSnapshot(uid)
 
 @Stable
 class EditActionSnapshot(
     uid: Long,
-    val old: ReadonlyDoodle,
-    val new: ReadonlyDoodle
+    val old: ReadonlyDoodleSnapshot,
+    val new: ReadonlyDoodleSnapshot
 ): NbtEditorActionSnapshot(uid)
 
 @Stable

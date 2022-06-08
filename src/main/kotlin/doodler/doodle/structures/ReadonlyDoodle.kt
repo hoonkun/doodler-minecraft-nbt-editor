@@ -48,7 +48,7 @@ class TagDoodle(
 
     var action by mutableStateOf<ActionDoodle?>(null)
 
-    val children = mutableListOf<ReadonlyDoodle>()
+    val children = mutableStateListOf<ReadonlyDoodle>()
 
     val items: SnapshotStateList<Doodle> by derivedStateOf {
         mutableListOf<Doodle>().apply {

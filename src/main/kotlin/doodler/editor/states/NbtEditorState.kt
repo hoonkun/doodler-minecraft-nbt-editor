@@ -367,8 +367,12 @@ class NbtEditorState(
 
             when (criteria) {
                 CannotBePasted -> throw InternalAssertionException(
-                    listOf(activator.doodler.doodle.structures.CanBePastedIntoCompound::class.java.simpleName, activator.doodler.doodle.structures.CanBePastedIntoArray::class.java.simpleName, activator.doodler.doodle.structures.CanBePastedIntoList::class.java.simpleName),
-                    activator.doodler.doodle.structures.CannotBePasted::class.java.simpleName
+                    listOf(
+                        CanBePastedIntoCompound::class.java.simpleName,
+                        CanBePastedIntoArray::class.java.simpleName,
+                        CanBePastedIntoList::class.java.simpleName
+                    ),
+                    CannotBePasted::class.java.simpleName
                 )
                 CanBePastedIntoCompound ->
                     if (!into.tag.type.isCompound()) throw InvalidPasteTargetException(into.tag.type)
@@ -389,7 +393,7 @@ class NbtEditorState(
 
             actions.selector.select(created)
 
-            actions.history.newAction(PasteActionSnapshot(uid(), created))
+            actions.history.newAction(PasteActionSnapshot(uid(), created.snapshot()))
 
         }
 
@@ -447,31 +451,31 @@ class NbtEditorState(
             new.parent = into
 
             actions.selector.select(new)
-            actions.history.newAction(CreateActionSnapshot(uid(), new))
+            actions.history.newAction(CreateActionSnapshot(uid(), new.snapshot()))
 
             createInto = null
         }
 
         inner class Internal {
 
-            fun create(targets: List<ReadonlyDoodle>) {
+            fun create(targets: List<ReadonlyDoodleSnapshot>) {
                 targets.forEach {
-                    val eachParent = it.parent ?: throw ParentNotFoundException()
+                    val eachParent = it.doodle.parent ?: throw ParentNotFoundException()
                     if (!eachParent.expanded) eachParent.expand()
 
-                    eachParent.createChild(it, it.index)
+                    eachParent.createChild(it.doodle, it.index)
                 }
 
-                actions.selector.select(targets)
+                actions.selector.select(targets.map { it.doodle })
             }
 
-            fun create(target: ReadonlyDoodle) {
-                val eachParent = target.parent ?: throw ParentNotFoundException()
+            fun create(target: ReadonlyDoodleSnapshot) {
+                val eachParent = target.doodle.parent ?: throw ParentNotFoundException()
                 if (!eachParent.expanded) eachParent.expand()
 
-                eachParent.createChild(target, target.index)
+                eachParent.createChild(target.doodle, target.index)
 
-                actions.selector.select(target)
+                actions.selector.select(target.doodle)
             }
 
         }
@@ -522,26 +526,28 @@ class NbtEditorState(
         }
 
         fun edit(old: ReadonlyDoodle, new: ReadonlyDoodle) {
-            internal.edit(old, new)
-            actions.history.newAction(EditActionSnapshot(uid(), old, new))
+            val oldSnapshot = old.snapshot()
+            val newSnapshot = ReadonlyDoodleSnapshot(new, oldSnapshot.index)
+            internal.edit(oldSnapshot, newSnapshot)
+            actions.history.newAction(EditActionSnapshot(uid(), oldSnapshot, newSnapshot))
         }
 
         inner class Internal {
 
-            fun edit(old: ReadonlyDoodle, new: ReadonlyDoodle) {
-                val into = old.parent ?: throw ParentNotFoundException()
+            fun edit(old: ReadonlyDoodleSnapshot, new: ReadonlyDoodleSnapshot) {
+                val into = old.doodle.parent ?: throw ParentNotFoundException()
 
-                val conflict = (new as? TagDoodle)?.hasConflict()
+                val conflict = (new.doodle as? TagDoodle)?.hasConflict()
                 if (conflict != null) throw NameConflictException("edit", conflict.name ?: "root", conflict.where)
 
                 actions.deleter.internal.delete(old)
                 actions.creator.internal.create(new)
 
-                new.parent = into
+                new.doodle.parent = into
 
                 into.action = null
 
-                actions.selector.select(new)
+                actions.selector.select(new.doodle)
             }
 
         }
@@ -565,7 +571,10 @@ class NbtEditorState(
             actions.history.newAction(
                 DeleteActionSnapshot(
                     uid(),
-                    selected.sortedBy { items.indexOf(it) }.onEach { it.delete() }.toMutableStateList()
+                    selected.sortedBy { items.indexOf(it) }
+                        .map { it.snapshot() }
+                        .onEach { it.doodle.delete() }
+                        .toMutableStateList()
                 )
             )
             selected.clear()
@@ -573,13 +582,13 @@ class NbtEditorState(
 
         inner class Internal {
 
-            fun delete(targets: List<ReadonlyDoodle>) {
-                targets.forEach { it.delete() }
+            fun delete(targets: List<ReadonlyDoodleSnapshot>) {
+                targets.forEach { it.doodle.delete() }
                 selected.clear()
             }
 
-            fun delete(target: ReadonlyDoodle) {
-                target.delete()
+            fun delete(target: ReadonlyDoodleSnapshot) {
+                target.doodle.delete()
                 selected.clear()
             }
 
