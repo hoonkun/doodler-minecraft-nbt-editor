@@ -56,7 +56,7 @@ fun ActionButton(
             }
             .alpha(if (enabled()) 1f else 0.3f),
         content = {
-            Box(modifier = Modifier.padding(top = 8.dp, bottom = 8.dp, start = 8.dp, end = 8.dp), content = content)
+            Box(modifier = Modifier.padding(5.dp), content = content)
         }
     )
 }
@@ -68,7 +68,7 @@ fun TagCreatorButton(
     onClick: () -> Unit
 ) {
     ActionButton(enabled, onClick = onClick) {
-        TagDoodleTypeText(type, enabled = enabled, fontSize = MaterialTheme.typography.h4.fontSize)
+        TagDoodleTypeText(type, enabled = enabled, fontSize = MaterialTheme.typography.h5.fontSize)
     }
 }
 
@@ -76,7 +76,7 @@ fun TagCreatorButton(
 fun EditorActionButton(
     text: String,
     color: Color,
-    fontSize: TextUnit = MaterialTheme.typography.h4.fontSize,
+    fontSize: TextUnit = MaterialTheme.typography.h5.fontSize,
     rotate: Pair<Float, Int>? = null,
     enabled: BooleanProvider = TrueProvider,
     onRightClick: () -> Unit = EmptyLambda,

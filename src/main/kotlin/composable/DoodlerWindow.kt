@@ -40,7 +40,7 @@ fun DoodlerWindow(
                 is EditorDoodlerWindow ->
                     when (window.type) {
                         DoodlerEditorType.WORLD -> DpSize(700.dp, 575.dp)
-                        DoodlerEditorType.STANDALONE -> DpSize(500.dp, 525.dp)
+                        DoodlerEditorType.STANDALONE -> DpSize(850.dp, 775.dp)
                     }
             }
     ),
