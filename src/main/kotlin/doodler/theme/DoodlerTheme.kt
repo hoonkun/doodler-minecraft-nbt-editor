@@ -73,6 +73,9 @@ class DoodlerTheme {
                 val NormalExpandableValue = Color(0xff969696)
                 val SelectedExpandableValue = NormalExpandableValue.offsetRGB(0.0274f)
 
+                val NormalIndex = Color(0xff7a7a7a)
+                val SelectedIndex = NormalExpandableValue.offsetRGB(0.0274f)
+
                 val NormalItemBackground = Color(0xff2b2b2b)
                 val SelectedItemBackground = Color(0xff5b7341)
                 val ActionTargetItemBackground = Color(0xff426bad)
@@ -85,6 +88,9 @@ class DoodlerTheme {
 
                 fun TagTypeBackground(selected: Boolean) =
                     if (!selected) NormalTagTypeBackground else SelectedTagTypeBackground
+
+                fun IndexTextColor(selected: Boolean) =
+                    if (!selected) NormalIndex else SelectedIndex
 
                 fun ExpandableValueTextColor(selected: Boolean) =
                     if (!selected) NormalExpandableValue else SelectedExpandableValue

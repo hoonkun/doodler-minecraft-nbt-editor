@@ -168,7 +168,7 @@ fun ExpandableTagItemDoodleIndex(
     content = {
         TagDoodleContentText(
             text = "$index:",
-            color = DoodlerTheme.Colors.DoodleItem.TagTypeBackground(selected()),
+            color = DoodlerTheme.Colors.DoodleItem.IndexTextColor(selected()),
             fontSize = MaterialTheme.typography.h3.fontSize
         )
     }
