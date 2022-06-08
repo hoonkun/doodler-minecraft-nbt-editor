@@ -68,10 +68,10 @@ class DoodlerTheme {
 
             companion object {
                 val NormalTagTypeBackground = Color(0xff3c3c3c)
-                val SelectedTagTypeBackground = NormalTagTypeBackground.offsetRGB(0.625f)
+                val SelectedTagTypeBackground = NormalTagTypeBackground.offsetRGB(0.0392f)
 
                 val NormalExpandableValue = Color(0xff969696)
-                val SelectedExpandableValue = NormalExpandableValue.offsetRGB(0.4375f)
+                val SelectedExpandableValue = NormalExpandableValue.offsetRGB(0.0274f)
 
                 val NormalItemBackground = Color(0xff2b2b2b)
                 val SelectedItemBackground = Color(0xff5b7341)
