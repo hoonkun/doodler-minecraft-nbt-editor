@@ -174,9 +174,13 @@ fun ExpandableTagItemDoodleIndex(
     }
 )
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun DepthLine(
+    focused: BooleanProvider,
     selected: BooleanProvider = FalseProvider,
+    focus: () -> Unit,
+    unFocus: () -> Unit,
     collapse: () -> Unit
 ){
     val hoverInteractionSource = remember { MutableInteractionSource() }
@@ -184,10 +188,13 @@ fun DepthLine(
 
     Canvas(
         modifier = Modifier.width(40.dp).fillMaxHeight()
+            .onPointerEvent(PointerEventType.Enter) { focus() }
+            .onPointerEvent(PointerEventType.Exit) { unFocus() }
+            .hoverable(hoverInteractionSource)
             .clickable { collapse() },
     ) {
         drawLine(
-            DoodlerTheme.Colors.DoodleItem.DepthLine(selected = selected(), hovered = hovered),
+            DoodlerTheme.Colors.DoodleItem.DepthLine(selected = selected(), hovered = hovered || focused()),
             start = Offset.Zero,
             end = Offset(0f, size.height)
         )
@@ -237,11 +244,14 @@ fun RowScope.ReadonlyDoodleContent(
     hoverInteractionSource: MutableInteractionSource,
     pressedState: MutableState<Boolean>,
     expand: Boolean = true,
+    focus: (ReadonlyDoodle?) -> Unit,
     onClick: MouseClickScope.() -> Unit,
 ) = Box(
     modifier = Modifier.fillMaxHeight()
+        .onPointerEvent(PointerEventType.Enter) { focus(doodle) }
+        .onPointerEvent(PointerEventType.Exit) { focus(null) }
         .onPointerEvent(PointerEventType.Press) { pressedState.value = true }
-        .onPointerEvent(PointerEventType.Release) { pressedState.value = false; }
+        .onPointerEvent(PointerEventType.Release) { pressedState.value = false }
         .mouseClickable(onClick = onClick)
         .hoverable(hoverInteractionSource)
         .let { if (expand) it.weight(1f) else it },
@@ -428,6 +438,7 @@ fun ReadonlyDoodle(
     toggle: (ReadonlyDoodle) -> Unit,
     select: (ReadonlyDoodle) -> Unit,
     collapse: (TagDoodle) -> Unit,
+    stateProvider: Provider<NbtEditorState>,
     selected: BooleanProvider = FalseProvider,
     actionTarget: BooleanProvider = FalseProvider,
     enabled: BooleanProvider = TrueProvider
@@ -448,7 +459,7 @@ fun ReadonlyDoodle(
                     drawRect(DoodlerTheme.Colors.DoodleItem.NormalItemBackground.copy(alpha = 0.68627f))
                 } else {
                     drawRect(DoodlerTheme.Colors.DoodleItem.Background(
-                        hovered,
+                        hovered || stateProvider().focused == doodle,
                         pressedState.value,
                         selected(),
                         actionTarget()
@@ -458,12 +469,21 @@ fun ReadonlyDoodle(
             }
     ) {
         for (parent in hierarchy) {
-            DepthLine(selected) { collapse(parent) }
+            val focus = { stateProvider().focused = parent }
+            val unFocus = { stateProvider().focused = null }
+            DepthLine(
+                focused = { stateProvider().focused == parent },
+                selected = selected,
+                focus = focus,
+                unFocus = unFocus,
+                collapse = { collapse(parent) }
+            )
         }
         ReadonlyDoodleContent(
             doodle = doodle,
             hoverInteractionSource = hoverInteractionSource,
             pressedState = pressedState,
+            focus = { stateProvider().focused = it },
             onClick = {
                 if (!enabled()) return@ReadonlyDoodleContent
                 if (buttons.isPrimaryPressed) toggle(doodle)
@@ -493,7 +513,7 @@ fun ActionDoodle(
             }
     ) {
         for (parent in hierarchy) {
-            DepthLine(TrueProvider, EmptyLambda)
+            DepthLine(FalseProvider, TrueProvider, EmptyLambda, EmptyLambda, EmptyLambda)
         }
         ActionDoodleContent(
             doodle = doodle,
@@ -505,16 +525,18 @@ fun ActionDoodle(
 @Composable
 fun TagDoodleDepthPreview(
     doodleProvider: Provider<Pair<ReadonlyDoodle, Int>?>,
+    focus: (ReadonlyDoodle?) -> Unit,
     lazyStateProvider: Provider<LazyListState>,
     scrollTo: (ReadonlyDoodle) -> Unit
 ) {
     val (doodle, index) = doodleProvider() ?: return
     val lazyState = lazyStateProvider()
 
-    if (lazyState.firstVisibleItemIndex > index) return
+    if (lazyState.firstVisibleItemIndex <= index) return
 
     TagDoodlePreview(
         doodleProvider = { doodle },
+        focus = focus,
         scrollTo = scrollTo
     )
 }
@@ -523,6 +545,7 @@ fun TagDoodleDepthPreview(
 @Composable
 fun TagDoodlePreview(
     doodleProvider: Provider<ReadonlyDoodle>,
+    focus: (ReadonlyDoodle?) -> Unit = { },
     scrollTo: (ReadonlyDoodle) -> Unit,
     modifier: Modifier = Modifier.fillMaxWidth()
 ) {
@@ -553,6 +576,7 @@ fun TagDoodlePreview(
             hoverInteractionSource = hoverInteractionSource,
             pressedState = pressedState,
             expand = false,
+            focus = focus,
             onClick = {
                 scrollTo(doodleProvider())
             }

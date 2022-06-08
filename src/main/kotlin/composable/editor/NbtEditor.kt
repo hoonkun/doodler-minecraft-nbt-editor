@@ -75,8 +75,9 @@ fun BoxScope.NbtEditor(
     }
 
     TagDoodleDepthPreview(
-        doodleProvider = { editor.state.focusedDepth?.let { Pair(it, editor.state.items.indexOf(it)) } },
+        doodleProvider = { editor.state.focused?.let { Pair(it, editor.state.items.indexOf(it)) } },
         lazyStateProvider = { editor.state.lazyState },
+        focus = { editor.state.focused = it },
         scrollTo = scrollTo
     )
 
@@ -89,6 +90,7 @@ fun BoxScope.NbtEditor(
                         toggle = toggle,
                         select = select,
                         collapse = depthCollapse,
+                        stateProvider = { editor.state },
                         selected = { editor.state.selected.contains(item) },
                         enabled = { editor.state.action == null },
                         actionTarget = { editor.state.action?.parent == item }

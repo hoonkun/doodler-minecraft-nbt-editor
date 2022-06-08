@@ -31,7 +31,7 @@ class NbtEditorState(
      val currentLog = mutableStateOf<EditorLog?>(null)
 
     val selected = mutableStateListOf<ReadonlyDoodle>()
-    var focusedDepth by mutableStateOf<ReadonlyDoodle?>(null)
+    var focused by mutableStateOf<ReadonlyDoodle?>(null)
 
     val lazyState = LazyListState()
 
