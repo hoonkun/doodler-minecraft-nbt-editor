@@ -35,7 +35,7 @@ class NbtEditorState(
 
     val lazyState = LazyListState()
 
-    val items: SnapshotStateList<Doodle> = root.items
+    val items: SnapshotStateList<Doodle> by derivedStateOf { root.items }
     val action by derivedStateOf { items.find { it is ActionDoodle } as? ActionDoodle }
 
     var lastSaveUid by mutableStateOf(0L)

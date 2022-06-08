@@ -8,13 +8,14 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.zIndex
+import composable.rememberGlobalKeys
 import doodler.doodle.structures.ActionDoodle
 import doodler.doodle.structures.ReadonlyDoodle
 import doodler.doodle.structures.TagDoodle
@@ -34,18 +35,13 @@ fun BoxScope.NbtEditor(
 
     val coroutine = rememberCoroutineScope()
 
-    val keys = remember { mutableListOf<Key>() }
+    val keys = rememberGlobalKeys()
 
     val toggle: (ReadonlyDoodle) -> Unit = toggle@ { doodle ->
         if (doodle !is TagDoodle || !doodle.tag.canHaveChildren) return@toggle
 
         if (doodle.expanded) doodle.collapse()
         else doodle.expand()
-    }
-
-    val onKeyEvent: (KeyEvent) -> Boolean = {
-        if (it.type == KeyEventType.KeyDown) keys.add(it.key)
-        else keys.remove(it.key)
     }
 
     val select: (ReadonlyDoodle) -> Unit = select@ {
@@ -78,8 +74,6 @@ fun BoxScope.NbtEditor(
         coroutine.launch { editor.state.lazyState.scrollToItem(editor.state.items.indexOf(it)) }
     }
 
-    KeyEventWatcher(onKeyEvent = onKeyEvent)
-
     TagDoodleDepthPreview(
         doodleProvider = { editor.state.focusedDepth?.let { Pair(it, editor.state.items.indexOf(it)) } },
         lazyStateProvider = { editor.state.lazyState },
@@ -96,7 +90,7 @@ fun BoxScope.NbtEditor(
                         select = select,
                         collapse = depthCollapse,
                         selected = { editor.state.selected.contains(item) },
-                        enabled = { editor.state.action != null },
+                        enabled = { editor.state.action == null },
                         actionTarget = { editor.state.action?.parent == item }
                     )
                 is ActionDoodle ->
@@ -123,11 +117,6 @@ fun BoxScope.NbtEditor(
 }
 
 @Composable
-fun KeyEventWatcher(
-    onKeyEvent: (KeyEvent) -> Boolean
-) = Box(modifier = Modifier.onPreviewKeyEvent(onKeyEvent))
-
-@Composable
 fun LazyScrollEffect(
     coroutine: CoroutineScope,
     stateProvider: Provider<NbtEditorState>
@@ -139,20 +128,21 @@ fun LazyScrollEffect(
 
 @Composable
 fun BoxScope.LazyScrollbarDecoration(
-    itemsProvider: Provider<SnapshotStateList<ReadonlyDoodle>>,
-    selectedProvider: Provider<SnapshotStateList<ReadonlyDoodle>>,
+    itemsProvider: Provider<List<ReadonlyDoodle>>,
+    selectedProvider: Provider<List<ReadonlyDoodle>>,
     scrollTo: (ReadonlyDoodle) -> Unit
 ) {
-    val selected = selectedProvider()
-    if (selected.isEmpty()) return
-
     val items = itemsProvider()
+    val selected = selectedProvider()
 
     val minSize = 3.dp
     val size = 1f / items.size
     val positionUnit = 1f / items.lastIndex
 
-    Box(modifier = Modifier.align(Alignment.TopEnd).fillMaxHeight().wrapContentWidth()) {
+    Box(
+        contentAlignment = Alignment.TopEnd,
+        modifier = Modifier.align(Alignment.TopEnd).fillMaxHeight().wrapContentWidth().zIndex(99f)
+    ) {
         for (item in items) {
             LazyScrollbarDecorationItem(
                 size = size, minSize = minSize, position = positionUnit * items.indexOf(item),
@@ -174,17 +164,35 @@ fun BoxScope.LazyScrollbarDecorationItem(
     isSelectedProvider: Provider<Boolean>,
     scrollTo: (ReadonlyDoodle) -> Unit
 ) {
-    val hoverInteractionSource = remember { MutableInteractionSource() }
-    val hovered by hoverInteractionSource.collectIsHoveredAsState()
+    val indicatorHoverSource = remember { MutableInteractionSource() }
+    val indicatorHovered by indicatorHoverSource.collectIsHoveredAsState()
 
-    Column {
-        if (position > 0) Spacer(modifier = Modifier.weight(position))
+    val previewHoverSource = remember { MutableInteractionSource() }
+    val previewHovered by previewHoverSource.collectIsHoveredAsState()
 
-        Box(contentAlignment = Alignment.CenterEnd) {
+    Row {
+
+        if ((indicatorHovered || previewHovered) && isSelectedProvider()) {
+            Column {
+                if (position > 0) Spacer(modifier = Modifier.weight(position))
+
+                TagDoodlePreview(
+                    doodleProvider = doodleProvider,
+                    scrollTo = scrollTo,
+                    modifier = Modifier.wrapContentWidth().hoverable(previewHoverSource)
+                )
+
+                if (position < 1) Spacer(modifier = Modifier.weight(1 - position))
+            }
+        }
+
+        Column {
+            if (position > 0) Spacer(modifier = Modifier.weight(position))
+
             Canvas(
                 modifier = Modifier
                     .fillMaxHeight(size).defaultMinSize(minSize).width(20.dp)
-                    .hoverable(hoverInteractionSource)
+                    .hoverable(indicatorHoverSource)
             ) {
                 drawRect(
                     if (isSelectedProvider()) DoodlerTheme.Colors.Editor.ScrollbarDecorSelected
@@ -192,20 +200,15 @@ fun BoxScope.LazyScrollbarDecorationItem(
                     size = this.size
                 )
                 drawRect(
-                    if (!isSelectedProvider() || hovered) Color.Transparent
+                    if (!isSelectedProvider() || indicatorHovered) Color.Transparent
                     else DoodlerTheme.Colors.Background.copy(alpha = 0.35f),
                     size = this.size
                 )
             }
-            TagDoodlePreview(
-                doodleProvider = doodleProvider,
-                scrollTo = scrollTo,
-                modifier = Modifier.wrapContentWidth().align(Alignment.TopEnd).offset(x = (-20).dp)
-                    .hoverable(hoverInteractionSource)
-            )
+
+            if (position < 1) Spacer(modifier = Modifier.weight(1 - position))
         }
 
-        if (position < 1) Spacer(modifier = Modifier.weight(1 - position))
     }
 
 }

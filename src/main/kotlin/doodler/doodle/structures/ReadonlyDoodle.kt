@@ -52,7 +52,10 @@ class TagDoodle(
 
     val items: SnapshotStateList<Doodle> by derivedStateOf {
         mutableListOf<Doodle>().apply {
-            parent?.action?.let { if (it is EditorDoodle && it.source.path == path) add(it) else add(this@TagDoodle) }
+            parent?.action.also {
+                if (it is EditorDoodle && it.source.path == path) add(it)
+                else if (depth != -1) add(this@TagDoodle)
+            }
 
             if (!expanded) return@apply
 

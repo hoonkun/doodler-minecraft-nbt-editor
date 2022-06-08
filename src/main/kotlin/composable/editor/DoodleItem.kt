@@ -45,7 +45,7 @@ fun DoodleItemRoot(
     content: @Composable RowScope.() -> Unit
 ) = Row(
     verticalAlignment = Alignment.CenterVertically,
-    modifier = Modifier.then(modifier).fillMaxWidth().padding(start = 20.dp).height(50.dp),
+    modifier = Modifier.then(modifier).padding(start = 20.dp).height(50.dp),
     content = content
 )
 
@@ -235,12 +235,14 @@ fun RowScope.ReadonlyDoodleContent(
     doodle: ReadonlyDoodle,
     hoverInteractionSource: MutableInteractionSource,
     pressInteractionSource: MutableInteractionSource,
+    expand: Boolean = true,
     onClick: MouseClickScope.() -> Unit,
 ) = Box(
-    modifier = Modifier.weight(1f).fillMaxHeight()
+    modifier = Modifier.fillMaxHeight()
         .clickable(pressInteractionSource, null, onClick = EmptyLambda)
         .mouseClickable(onClick = onClick)
-        .hoverable(hoverInteractionSource),
+        .hoverable(hoverInteractionSource)
+        .let { if (expand) it.weight(1f) else it },
     content = {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -436,15 +438,17 @@ fun ReadonlyDoodle(
     val hierarchy = remember(doodle) { doodle.hierarchy() }
 
     DoodleItemRoot(
-        modifier = Modifier.drawWithContent {
-            if (!enabled()) {
-                drawContent()
-                drawRect(DoodlerTheme.Colors.DoodleItem.NormalItemBackground.copy(alpha = 0.68627f))
-            } else {
-                drawRect(DoodlerTheme.Colors.DoodleItem.Background(hovered, pressed, selected(), actionTarget()))
-                drawContent()
+        modifier = Modifier.fillMaxWidth()
+            .drawWithContent {
+                drawRect(DoodlerTheme.Colors.DoodleItem.NormalItemBackground)
+                if (!enabled()) {
+                    drawContent()
+                    drawRect(DoodlerTheme.Colors.DoodleItem.NormalItemBackground.copy(alpha = 0.68627f))
+                } else {
+                    drawRect(DoodlerTheme.Colors.DoodleItem.Background(hovered, pressed, selected(), actionTarget()))
+                    drawContent()
+                }
             }
-        }
     ) {
         for (parent in hierarchy) {
             DepthLine(selected) { collapse(parent) }
@@ -470,13 +474,16 @@ fun ActionDoodle(
     val hierarchy = remember(doodle) { doodle.hierarchy() }
 
     DoodleItemRoot(
-        modifier = Modifier.drawBehind {
-            drawRect(
-                DoodlerTheme.Colors.DoodleItem.Background(
-                    hovered = false, pressed = false, selected = true, highlightAsActionTarget = true
+        modifier = Modifier
+            .fillMaxWidth()
+            .drawBehind {
+                drawRect(DoodlerTheme.Colors.DoodleItem.NormalItemBackground)
+                drawRect(
+                    DoodlerTheme.Colors.DoodleItem.Background(
+                        hovered = false, pressed = false, selected = true, highlightAsActionTarget = true
+                    )
                 )
-            )
-        }
+            }
     ) {
         for (parent in hierarchy) {
             DepthLine(TrueProvider, EmptyLambda)
@@ -523,6 +530,7 @@ fun TagDoodlePreview(
             .zIndex(99f)
             .border(2.dp, DoodlerTheme.Colors.DoodleItem.DepthPreviewBorder)
             .drawWithContent {
+                drawRect(DoodlerTheme.Colors.DoodleItem.NormalItemBackground)
                 drawRect(
                     DoodlerTheme.Colors.DoodleItem.Background(
                         hovered = hovered,
@@ -538,6 +546,7 @@ fun TagDoodlePreview(
             doodle = doodleProvider(),
             hoverInteractionSource = hoverInteractionSource,
             pressInteractionSource = pressInteractionSource,
+            expand = false,
             onClick = {
                 scrollTo(doodleProvider())
             }

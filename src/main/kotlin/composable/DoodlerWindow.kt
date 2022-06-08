@@ -5,6 +5,8 @@ import androidx.compose.material.Typography
 import androidx.compose.material.ripple.LocalRippleTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.DpSize
 import doodler.unit.dp
@@ -17,6 +19,12 @@ import doodler.application.state.DoodlerAppState
 import doodler.application.structure.*
 import doodler.theme.DoodlerTheme
 import doodler.unit.sp
+
+
+private val keys = mutableListOf<Key>()
+
+@Composable
+fun rememberGlobalKeys() = remember { keys }
 
 @Composable
 fun DoodlerWindow(
@@ -36,6 +44,12 @@ fun DoodlerWindow(
                     }
             }
     ),
+    onPreviewKeyEvent = {
+        if (it.type == KeyEventType.KeyDown) keys.add(it.key)
+        else keys.remove(it.key)
+
+        false
+    },
     title = window.title
 ) {
     MaterialTheme(
