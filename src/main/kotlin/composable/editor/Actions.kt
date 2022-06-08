@@ -1,6 +1,7 @@
 package composable.editor
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
@@ -48,6 +49,7 @@ fun ActionRoot(
     modifier = Modifier
         .background(DoodlerTheme.Colors.Editor.ActionBackground, RoundedCornerShape(4.dp))
         .wrapContentSize()
+        .clickable {  }
         .padding(5.dp),
     content = content
 )

@@ -42,7 +42,7 @@ fun ActionButton(
     Box(
         modifier = Modifier
             .wrapContentSize()
-            .padding(top = 12.dp, bottom = 12.dp, start = 8.dp, end = 8.dp)
+            .padding(top = 4.dp, bottom = 4.dp)
             .hoverable(hoverInteractionSource, enabled())
             .mouseClickable(enabled()) {
                 if (buttons.isPrimaryPressed) onClick()
@@ -55,7 +55,9 @@ fun ActionButton(
                 drawRoundRect(color = color, cornerRadius = CornerRadius(3.dp.value))
             }
             .alpha(if (enabled()) 1f else 0.3f),
-        content = content
+        content = {
+            Box(modifier = Modifier.padding(top = 8.dp, bottom = 8.dp, start = 8.dp, end = 8.dp), content = content)
+        }
     )
 }
 
@@ -66,7 +68,7 @@ fun TagCreatorButton(
     onClick: () -> Unit
 ) {
     ActionButton(enabled, onClick = onClick) {
-        TagDoodleType(type, fontSize = MaterialTheme.typography.h4.fontSize)
+        TagDoodleTypeText(type, enabled = enabled, fontSize = MaterialTheme.typography.h4.fontSize)
     }
 }
 
