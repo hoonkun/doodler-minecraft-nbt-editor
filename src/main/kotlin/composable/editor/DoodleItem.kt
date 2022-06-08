@@ -137,7 +137,7 @@ fun NumberTagDoodleValue(
 @Composable
 fun StringTagDoodleValue(
     value: String
-) = TagDoodleContentText(text = value, color = DoodlerTheme.Colors.Text.IdeStringLiteral)
+) = TagDoodleContentText(text = "\"${value}\"", color = DoodlerTheme.Colors.Text.IdeStringLiteral)
 
 @Composable
 fun ExpandableTagDoodleValue(
