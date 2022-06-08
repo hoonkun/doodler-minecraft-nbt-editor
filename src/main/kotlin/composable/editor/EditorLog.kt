@@ -51,23 +51,30 @@ fun BoxScope.Log(
     }
 
     Box(
+        contentAlignment = Alignment.BottomStart,
         modifier = Modifier
             .align(Alignment.BottomStart)
             .fillMaxWidth().aspectRatio(4f)
             .alpha(alpha).drawBehind { drawBackgroundGradient() }
     ) {
-        Box(modifier = Modifier.background(log.level.background, RoundedCornerShape(6.dp))) {
-            Column(modifier = Modifier.padding(top = 20.dp, end = 40.dp, bottom = 20.dp, start = 20.dp)) {
+        Column(
+            modifier = Modifier
+                .padding(20.dp)
+        ) {
+            Column(modifier = Modifier
+                .background(log.level.background, RoundedCornerShape(6.dp))
+                .padding(top = 20.dp, end = 40.dp, bottom = 20.dp, start = 20.dp)
+            ) {
                 Row {
                     LogText(text = log.title, alpha = 0.85f)
                     if (log.summary != null) {
                         Spacer(modifier = Modifier.width(20.dp))
-                        LogText(text = log.summary, alpha = 0.7f, fontSize = MaterialTheme.typography.h4.fontSize)
+                        LogText(text = log.summary, alpha = 0.7f, fontSize = MaterialTheme.typography.h5.fontSize)
                     }
                 }
                 if (log.description != null) {
                     Spacer(modifier = Modifier.height(7.dp))
-                    LogText(log.description, alpha = 0.45f, fontSize = MaterialTheme.typography.h4.fontSize)
+                    LogText(log.description, alpha = 0.45f, fontSize = MaterialTheme.typography.h5.fontSize)
                 }
             }
         }
@@ -79,7 +86,7 @@ fun BoxScope.Log(
 fun LogText(
     text: String,
     alpha: Float,
-    fontSize: TextUnit = MaterialTheme.typography.h3.fontSize
+    fontSize: TextUnit = MaterialTheme.typography.h4.fontSize
 ) {
     Text(
         text = text,
