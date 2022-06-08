@@ -118,6 +118,8 @@ fun BoxScope.NbtEditor(
 
     Actions(stateProvider = { editor.state })
 
+    Log { editor.state.currentLog }
+
 }
 
 @Composable
