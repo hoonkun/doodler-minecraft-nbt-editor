@@ -26,8 +26,8 @@ fun BoxScope.Actions(
     val state = stateProvider()
     if (state.action != null) return
 
-    Row(modifier = Modifier.align(Alignment.TopEnd).padding(30.dp)) {
-        Column(modifier = Modifier.wrapContentSize().padding(end = 20.dp)) {
+    Row(modifier = Modifier.align(Alignment.TopEnd).padding(20.dp)) {
+        Column(modifier = Modifier.wrapContentSize().padding(end = 15.dp)) {
             HistoryAction(state)
             ElevatorAction(state)
         }
@@ -40,7 +40,7 @@ fun BoxScope.Actions(
 }
 
 @Composable
-fun ActionSpacer() = Spacer(modifier = Modifier.height(20.dp))
+fun ActionSpacer() = Spacer(modifier = Modifier.height(15.dp))
 
 @Composable
 fun ActionRoot(
