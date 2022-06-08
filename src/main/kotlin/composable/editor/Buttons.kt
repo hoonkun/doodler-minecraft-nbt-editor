@@ -77,9 +77,10 @@ fun EditorActionButton(
     fontSize: TextUnit = MaterialTheme.typography.h4.fontSize,
     rotate: Pair<Float, Int>? = null,
     enabled: BooleanProvider = TrueProvider,
+    onRightClick: () -> Unit = EmptyLambda,
     onClick: () -> Unit
 ) {
-    ActionButton(enabled, onClick = onClick) {
+    ActionButton(enabled, onClick = onClick, onRightClick = onRightClick) {
         DoodleText(
             text = text,
             color = color,

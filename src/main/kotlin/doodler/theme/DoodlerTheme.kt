@@ -48,8 +48,18 @@ class DoodlerTheme {
 
             companion object {
                 val CancelAction = Color(0xffe35d30)
+                val DeleteAction = Color(0xffe35d30)
                 val OkAction = Color(0xff408fe3)
                 val SaveAction = Color(0xff689f38)
+            }
+
+        }
+
+        class Editor {
+
+            companion object {
+                val ScrollbarDecorSelected = Color(0xff5b7341)
+                val ActionBackground = Color(0x19ffffff)
             }
 
         }
@@ -70,6 +80,8 @@ class DoodlerTheme {
                 val NormalDepthLine = Color(0xff3c3c3c)
                 val SelectedDepthLine = NormalDepthLine.offsetRGB(0.0627f)
                 val DepthLineHoverOffset = 0.1568f
+
+                val DepthPreviewBorder = Color(0xff646464)
 
                 fun TagTypeBackground(selected: Boolean) =
                     if (!selected) NormalTagTypeBackground else SelectedTagTypeBackground

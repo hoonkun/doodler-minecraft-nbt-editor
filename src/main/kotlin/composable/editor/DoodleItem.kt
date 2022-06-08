@@ -5,6 +5,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.MaterialTheme
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.zIndex
 import doodler.doodle.extensions.*
 import doodler.doodle.structures.*
 import doodler.editor.states.NbtEditorState
@@ -482,6 +484,63 @@ fun ActionDoodle(
         ActionDoodleContent(
             doodle = doodle,
             stateProvider = stateProvider
+        )
+    }
+}
+
+@Composable
+fun TagDoodleDepthPreview(
+    doodleProvider: Provider<Pair<ReadonlyDoodle, Int>?>,
+    lazyStateProvider: Provider<LazyListState>,
+    scrollTo: (ReadonlyDoodle) -> Unit
+) {
+    val (doodle, index) = doodleProvider() ?: return
+    val lazyState = lazyStateProvider()
+
+    if (lazyState.firstVisibleItemIndex > index) return
+
+    TagDoodlePreview(
+        doodleProvider = { doodle },
+        scrollTo = scrollTo
+    )
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun TagDoodlePreview(
+    doodleProvider: Provider<ReadonlyDoodle>,
+    scrollTo: (ReadonlyDoodle) -> Unit,
+    modifier: Modifier = Modifier.fillMaxWidth()
+) {
+    val pressInteractionSource = remember { MutableInteractionSource() }
+    val pressed by pressInteractionSource.collectIsPressedAsState()
+
+    val hoverInteractionSource = remember { MutableInteractionSource() }
+    val hovered by hoverInteractionSource.collectIsHoveredAsState()
+
+    DoodleItemRoot(
+        modifier = Modifier.then(modifier)
+            .zIndex(99f)
+            .border(2.dp, DoodlerTheme.Colors.DoodleItem.DepthPreviewBorder)
+            .drawWithContent {
+                drawRect(
+                    DoodlerTheme.Colors.DoodleItem.Background(
+                        hovered = hovered,
+                        pressed = pressed,
+                        selected = false,
+                        highlightAsActionTarget = false
+                    )
+                )
+                drawContent()
+            }
+    ) {
+        ReadonlyDoodleContent(
+            doodle = doodleProvider(),
+            hoverInteractionSource = hoverInteractionSource,
+            pressInteractionSource = pressInteractionSource,
+            onClick = {
+                scrollTo(doodleProvider())
+            }
         )
     }
 }
