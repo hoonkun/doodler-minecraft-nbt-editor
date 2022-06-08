@@ -14,11 +14,13 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import doodler.doodle.structures.*
+import doodler.doodle.structures.Doodle
 import doodler.editor.structures.*
 import doodler.exceptions.*
 import doodler.file.StateFile
 import java.io.File
 
+@Stable
 class NbtEditorState(
     val root: TagDoodle,
     private val file: StateFile,
@@ -33,12 +35,13 @@ class NbtEditorState(
 
     val lazyState = LazyListState()
 
-    val items get() = root.items
+    val items: SnapshotStateList<Doodle> = root.items
     val action by derivedStateOf { items.find { it is ActionDoodle } as? ActionDoodle }
 
     var lastSaveUid by mutableStateOf(0L)
 
     private val actions = NbtEditorActions()
+    val actionFlags = NbtEditorActionFlags()
 
     init {
         root.expand()
@@ -113,6 +116,20 @@ class NbtEditorState(
         val editor = Editor()
         
         val elevator = Elevator()
+
+    }
+
+    @Stable
+    inner class NbtEditorActionFlags {
+
+        val canBeSaved by derivedStateOf { actions.history.lastActionUid != lastSaveUid }
+        val canBeUndo by derivedStateOf { actions.history.canBeUndo }
+        val canBeRedo by derivedStateOf { actions.history.canBeRedo }
+
+        val canBeCopied by derivedStateOf { actions.clipboard.copyEnabled }
+        val canBePasted by derivedStateOf { actions.clipboard.pasteEnabled }
+
+        val canBeEdited by derivedStateOf { actions.editor.canBeEdited }
 
     }
 
@@ -257,7 +274,42 @@ class NbtEditorState(
     @Stable
     inner class Clipboard: Action() {
 
-        val stack = mutableStateListOf<Pair<PasteCriteria, List<ReadonlyDoodle>>>()
+        private val stack = mutableStateListOf<Pair<PasteCriteria, List<ReadonlyDoodle>>>()
+
+        private val criteria by derivedStateOf {
+            val targets = selected
+            val attributes = setOf(
+                *targets.map {
+                    if (it is ArrayValueDoodle) TagAttribute.Value
+                    else if (it is TagDoodle && it.tag.name != null) TagAttribute.Named
+                    else TagAttribute.Unnamed
+                }.toTypedArray()
+            )
+            val tagTypes = setOf(
+                *targets.mapNotNull {
+                    when (it) {
+                        is TagDoodle -> it.tag.type
+                        is ArrayValueDoodle -> it.parent?.tag?.type
+                    }
+                }.toTypedArray()
+            )
+
+            val criteria =
+                if (attributes.size != 1) CannotBePasted
+                else {
+                    val attribute = attributes.iterator().next()
+                    if (attribute == TagAttribute.Named) CanBePastedIntoCompound
+                    else if (attribute == TagAttribute.Unnamed && tagTypes.size == 1)
+                        CanBePastedIntoList(tagTypes.iterator().next())
+                    else if (attribute == TagAttribute.Value && tagTypes.size == 1)
+                        CanBePastedIntoArray(tagTypes.iterator().next())
+                    else CannotBePasted
+                }
+
+            criteria
+        }
+
+        val copyEnabled by derivedStateOf { criteria != CannotBePasted }
 
         val pasteEnabled by derivedStateOf {
             if (selected.isEmpty()) return@derivedStateOf false
@@ -286,6 +338,7 @@ class NbtEditorState(
             }
         }
 
+
         fun undo(snapshot: PasteActionSnapshot) {
             actions.deleter.internal.delete(snapshot.created)
         }
@@ -295,40 +348,11 @@ class NbtEditorState(
         }
 
         fun copy() {
-            val targets = selected
-            val attributes = setOf(*
-                targets.map {
-                    if (it is ArrayValueDoodle) TagAttribute.Value
-                    else if (it is TagDoodle && it.tag.name != null) TagAttribute.Named
-                    else TagAttribute.Unnamed
-                }.toTypedArray()
-            )
-            val tagTypes = setOf(*
-                targets.mapNotNull {
-                    when (it) {
-                        is TagDoodle -> it.tag.type
-                        is ArrayValueDoodle -> it.parent?.tag?.type
-                    }
-                }.toTypedArray()
-            )
-
-            val criteria =
-                if (attributes.size != 1) CannotBePasted
-                else {
-                    val attribute = attributes.iterator().next()
-                    if (attribute == TagAttribute.Named) CanBePastedIntoCompound
-                    else if (attribute == TagAttribute.Unnamed && tagTypes.size == 1)
-                        CanBePastedIntoList(tagTypes.iterator().next())
-                    else if (attribute == TagAttribute.Value && tagTypes.size == 1)
-                        CanBePastedIntoArray(tagTypes.iterator().next())
-                    else CannotBePasted
-                }
-
             if (criteria == CannotBePasted) return
 
             if (stack.size >= 5) stack.removeFirst()
 
-            stack.add(Pair(criteria, listOf(*targets.map { it.clone(null) }.toTypedArray())))
+            stack.add(Pair(criteria, listOf(*selected.map { it.clone(null) }.toTypedArray())))
         }
 
         fun paste() {
@@ -460,6 +484,13 @@ class NbtEditorState(
         private val internal = Internal()
 
         private var editTarget: ReadonlyDoodle? = null
+
+        val canBeEdited by derivedStateOf {
+            val first = selected.firstOrNull() ?: return@derivedStateOf false
+            if (first !is TagDoodle) return@derivedStateOf true
+
+            first.tag.name != null
+        }
 
         fun undo(snapshot: EditActionSnapshot) {
             internal.edit(snapshot.new, snapshot.old)

@@ -6,6 +6,7 @@ import doodler.nbt.AnyTag
 import doodler.nbt.TagType
 import doodler.nbt.tag.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import doodler.exceptions.*
 
 
@@ -49,7 +50,7 @@ class TagDoodle(
 
     val children = mutableListOf<ReadonlyDoodle>()
 
-    val items: List<Doodle> by derivedStateOf {
+    val items: SnapshotStateList<Doodle> by derivedStateOf {
         mutableListOf<Doodle>().apply {
             parent?.action?.let { if (it is EditorDoodle && it.source.path == path) add(it) else add(this@TagDoodle) }
 
@@ -57,7 +58,7 @@ class TagDoodle(
 
             action?.let { if (it is CreatorDoodle) add(it) }
             addAll(children.map { if (it is TagDoodle) it.items else listOf(it) }.flatten())
-        }
+        }.toMutableStateList()
     }
 
     override val value: String get() = if (tag.type.canHaveChildren()) valueOfExpandable(tag) else "${tag.value}"
