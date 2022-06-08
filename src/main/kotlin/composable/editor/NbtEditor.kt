@@ -10,8 +10,10 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.unit.Dp
 import doodler.doodle.structures.ActionDoodle
 import doodler.doodle.structures.ReadonlyDoodle
@@ -24,12 +26,15 @@ import doodler.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.NbtEditor(
     editor: NbtEditor
 ) {
 
     val coroutine = rememberCoroutineScope()
+
+    val keys = remember { mutableListOf<Key>() }
 
     val toggle: (ReadonlyDoodle) -> Unit = toggle@ { doodle ->
         if (doodle !is TagDoodle || !doodle.tag.canHaveChildren) return@toggle
@@ -38,8 +43,27 @@ fun BoxScope.NbtEditor(
         else doodle.expand()
     }
 
-    val select: (ReadonlyDoodle) -> Unit = {
+    val onKeyEvent: (KeyEvent) -> Boolean = {
+        if (it.type == KeyEventType.KeyDown) keys.add(it.key)
+        else keys.remove(it.key)
+    }
 
+    val select: (ReadonlyDoodle) -> Unit = select@ {
+        if (keys.contains(Key.CtrlLeft) && keys.contains(Key.ShiftLeft)) return@select
+
+        if (!editor.state.selected.contains(it)) {
+            if (keys.contains(Key.CtrlLeft))
+                editor.state.action { selector.multiSelectSingle(it) }
+            else if (keys.contains(Key.ShiftLeft))
+                editor.state.action { selector.multiSelectRange(it) }
+            else
+                editor.state.action { selector.select(it) }
+        } else {
+            if (keys.contains(Key.CtrlLeft) || keys.contains(Key.ShiftLeft) || editor.state.selected.size == 1)
+                editor.state.action { selector.unselect(it) }
+            else if (editor.state.selected.size > 1)
+                editor.state.action { selector.select(it) }
+        }
     }
 
     val depthCollapse: (TagDoodle) -> Unit = { target ->
@@ -53,6 +77,8 @@ fun BoxScope.NbtEditor(
     val scrollTo: (ReadonlyDoodle) -> Unit = {
         coroutine.launch { editor.state.lazyState.scrollToItem(editor.state.items.indexOf(it)) }
     }
+
+    KeyEventWatcher(onKeyEvent = onKeyEvent)
 
     TagDoodleDepthPreview(
         doodleProvider = { editor.state.focusedDepth?.let { Pair(it, editor.state.items.indexOf(it)) } },
@@ -93,6 +119,11 @@ fun BoxScope.NbtEditor(
     Actions(stateProvider = { editor.state })
 
 }
+
+@Composable
+fun KeyEventWatcher(
+    onKeyEvent: (KeyEvent) -> Boolean
+) = Box(modifier = Modifier.onPreviewKeyEvent(onKeyEvent))
 
 @Composable
 fun LazyScrollEffect(

@@ -599,8 +599,19 @@ class NbtEditorState(
             selected.addAll(targets)
         }
 
-        fun multiSelectRange(items: List<ReadonlyDoodle>) {
-            selected.addAll(items.filter { !selected.contains(it) })
+        fun multiSelectRange(target: ReadonlyDoodle) {
+            val lastSelected = selected.lastOrNull() ?: return select(target)
+            val from = items.indexOf(lastSelected)
+            val to = items.indexOf(target)
+
+            val targets = items.filterIsInstance<ReadonlyDoodle>()
+                .slice(
+                    if (from < to) from + 1 until to + 1
+                    else to until from
+                )
+                .filter { !selected.contains(it) }
+
+            selected.addAll(targets)
         }
 
         fun multiSelectSingle(target: ReadonlyDoodle) {
