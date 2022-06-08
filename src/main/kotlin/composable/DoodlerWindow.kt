@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.DpSize
 import doodler.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
+import composable.editor.standalone.StandaloneNbtEditor
 import composable.intro.Intro
 import composable.selector.Selector
 import doodler.application.state.DoodlerAppState
@@ -53,8 +54,15 @@ fun DoodlerWindow(
         ) {
             when (window) {
                 is IntroDoodlerWindow -> Intro { appState.sketch(SelectorDoodlerWindow("doodler: open '${it.displayName}'", it)) }
-                is SelectorDoodlerWindow -> Selector(window.targetType) { }
-                is EditorDoodlerWindow -> {}
+                is SelectorDoodlerWindow -> Selector(window.targetType) { file, type ->
+                    appState.sketch(EditorDoodlerWindow("", type, file.absolutePath))
+                }
+                is EditorDoodlerWindow -> {
+                    when (window.type) {
+                        DoodlerEditorType.STANDALONE -> StandaloneNbtEditor(window.path)
+                        DoodlerEditorType.WORLD -> {  }
+                    }
+                }
             }
         }
     }

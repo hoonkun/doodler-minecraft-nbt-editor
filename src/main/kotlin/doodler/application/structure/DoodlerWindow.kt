@@ -15,7 +15,8 @@ class SelectorDoodlerWindow(
 
 class EditorDoodlerWindow(
     title: String,
-    val type: DoodlerEditorType
+    val type: DoodlerEditorType,
+    val path: String
 ): DoodlerWindow(title)
 
 enum class DoodlerEditorType(val displayName: String) {

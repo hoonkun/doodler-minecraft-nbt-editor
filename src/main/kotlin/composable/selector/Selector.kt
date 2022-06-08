@@ -109,7 +109,7 @@ enum class CandidateType(
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun Selector(targetType: DoodlerEditorType, onSelect: (File) -> Unit) {
+fun Selector(targetType: DoodlerEditorType, onSelect: (File, DoodlerEditorType) -> Unit) {
 
     var path by remember { mutableStateOf(TextFieldValue("/", selection = TextRange(1))) }
     val entirePath by remember(path.text) { derivedStateOf { "$BasePath${path.text}" } }
@@ -216,7 +216,7 @@ fun Selector(targetType: DoodlerEditorType, onSelect: (File) -> Unit) {
             }
             requester.requestFocus()
         } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-            if (!complete() && selected != null && keys.ctrl) onSelect(selected!!)
+            if (!complete() && selected != null && keys.ctrl) onSelect(selected!!, targetType)
         } else if (it.key == Key.CtrlLeft || it.key == Key.CtrlRight) {
             keys.ctrl = it.type == KeyEventType.KeyDown
         } else if (it.key == Key.ShiftLeft || it.key == Key.ShiftRight) {
@@ -242,7 +242,7 @@ fun Selector(targetType: DoodlerEditorType, onSelect: (File) -> Unit) {
                 hideCursor = haveToShiftField,
                 focusRequester = requester
             )
-            Select(enabled = selected != null) { selected?.let(onSelect) }
+            Select(enabled = selected != null) { selected?.let { onSelect(it, targetType) } }
         }
         Padded {
             if (!candidateTarget.isDirectory) return@Padded

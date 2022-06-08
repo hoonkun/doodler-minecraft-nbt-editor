@@ -88,7 +88,6 @@ fun LogText(
     )
 }
 
-@Composable
 fun DrawScope.drawBackgroundGradient() {
     val amount = 125f
 
