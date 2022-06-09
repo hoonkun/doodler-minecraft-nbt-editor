@@ -69,6 +69,7 @@ fun DoodlerWindow(
             when (window) {
                 is IntroDoodlerWindow -> Intro { appState.sketch(SelectorDoodlerWindow("doodler: open '${it.displayName}'", it)) }
                 is SelectorDoodlerWindow -> Selector(window.targetType) { file, type ->
+                    appState.erase(window)
                     appState.sketch(EditorDoodlerWindow("", type, file.absolutePath))
                 }
                 is EditorDoodlerWindow -> {
