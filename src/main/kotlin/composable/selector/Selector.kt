@@ -426,7 +426,7 @@ fun RowScope.Select(
 
     Box(
         modifier = Modifier.width(60.dp).fillMaxHeight().padding(5.dp)
-            .clickable { if (!enabled) onClick() }
+            .clickable { if (enabled) onClick() }
             .alpha(if (enabled) 1f else 0.6f)
     ) {
         Box(
