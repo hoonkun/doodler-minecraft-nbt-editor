@@ -30,6 +30,7 @@ import doodler.minecraft.structures.WorldHierarchy
 import doodler.theme.DoodlerTheme
 import doodler.types.BooleanProvider
 import doodler.unit.dp
+import doodler.unit.sp
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.ColorAlphaType
 import org.jetbrains.skia.ColorType
@@ -38,8 +39,8 @@ import org.jetbrains.skiko.toBufferedImage
 import java.io.File
 
 
-val Width = 325.dp
-val ItemHeight = 37.dp
+val Width = 225.dp
+val ItemHeight = 29.dp
 
 val ExtensionAlias = mapOf("mca" to "AVL", "dat" to "NBT", "png" to "IMG", "jpg" to "IMG", "json" to "JSN")
 
@@ -87,14 +88,11 @@ fun BoxScope.WorldHierarchy(
 
     Box(modifier = Modifier.requiredWidth(Width).verticalScroll(verticalScrollState)) {
 
+        SelectedIndicator(1, DoodlerTheme.Colors.HierarchyView.DimensionsDirectoryBackground)
+
         val index = items.indexOf(selected)
         if (index >= 0) {
-            Box(
-                modifier = Modifier
-                    .height(ItemHeight).fillMaxWidth()
-                    .background(DoodlerTheme.Colors.HierarchyView.Selected)
-                    .offset { IntOffset(0, (ItemHeight * index).value.toInt()) }
-            )
+            SelectedIndicator(index)
         }
 
         HierarchyItemsColumn(
@@ -108,7 +106,7 @@ fun BoxScope.WorldHierarchy(
             } else if (it is FileHierarchyItem) {
                 FileTypeIcon(it.file.extension)
             }
-            Spacer(modifier = Modifier.width(15.dp))
+            Spacer(modifier = Modifier.width(7.dp))
             HierarchyText(
                 text = it.name,
                 bold = items.indexOf(it) == 0
@@ -157,10 +155,6 @@ fun HierarchyItemsColumn(
                 modifier = Modifier
                     .padding(start = item.padding, end = 15.dp)
                     .height(ItemHeight)
-                    .background(
-                        if (items.indexOf(item) == 1) DoodlerTheme.Colors.HierarchyView.DimensionsDirectoryBackground
-                        else Color.Transparent
-                    )
                     .let {
                         if (onClick != null) it.fillMaxWidth().clickable { onClick(item) }
                         else it
@@ -172,17 +166,33 @@ fun HierarchyItemsColumn(
 }
 
 @Composable
+fun SelectedIndicator(
+    index: Int
+) = SelectedIndicator(index, DoodlerTheme.Colors.HierarchyView.Selected)
+
+@Composable
+fun SelectedIndicator(
+    index: Int,
+    color: Color
+) = Box(
+    modifier = Modifier.offset { IntOffset(0, (ItemHeight * index).value.toInt()) },
+    content = { Box(modifier = Modifier.height(ItemHeight).fillMaxWidth().background(color)) }
+)
+
+@Composable
 fun DirectoryToggleIcon(expandedProvider: BooleanProvider) {
     Image(
         painter = painterResource("/icons/icon_${if (expandedProvider()) "collapse" else "expand"}.png"),
         contentDescription = null,
-        modifier = Modifier.size(30.dp).alpha(0.6f).padding(4.dp)
+        modifier = Modifier.size(18.dp).alpha(0.6f)
     )
+    Spacer(modifier = Modifier.width(5.dp))
 }
 
 @Composable
 fun DirectoryToggleInteraction(onClick: () -> Unit) {
-    Spacer(modifier = Modifier.size(30.dp).padding(4.dp).clickable(onClick = onClick))
+    Spacer(modifier = Modifier.size(18.dp).clickable(onClick = onClick))
+    Spacer(modifier = Modifier.width(5.dp))
 }
 
 @Composable
@@ -190,7 +200,7 @@ fun WorldIcon(bitmap: ImageBitmap) {
     Image(
         bitmap = bitmap,
         contentDescription = null,
-        modifier = Modifier.size(size = 27.dp).offset(x = 2.5f.dp, y = 2.5f.dp).clip(RoundedCornerShape(3.dp))
+        modifier = Modifier.size(size = 20.dp).clip(RoundedCornerShape(3.dp))
     )
 }
 
@@ -199,16 +209,17 @@ fun DirectoryIcon() {
     Image(
         painter = painterResource("/icons/editor_folder.png"),
         contentDescription = null,
-        modifier = Modifier.size(32.dp)
+        modifier = Modifier.size(18.dp)
     )
 }
 
 @Composable
 fun FileTypeIcon(extension: String) {
+    Spacer(modifier = Modifier.width(3.dp))
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(width = 33.dp, height = 16.dp)
+            .size(width = 20.dp, height = 16.dp)
             .background(
                 when (extension) {
                     "dat" -> DoodlerTheme.Colors.HierarchyView.Dat
@@ -222,7 +233,7 @@ fun FileTypeIcon(extension: String) {
         Text(
             text = ExtensionAlias[extension] ?: "",
             color = DoodlerTheme.Colors.HierarchyView.TextColor,
-            fontSize = MaterialTheme.typography.h6.fontSize
+            fontSize = 8.sp
         )
     }
 }
@@ -231,7 +242,7 @@ fun FileTypeIcon(extension: String) {
 fun HierarchyText(
     text: String,
     bold: Boolean = false,
-    fontSize: TextUnit = MaterialTheme.typography.h3.fontSize
+    fontSize: TextUnit = MaterialTheme.typography.h5.fontSize
 ) {
     Text(
         text = text,
@@ -311,7 +322,7 @@ sealed class HierarchyItem(
 ) {
 
     val padding: Dp get() =
-        ((depth + 1) * 30 - (if (this is DirectoryHierarchyItem) 35 else 0)).coerceAtLeast(0).dp
+        7.dp + ((depth + 1) * 20 - (if (this is DirectoryHierarchyItem) 20 else 0)).coerceAtLeast(0).dp
 
 }
 
@@ -330,18 +341,23 @@ class DirectoryHierarchyItem(
     var expanded by mutableStateOf(false); private set
     val items = derivedStateOf {
         if (expanded) children()
-        else emptyList()
+        else listOf(this)
     }
 
     fun children(): List<HierarchyItem> =
-        children
-            .map {
-                when (it) {
-                    is FileHierarchyItem -> listOf(it)
-                    is DirectoryHierarchyItem -> it.children()
-                }
-            }
-            .flatten()
+        mutableListOf<HierarchyItem>().apply {
+            add(this@DirectoryHierarchyItem)
+            addAll(
+                children
+                    .map {
+                        when (it) {
+                            is FileHierarchyItem -> listOf(it)
+                            is DirectoryHierarchyItem -> it.items.value
+                        }
+                    }
+                    .flatten()
+            )
+        }
 
     fun toggle() {
         expanded = !expanded
