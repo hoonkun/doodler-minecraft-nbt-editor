@@ -60,6 +60,24 @@ class DoodlerTheme {
             companion object {
                 val ScrollbarDecorSelected = Color(0xff5b7341)
                 val ActionBackground = Color(0x19ffffff)
+
+                val TabPath = Color(0xff808080)
+
+                val TabHasChanges = Color(0xff90caf9)
+
+                fun Tab(selected: Boolean, pressed: Boolean, focused: Boolean) =
+                    if (selected) Color(255, 255, 255, 20)
+                    else if (pressed) Color(0, 0, 0, 80)
+                    else if (focused) Color(0, 0, 0, 40)
+                    else Color.Transparent
+
+                fun TabCloseButton(hovered: Boolean) =
+                    if (hovered) Color(25, 25, 25, 200)
+                    else Color(255, 255, 255, 100)
+
+                fun TabCloseButtonBackground(hovered: Boolean) =
+                    if (hovered) Color(255, 255, 255, 75)
+                    else Color.Transparent
             }
 
         }
