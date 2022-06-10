@@ -7,9 +7,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.ImageBitmap
-import activator.composables.editor.world.DirectoryItem
-import activator.composables.editor.world.FileItem
-import activator.composables.editor.world.WorldTreeItem
+import composable.editor.world.DirectoryHierarchyItem
+import composable.editor.world.FileHierarchyItem
+import composable.editor.world.HierarchyItem
 import doodler.exceptions.DoodleException
 import java.io.File
 
@@ -31,14 +31,14 @@ class WorldHierarchy (
         }
     }
 
-    fun listWorldFiles(dimension: WorldDimension): List<WorldTreeItem> {
+    fun listWorldFiles(dimension: WorldDimension): List<HierarchyItem> {
         val world = get(dimension)
         val list = listOf("data", "region", "poi", "entities").sorted()
 
         return list.mapNotNull {
             if (world[it].isNotEmpty()) {
-                val files = world[it].map { file -> FileItem(file.name, 3, file) }
-                DirectoryItem(it, 2, files)
+                val files = world[it].map { file -> FileHierarchyItem(file, file.name, 3) }
+                DirectoryHierarchyItem(files, it, 2)
             } else null
         }
     }

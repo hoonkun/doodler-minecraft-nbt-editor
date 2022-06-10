@@ -306,9 +306,9 @@ fun createWorldTreeItems(tree: WorldHierarchy): List<WorldTreeItem> {
     val rootDepth = 0
     val depth = 1
     result.add(DirectoryItem("dimensions", rootDepth, mutableListOf<WorldTreeItem>().apply {
-        add(DirectoryItem("overworld", depth, tree.listWorldFiles(WorldDimension.OVERWORLD)))
-        add(DirectoryItem("nether", depth, tree.listWorldFiles(WorldDimension.NETHER)))
-        add(DirectoryItem("the_end", depth, tree.listWorldFiles(WorldDimension.THE_END)))
+//        add(DirectoryItem("overworld", depth, tree.listWorldFiles(WorldDimension.OVERWORLD)))
+//        add(DirectoryItem("nether", depth, tree.listWorldFiles(WorldDimension.NETHER)))
+//        add(DirectoryItem("the_end", depth, tree.listWorldFiles(WorldDimension.THE_END)))
     }))
     result.add(DirectoryItem("advancements", rootDepth, tree.advancements.map { FileItem(it.name, depth, it) }))
     result.add(DirectoryItem("playerdata", rootDepth, tree.players.filter { !it.name.contains(".dat_old") }.map { FileItem(it.name, depth, it) }))

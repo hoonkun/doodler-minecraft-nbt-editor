@@ -55,6 +55,23 @@ class DoodlerTheme {
 
         }
 
+        class HierarchyView {
+
+            companion object {
+                val Selected = Color(0xff49544a)
+
+                val Dat = Color(0x3642a5f5)
+                val Mca = Color(0x36689f38)
+                val Png = Color(0x36ef6c00)
+                val Json = Color(0x36bdbdbd)
+
+                val TextColor = Color(0xffbbbbbb)
+
+                val DimensionsDirectoryBackground = Color(0xff4f4b41)
+            }
+
+        }
+
         class Editor {
 
             companion object {
