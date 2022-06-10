@@ -2,19 +2,15 @@ package doodler.editor
 
 import activator.doodler.editor.StandaloneNbtEditor
 import activator.doodler.editor.states.NbtState
+import androidx.compose.runtime.*
 import doodler.minecraft.DatWorker
 import doodler.minecraft.structures.*
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import doodler.editor.states.McaEditorState
 import doodler.editor.states.NbtEditorState
 import java.io.File
 
-
+@Stable
 class EditorManager {
     val editors = mutableStateListOf<Editor>()
     var selected by mutableStateOf<Editor?>(null)
