@@ -20,11 +20,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
-import doodler.editor.GlobalInitRequest
-import doodler.editor.NbtOpenRequest
-import doodler.editor.OpenRequest
-import doodler.editor.SingleMcaRequest
+import doodler.editor.*
 import doodler.minecraft.structures.AnvilLocation
+import doodler.minecraft.structures.McaType
 import doodler.minecraft.structures.WorldDimension
 import doodler.minecraft.structures.WorldHierarchy
 import doodler.theme.DoodlerTheme
@@ -75,14 +73,19 @@ fun BoxScope.WorldHierarchy(
         selected = it
 
         if (items.indexOf(it) == 1) {
-            open(GlobalInitRequest)
+            open(GlobalOpenRequest)
             return@itemClick
         }
 
         if (it !is FileHierarchyItem) return@itemClick
         when (it.file.extension) {
             "dat" -> open(NbtOpenRequest(it.file))
-            "mca" -> open(SingleMcaRequest(AnvilLocation.fromFileName(it.file.name), it.file))
+            "mca" -> open(SingleMcaRequest(
+                WorldDimension.fromMcaPath(it.file.absolutePath),
+                McaType.fromMcaPath(it.file.absolutePath),
+                AnvilLocation.fromFileName(it.file.name),
+                it.file
+            ))
         }
     }
 

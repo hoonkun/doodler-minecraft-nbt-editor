@@ -11,21 +11,18 @@ import activator.doodler.editor.McaPayload
 import activator.doodler.logger.DoodlerLogger
 import doodler.minecraft.McaWorker
 import doodler.minecraft.structures.*
-import doodler.nbt.tag.CompoundTag
-import doodler.nbt.tag.DoubleTag
-import doodler.nbt.tag.ListTag
-import doodler.nbt.tag.StringTag
 import java.io.File
 
 @Composable
 fun BoxScope.McaEditor(
-    levelInfo: CompoundTag?,
+    worldSpec: WorldSpecification,
     selector: McaEditor,
-    tree: WorldHierarchy,
     onOpenRequest: (ChunkLocation, File) -> Unit,
     onUpdateRequest: (GlobalAnvilUpdateRequest) -> Unit
 ) {
     DoodlerLogger.recomposition("McaEditor")
+
+    val tree = worldSpec.tree
 
     val data by remember {
         derivedStateOf {
@@ -43,20 +40,12 @@ fun BoxScope.McaEditor(
                     Pair(chunks, McaPayload(request, dimension, type, location, file))
                 }
                 is GlobalAnvilInitRequest -> {
-                    val player = levelInfo?.get("Player")?.getAs<CompoundTag>()
-                    val dimensionId = player?.get("Dimension")?.getAs<StringTag>()?.value
-
-                    val pos = player?.get("Pos")?.getAs<ListTag>()
-                    val x = pos?.get(0)?.getAs<DoubleTag>()?.value?.toInt()
-                    val z = pos?.get(2)?.getAs<DoubleTag>()?.value?.toInt()
-
-                    if (player == null || dimensionId == null || x == null || z == null)
-                        throw DoodleException("Internal Error", null, "Could not find dimension data of Player.")
+                    val (dimensionId, block) = worldSpec.playerPos
+                        ?: throw DoodleException("Internal Error", null, "Could not find dimension data of Player.")
 
                     val dimension = WorldDimension.namespace(dimensionId)
                     val type = McaType.TERRAIN
-                    val initial = BlockLocation(x, z)
-                    val location = initial.toChunkLocation().toAnvilLocation()
+                    val location = block.toChunkLocation().toAnvilLocation()
                     val file = tree[dimension][McaType.TERRAIN.pathName]
                         .find { it.name == "r.${location.x}.${location.z}.mca" }
                         ?: throw DoodleException(
@@ -71,7 +60,7 @@ fun BoxScope.McaEditor(
                         McaWorker.loadChunkList(itLocation, it.readBytes())
                     }.toList().flatten()
 
-                    val payload = McaPayload(request, dimension, type, location, file, initial)
+                    val payload = McaPayload(request, dimension, type, location, file, block)
                     selector.globalMcaPayload = payload
 
                     Pair(chunks, payload)

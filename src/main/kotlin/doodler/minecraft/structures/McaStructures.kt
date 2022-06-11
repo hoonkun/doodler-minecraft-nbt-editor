@@ -14,5 +14,11 @@ enum class McaType(val pathName: String) {
                 "Cannot find McaInfo.Type with pathName '$pathName'"
             )
 
+        fun fromMcaPath(path: String): McaType {
+            val segments = path.split("/").toMutableList()
+            val pathName = segments.slice(0 until segments.size - 1).last()
+            return McaType[pathName]
+        }
+
     }
 }

@@ -6,23 +6,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
 import activator.composables.editor.NbtEditor
 import activator.doodler.editor.AnvilNbtEditor
-import activator.doodler.editor.EditorManager
 import activator.doodler.editor.McaEditor
 import activator.doodler.editor.NbtEditor
 import activator.doodler.editor.states.NbtState
+import activator.doodler.editor.states.WorldEditorState
 import activator.doodler.logger.DoodlerLogger
 import doodler.minecraft.McaWorker
 import doodler.minecraft.structures.McaFileType
-import doodler.minecraft.structures.WorldHierarchy
-import doodler.nbt.tag.CompoundTag
 
 @Composable
 fun BoxScope.EditorManager(
-    levelInfo: CompoundTag?,
-    tree: WorldHierarchy,
-    manager: EditorManager,
+    states: WorldEditorState
 ) {
     DoodlerLogger.recomposition("EditorManager")
+
+    val manager = states.manager
 
     EditorManagerRoot {
         EditorTabs(
@@ -39,7 +37,7 @@ fun BoxScope.EditorManager(
             if (selected is NbtEditor) NbtEditor(selected)
             else if (selected is McaEditor) {
                 McaEditor(
-                    levelInfo, selected, tree,
+                    states.worldSpec, selected,
                     open@ { location, file ->
                         if (manager.hasItem("${file.absolutePath}/c.${location.x}.${location.z}")) return@open
 

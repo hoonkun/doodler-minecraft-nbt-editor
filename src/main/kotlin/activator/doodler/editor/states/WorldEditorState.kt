@@ -11,8 +11,9 @@ class WorldEditorState (
 
 @Composable
 fun rememberWorldEditorState (
+    worldName: String,
     manager: EditorManager = EditorManager(),
-    worldSpec: WorldSpecification = WorldSpecification()
+    worldSpec: WorldSpecification = WorldSpecification(worldName)
 ) = remember (manager, worldSpec) {
     WorldEditorState(manager, worldSpec)
 }

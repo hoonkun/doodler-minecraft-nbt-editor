@@ -10,6 +10,10 @@ data class BlockLocation(val x: Int, val z: Int) {
 
 data class AnvilLocation(val x: Int, val z: Int) {
     fun validate(where: List<AnvilLocation>) = if (where.contains(this)) this else null
+
+    companion object {
+        fun fromFileName(name: String) = name.split(".").let { AnvilLocation(it[1].toInt(), it[2].toInt()) }
+    }
 }
 
 data class ChunkLocation(val x: Int, val z: Int) {

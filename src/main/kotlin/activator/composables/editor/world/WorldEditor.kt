@@ -21,10 +21,6 @@ import activator.doodler.editor.McaEditor
 import activator.doodler.editor.StandaloneNbtEditor
 import activator.doodler.editor.states.rememberWorldEditorState
 import activator.doodler.logger.DoodlerLogger
-import doodler.minecraft.DatWorker
-import doodler.minecraft.WorldUtils
-import doodler.nbt.tag.CompoundTag
-import doodler.nbt.tag.StringTag
 import java.awt.Desktop
 import java.net.URI
 import java.util.*
@@ -35,25 +31,10 @@ fun WorldEditor(
 ) {
     DoodlerLogger.recomposition("WorldEditor")
 
-    val states = rememberWorldEditorState()
+    val states = rememberWorldEditorState(worldPath)
 
-    if (states.worldSpec.tree == null)
-        states.worldSpec.tree = WorldUtils.load(worldPath)
-
-    val levelInfo = DatWorker.read(states.worldSpec.requireTree.level.readBytes())["Data"]?.getAs<CompoundTag>()
-
-    if (states.worldSpec.name == null)
-        states.worldSpec.name = levelInfo!!["LevelName"]
-            ?.getAs<StringTag>()
-            ?.value
-
-    if (states.worldSpec.tree == null || states.worldSpec.name == null) {
-        // TODO: Handle Loading or Parse Error here
-        return
-    }
-
-    val tree = states.worldSpec.requireTree
-    val name = states.worldSpec.requireName
+    val tree = states.worldSpec.tree
+    val name = states.worldSpec.name
 
     val onOpenRequest: (OpenRequest) -> Unit = handleRequest@ { request ->
         when (request) {
@@ -94,7 +75,7 @@ fun WorldEditor(
                     if (states.manager.editors.size == 0) {
                         NoFileSelected(name)
                     } else {
-                        EditorManager(levelInfo, tree, states.manager)
+                        EditorManager(states)
                     }
                 }
             }

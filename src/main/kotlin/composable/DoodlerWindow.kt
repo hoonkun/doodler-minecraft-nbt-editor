@@ -13,6 +13,7 @@ import doodler.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import composable.editor.standalone.StandaloneNbtEditor
+import composable.editor.world.WorldEditor
 import composable.intro.Intro
 import composable.selector.Selector
 import doodler.application.state.DoodlerAppState
@@ -75,7 +76,7 @@ fun DoodlerWindow(
                 is EditorDoodlerWindow -> {
                     when (window.type) {
                         DoodlerEditorType.STANDALONE -> StandaloneNbtEditor(window.path)
-                        DoodlerEditorType.WORLD -> {  }
+                        DoodlerEditorType.WORLD -> WorldEditor(window.path)
                     }
                 }
             }

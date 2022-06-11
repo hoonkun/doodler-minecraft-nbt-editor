@@ -1,16 +1,18 @@
 package doodler.minecraft.structures
 
-import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.ImageBitmap
 import composable.editor.world.DirectoryHierarchyItem
 import composable.editor.world.FileHierarchyItem
 import composable.editor.world.HierarchyItem
 import doodler.exceptions.DoodleException
+import doodler.minecraft.DatWorker
+import doodler.minecraft.WorldUtils
+import doodler.nbt.tag.CompoundTag
+import doodler.nbt.tag.DoubleTag
+import doodler.nbt.tag.ListTag
+import doodler.nbt.tag.StringTag
 import java.io.File
 
 class WorldHierarchy (
@@ -76,6 +78,13 @@ enum class WorldDimension(
 
     companion object {
         operator fun get(pathName: String): WorldDimension = values().find { it.ident == pathName } ?: OVERWORLD
+
+        fun fromMcaPath(path: String): WorldDimension {
+            val segments = path.split("/").toMutableList()
+            val pathName = segments.slice(0 until segments.size - 2).last()
+            return WorldDimension[pathName]
+        }
+
         fun namespace(namespaceId: String): WorldDimension = values().find { it.namespaceId == namespaceId }
             ?: throw DoodleException("Internal Error", null, "unknown dimension id: $namespaceId")
     }
@@ -84,14 +93,37 @@ enum class WorldDimension(
 data class CachedTerrainInfo(val yLimit: Short, val location: AnvilLocation)
 
 class WorldSpecification (
-    tree: MutableState<WorldHierarchy?> = mutableStateOf(null),
-    name: MutableState<String?> = mutableStateOf(null)
+    worldPath: String
 ) {
-    var tree: WorldHierarchy? by tree
-    val requireTree get() = tree!!
+    val tree: WorldHierarchy = WorldUtils.load(worldPath)
 
-    var name by name
-    val requireName get() = name!!
+    private var levelInfo = DatWorker.read(tree.level.readBytes())
+
+    private val _name: String?
+        get() {
+            return levelInfo["Data"]
+                ?.getAs<CompoundTag>()?.get("LevelName")
+                ?.getAs<StringTag>()?.value
+        }
+
+    val name = _name!!
+
+    val playerPos: Pair<String, BlockLocation>?
+        get() {
+            val player = levelInfo["Player"]?.getAs<CompoundTag>()
+            val dimensionId = player?.get("Dimension")?.getAs<StringTag>()?.value
+
+            val pos = player?.get("Pos")?.getAs<ListTag>()
+            val x = pos?.get(0)?.getAs<DoubleTag>()?.value?.toInt()
+            val z = pos?.get(2)?.getAs<DoubleTag>()?.value?.toInt()
+
+            return if (x == null || z == null || dimensionId == null) null else dimensionId to BlockLocation(x, z)
+        }
+
+    fun reload() {
+        levelInfo = DatWorker.read(tree.level.readBytes())
+    }
+
 }
 
 sealed class WorldFileType
