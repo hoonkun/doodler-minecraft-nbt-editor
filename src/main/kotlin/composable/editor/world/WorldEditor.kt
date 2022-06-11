@@ -103,7 +103,7 @@ fun RowScope.HierarchyBarText(text: String, hasChanges: Boolean = false) =
     Text(
         text = text,
         color =
-            if (!hasChanges) DoodlerTheme.Colors.Text.IdeGeneral
+            if (!hasChanges) DoodlerTheme.Colors.HierarchyView.TextColor
             else DoodlerTheme.Colors.Editor.TabHasChanges,
         fontSize = MaterialTheme.typography.h6.fontSize
     )
@@ -147,4 +147,9 @@ fun ColumnScope.BottomBar(content: @Composable RowScope.() -> Unit) =
     )
 
 @Composable
-fun RowScope.BottomBarText(text: String) = Text(text , fontSize = 8.sp, color = DoodlerTheme.Colors.OnBackground)
+fun RowScope.BottomBarText(text: String) =
+    Text(
+        text = text,
+        fontSize = 8.sp,
+        color = DoodlerTheme.Colors.HierarchyView.TextColor
+    )
