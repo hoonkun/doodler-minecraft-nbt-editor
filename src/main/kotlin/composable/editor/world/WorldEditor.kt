@@ -58,7 +58,7 @@ fun WorldEditor(
                 WorldHierarchy(name = state.worldSpec.name, hierarchy = state.worldSpec.tree, open = onOpenRequest)
             }
             EditorArea {
-                if (state.manager.editors.size != 0) {}
+                if (state.manager.editors.size != 0) EditorManager(state)
             }
         }
 
