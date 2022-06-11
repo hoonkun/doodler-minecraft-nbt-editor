@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.TextUnit
 import doodler.editor.structures.EditorLog
 import doodler.types.Provider
 import doodler.unit.dp
+import doodler.unit.ScaledUnits.Editor.Companion.scaled
 import kotlinx.coroutines.delay
 
 @Composable
@@ -59,22 +60,26 @@ fun BoxScope.Log(
     ) {
         Column(
             modifier = Modifier
-                .padding(20.dp)
+                .padding(20.dp.scaled)
         ) {
             Column(modifier = Modifier
-                .background(log.level.background, RoundedCornerShape(6.dp))
-                .padding(top = 20.dp, end = 40.dp, bottom = 20.dp, start = 20.dp)
+                .background(log.level.background, RoundedCornerShape(6.dp.scaled))
+                .padding(top = 12.dp.scaled, end = 30.dp.scaled, bottom = 12.dp.scaled, start = 12.dp.scaled)
             ) {
                 Row {
                     LogText(text = log.title, alpha = 0.85f)
                     if (log.summary != null) {
-                        Spacer(modifier = Modifier.width(20.dp))
-                        LogText(text = log.summary, alpha = 0.7f, fontSize = MaterialTheme.typography.h5.fontSize)
+                        Spacer(modifier = Modifier.width(10.dp.scaled))
+                        LogText(
+                            text = log.summary,
+                            alpha = 0.7f,
+                            fontSize = MaterialTheme.typography.h5.fontSize.scaled
+                        )
                     }
                 }
                 if (log.description != null) {
-                    Spacer(modifier = Modifier.height(7.dp))
-                    LogText(log.description, alpha = 0.45f, fontSize = MaterialTheme.typography.h5.fontSize)
+                    Spacer(modifier = Modifier.height(2.dp.scaled))
+                    LogText(log.description, alpha = 0.45f, fontSize = MaterialTheme.typography.h5.fontSize.scaled)
                 }
             }
         }
@@ -86,7 +91,7 @@ fun BoxScope.Log(
 fun LogText(
     text: String,
     alpha: Float,
-    fontSize: TextUnit = MaterialTheme.typography.h4.fontSize
+    fontSize: TextUnit = MaterialTheme.typography.h4.fontSize.scaled
 ) {
     Text(
         text = text,
