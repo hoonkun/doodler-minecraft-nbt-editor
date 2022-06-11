@@ -45,8 +45,8 @@ fun ActionButton(
             .wrapContentSize()
             .padding(top = 4.dp.scaled, bottom = 4.dp.scaled)
             .hoverable(hoverInteractionSource, enabled())
-            .mouseClickable(enabled()) {
-                if (buttons.isPrimaryPressed) onClick()
+            .mouseClickable {
+                if (buttons.isPrimaryPressed && enabled()) onClick()
                 if (buttons.isSecondaryPressed) onRightClick()
             }
             .drawBehind {
