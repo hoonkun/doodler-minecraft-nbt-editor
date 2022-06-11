@@ -36,7 +36,12 @@ class EditorManager {
     }
 
     fun close(item: Editor) {
-        if (item == selected) selected = editors.getOrNull(editors.indexOf(item) - 1)
+        if (item == selected) {
+            val index = editors.indexOf(item)
+            selected =
+                if (index != 0) editors.getOrNull(index - 1)
+                else editors.getOrNull(1)
+        }
         editors.remove(item)
     }
 }
