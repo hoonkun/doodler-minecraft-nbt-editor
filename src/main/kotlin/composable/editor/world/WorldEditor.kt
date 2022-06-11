@@ -10,6 +10,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import doodler.editor.*
+import doodler.exceptions.DoodleException
+import doodler.minecraft.structures.McaType
 import doodler.theme.DoodlerTheme
 import doodler.unit.dp
 import doodler.unit.sp
@@ -23,28 +25,9 @@ fun WorldEditor(
 
     val onOpenRequest: (OpenRequest) -> Unit = handleRequest@ { request ->
         when (request) {
-            is NbtOpenRequest -> {
-                if (state.manager.hasItem(request.ident)) {
-                    state.manager.select(request.ident)
-                } else {
-                    state.manager.open(StandaloneNbtEditor.fromFile(request.file))
-                }
-            }
-            is GlobalMcaRequest -> {
-                if (state.manager.hasItem(GlobalMcaEditor.Identifier)) {
-                    state.manager.select(GlobalMcaEditor.Identifier)
-                } else {
-                    state.manager.open(GlobalMcaEditor())
-                }
-            }
-            is SingleMcaRequest -> {
-                if (state.manager.hasItem(SingleMcaEditor.Identifier)) {
-                    (state.manager[SingleMcaEditor.Identifier] as SingleMcaEditor).payload = request
-                    state.manager.select(SingleMcaEditor.Identifier)
-                } else {
-                    state.manager.open(SingleMcaEditor(request))
-                }
-            }
+            is NbtOpenRequest -> openNbtEditor(state, request)
+            is GlobalOpenRequest -> openGlobalMcaEditor(state)
+            is SingleOpenRequest -> openSingleMcaEditor(state, request)
         }
     }
 
@@ -71,6 +54,49 @@ fun WorldEditor(
         }
     }
 }
+
+fun openNbtEditor(state: WorldEditorState, request: NbtOpenRequest) {
+    if (state.manager.hasItem(request.ident)) {
+        state.manager.select(request.ident)
+    } else {
+        state.manager.open(StandaloneNbtEditor.fromFile(request.file))
+    }
+}
+
+fun openGlobalMcaEditor(state: WorldEditorState) {
+    if (state.manager.hasItem(GlobalMcaEditor.Identifier)) {
+        state.manager.select(GlobalMcaEditor.Identifier)
+    } else {
+        val worldSpec = state.worldSpec
+
+        val (dimension, block) = worldSpec.playerPos
+            ?: throw DoodleException("Internal Error", null, "Cannot read player data from level.dat")
+
+        val type = McaType.TERRAIN
+        val anvil = block.toChunkLocation().toAnvilLocation()
+        val file = worldSpec.tree[dimension][type].find { it.name == "r.${anvil.x}.${anvil.z}.mca" }
+            ?: throw DoodleException("Internal Error", null, "Cannot find region file which player exists")
+
+        state.manager.open(GlobalMcaEditor(
+            McaPayload(
+                dimension = dimension,
+                type = type,
+                location = anvil,
+                file = file
+            )
+        ))
+    }
+}
+
+fun openSingleMcaEditor(state: WorldEditorState, request: SingleOpenRequest) {
+    if (state.manager.hasItem(SingleMcaEditor.Identifier)) {
+        (state.manager[SingleMcaEditor.Identifier] as SingleMcaEditor).payload = request.payload
+        state.manager.select(SingleMcaEditor.Identifier)
+    } else {
+        state.manager.open(SingleMcaEditor(initialPayload = request.payload))
+    }
+}
+
 
 @Composable
 fun WorldEditorRoot(content: @Composable ColumnScope.() -> Unit) =

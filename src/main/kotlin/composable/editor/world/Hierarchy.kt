@@ -81,12 +81,12 @@ fun BoxScope.WorldHierarchy(
         if (it !is FileHierarchyItem) return@itemClick
         when (it.file.extension) {
             "dat" -> open(NbtOpenRequest(it.file))
-            "mca" -> open(SingleMcaRequest(
+            "mca" -> open(SingleOpenRequest(McaPayload(
                 WorldDimension.fromMcaPath(it.file.absolutePath),
                 McaType.fromMcaPath(it.file.absolutePath),
                 AnvilLocation.fromFileName(it.file.name),
                 it.file
-            ))
+            )))
         }
     }
 

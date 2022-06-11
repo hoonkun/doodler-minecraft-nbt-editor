@@ -91,30 +91,30 @@ class AnvilNbtEditor(
 }
 
 sealed class McaEditor<K>(
-    val states: SnapshotStateMap<K, McaEditorState>
-): Editor()
+    val states: SnapshotStateMap<K, McaEditorState>,
+    initialPayload: McaPayload,
+): Editor() {
+    var payload: McaPayload by mutableStateOf(initialPayload)
+
+    abstract fun state(defaultFactory: () -> McaEditorState): McaEditorState
+}
 
 class GlobalMcaEditor(
+    initialPayload: McaPayload,
     states: SnapshotStateMap<WorldDimension, McaEditorState> = mutableStateMapOf()
-): McaEditor<WorldDimension>(states) {
-    var payload: GlobalUpdateRequest? by mutableStateOf(null)
+): McaEditor<WorldDimension>(states, initialPayload) {
 
-    val state by derivedStateOf {
-        val dimension = payload?.dimension ?: return@derivedStateOf null
-        states[dimension]
-    }
+    val state by derivedStateOf { states[payload.dimension] }
 
     override val ident: String get() = this.javaClass.name
     override val name: String get() = "WorldMap"
 
-    fun state(defaultFactory: () -> McaEditorState): McaEditorState? {
+    override fun state(defaultFactory: () -> McaEditorState): McaEditorState {
         val localState = state
         if (localState != null) return localState
 
-        val dimension = payload?.dimension ?: return null
-
         val newState = defaultFactory()
-        states[dimension] = newState
+        states[payload.dimension] = newState
         return newState
     }
 
@@ -125,17 +125,16 @@ class GlobalMcaEditor(
 }
 
 class SingleMcaEditor(
-    _payload: SingleMcaRequest,
-    states: SnapshotStateMap<SingleMcaRequest, McaEditorState> = mutableStateMapOf(),
-): McaEditor<SingleMcaRequest>(states) {
-    var payload by mutableStateOf(_payload)
+    states: SnapshotStateMap<McaPayload, McaEditorState> = mutableStateMapOf(),
+    initialPayload: McaPayload,
+): McaEditor<McaPayload>(states, initialPayload) {
 
     val state by derivedStateOf { states[payload] }
 
     override val ident: String get() = this.javaClass.name
     override val name: String by derivedStateOf { "${payload.location.x}.${payload.location.z}.mca" }
 
-    fun state(defaultFactory: () -> McaEditorState): McaEditorState {
+    override fun state(defaultFactory: () -> McaEditorState): McaEditorState {
         val localState = state
         if (localState != null) return localState
 
@@ -160,20 +159,12 @@ class NbtOpenRequest(
 
 sealed class McaOpenRequest: OpenRequest()
 
-sealed class GlobalMcaRequest: McaOpenRequest()
+object GlobalOpenRequest: McaOpenRequest()
+class SingleOpenRequest(val payload: McaPayload): McaOpenRequest()
 
-object GlobalOpenRequest: GlobalMcaRequest()
-
-class GlobalUpdateRequest(
+class McaPayload(
     val dimension: WorldDimension,
     val type: McaType,
     val location: AnvilLocation,
     val file: File
-): GlobalMcaRequest()
-
-class SingleMcaRequest(
-    val dimension: WorldDimension,
-    val type: McaType,
-    val location: AnvilLocation,
-    val file: File
-): McaOpenRequest()
+)

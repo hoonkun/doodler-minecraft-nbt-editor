@@ -88,10 +88,10 @@ fun ColumnScope.ChunkSelector(
     val surroundings = remember(anvil, anvils) {
         AnvilLocationSurroundings(
             base = anvil,
-            left = AnvilLocation(anvil.x, anvil.z - 1).validate(anvils),
-            right = AnvilLocation(anvil.x, anvil.z + 1).validate(anvils),
-            above = AnvilLocation(anvil.x + 1, anvil.z).validate(anvils),
-            below = AnvilLocation(anvil.x - 1, anvil.z).validate(anvils),
+            left = AnvilLocation(anvil.x, anvil.z - 1).nullIfNotExists(anvils),
+            right = AnvilLocation(anvil.x, anvil.z + 1).nullIfNotExists(anvils),
+            above = AnvilLocation(anvil.x + 1, anvil.z).nullIfNotExists(anvils),
+            below = AnvilLocation(anvil.x - 1, anvil.z).nullIfNotExists(anvils),
         )
     }
 

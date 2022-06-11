@@ -48,4 +48,15 @@ class ScaledUnits {
 
     }
 
+    class ChunkSelector {
+
+        companion object {
+            private const val Value = 0.6f
+
+            val TextUnit.scaled get() = this * Value
+            val Dp.scaled get() = this * Value
+        }
+
+    }
+
 }

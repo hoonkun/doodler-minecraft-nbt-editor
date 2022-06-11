@@ -9,7 +9,7 @@ data class BlockLocation(val x: Int, val z: Int) {
 }
 
 data class AnvilLocation(val x: Int, val z: Int) {
-    fun validate(where: List<AnvilLocation>) = if (where.contains(this)) this else null
+    fun nullIfNotExists(where: List<AnvilLocation>) = if (where.contains(this)) this else null
 
     companion object {
         fun fromFileName(name: String) = name.split(".").let { AnvilLocation(it[1].toInt(), it[2].toInt()) }
@@ -32,4 +32,17 @@ data class AnvilLocationSurroundings(
     val right: AnvilLocation?,
     val above: AnvilLocation?,
     val below: AnvilLocation?
-)
+) {
+    companion object {
+
+        fun fromBase(base: AnvilLocation, available: List<AnvilLocation>) =
+            AnvilLocationSurroundings(
+                base = base,
+                left = AnvilLocation(base.x, base.z - 1).nullIfNotExists(available),
+                right = AnvilLocation(base.x, base.z + 1).nullIfNotExists(available),
+                above = AnvilLocation(base.x + 1, base.z).nullIfNotExists(available),
+                below = AnvilLocation(base.x - 1, base.z).nullIfNotExists(available),
+            )
+
+    }
+}

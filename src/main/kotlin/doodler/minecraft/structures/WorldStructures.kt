@@ -67,6 +67,8 @@ class WorldDimensionHierarchy (
             else -> listOf()
         }
     }
+
+    operator fun get(type: McaType): List<File> = get(type.pathName)
 }
 
 enum class WorldDimension(
@@ -112,7 +114,7 @@ class WorldSpecification (
 
     val playerPos: Pair<WorldDimension, BlockLocation>?
         get() {
-            val player = levelInfo["Player"]?.getAs<CompoundTag>()
+            val player = levelInfo["Data"]?.getAs<CompoundTag>()?.get("Player")?.getAs<CompoundTag>()
             val dimensionId = player?.get("Dimension")?.getAs<StringTag>()?.value
 
             val pos = player?.get("Pos")?.getAs<ListTag>()

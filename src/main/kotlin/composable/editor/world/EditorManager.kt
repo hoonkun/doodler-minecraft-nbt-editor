@@ -43,7 +43,7 @@ fun BoxScope.EditorManager(
         )
     }
 
-    val updateGlobal: (GlobalUpdateRequest) -> Unit = updateGlobal@ {
+    val updateGlobal: (McaPayload) -> Unit = updateGlobal@ {
         val editor = manager[GlobalMcaEditor.Identifier] ?: return@updateGlobal
         if (editor !is GlobalMcaEditor)
             throw InternalAssertionException("GlobalMcaEditor", editor.javaClass.simpleName)

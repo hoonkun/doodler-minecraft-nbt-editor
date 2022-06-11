@@ -83,6 +83,13 @@ class DoodlerTheme {
 
                 val TabHasChanges = Color(0xff90caf9)
 
+                val McaEditorDropdownBackground = Color(0xff242424)
+
+                val SelectorValidAccent = Color(0xff32362f)
+                val SelectorInvalidAccent = Color(0xff403734)
+                val SelectorDefault = Color(0xff2a2a2a)
+                val SelectorHover = Color(0xff323232)
+
                 fun Tab(selected: Boolean, pressed: Boolean, focused: Boolean) =
                     if (selected) Color(255, 255, 255, 20)
                     else if (pressed) Color(0, 0, 0, 80)
@@ -96,6 +103,13 @@ class DoodlerTheme {
                 fun TabCloseButtonBackground(hovered: Boolean) =
                     if (hovered) Color(255, 255, 255, 75)
                     else Color.Transparent
+
+                fun DropdownBackground(accent: Boolean, valid: Boolean, hovered: Boolean) =
+                    if (accent && valid) SelectorValidAccent
+                    else if (accent) SelectorInvalidAccent
+                    else if (hovered) SelectorHover
+                    else SelectorDefault
+
             }
 
         }
@@ -179,6 +193,10 @@ class DoodlerTheme {
                 val IdeNumberLiteral = Color(0xff6897bb)
                 val IdeStringLiteral = Color(0xff6a8759)
                 val IdeGeneral = Color(0xffa9b7c6)
+
+                val Malformed = Color(0xff8c8c8c)
+                val Invalid = Color(0xfff57c00)
+                val Normal = Color(0xff7d7d7d)
             }
 
         }
