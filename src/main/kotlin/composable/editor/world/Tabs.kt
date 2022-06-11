@@ -35,7 +35,7 @@ fun EditorTabGroup(
 
     Box (
         modifier = Modifier
-            .background(DoodlerTheme.Colors.Primary)
+            .background(DoodlerTheme.Colors.SecondaryBackground)
             .fillMaxWidth().wrapContentHeight()
             .zIndex(10f)
     ) {
@@ -69,46 +69,51 @@ fun EditorTab(
     val hovered by hoverInteractionSource.collectIsHoveredAsState()
     val pressed by pressInteractionSource.collectIsPressedAsState()
 
-    Box(
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .hoverable(hoverInteractionSource)
             .clickable(pressInteractionSource, null) { onSelectTab(editor) }
-            .padding(vertical = 5.dp, horizontal = 12.dp)
             .drawBehind {
                 drawRect(DoodlerTheme.Colors.Editor.Tab(selectedProvider(), pressed, hovered))
 
                 if (!selectedProvider()) return@drawBehind
                 drawRect(
                     color = DoodlerTheme.Colors.Primary,
-                    topLeft = Offset(0f, size.height - 1.5f.dp.value),
-                    size = Size(size.width, 1.5f.dp.value)
+                    topLeft = Offset(0f, size.height - 2.dp.value),
+                    size = Size(size.width, 2.dp.value)
                 )
             }
-            .height(30.dp).wrapContentWidth()
+            .height(25.dp).wrapContentWidth()
     ) {
+        Spacer(modifier = Modifier.width(6.dp))
 
-        if (editor is AnvilNbtEditor) {
+        Row(verticalAlignment = Alignment.Bottom) {
+
+            if (editor is AnvilNbtEditor) {
+                Text(
+                    text = editor.path,
+                    color = DoodlerTheme.Colors.Editor.TabPath,
+                    fontSize = MaterialTheme.typography.h6.fontSize
+                )
+                Spacer(modifier = Modifier.width(3.dp))
+            }
+
             Text(
-                text = editor.path,
-                color = DoodlerTheme.Colors.Editor.TabPath,
-                fontSize = MaterialTheme.typography.h6.fontSize,
-                modifier = Modifier.align(Alignment.BottomCenter)
-            )
-            Spacer(modifier = Modifier.width(3.dp))
-        }
-
-        Text(
-            text = editor.name,
-            color =
+                text = editor.name,
+                color =
                 if (editor is NbtEditor && editor.state.actionFlags.canBeSaved) DoodlerTheme.Colors.Editor.TabHasChanges
                 else DoodlerTheme.Colors.Text.IdeGeneral,
-            fontSize = MaterialTheme.typography.h4.fontSize,
-            modifier = Modifier.align(Alignment.BottomCenter)
-        )
-        Spacer(modifier = Modifier.width(7.dp))
+                fontSize = MaterialTheme.typography.h5.fontSize
+            )
+
+        }
+
+        Spacer(modifier = Modifier.width(4.dp))
 
         EditorCloseButton { onCloseTab(editor) }
 
+        Spacer(modifier = Modifier.width(6.dp))
     }
 }
 
@@ -119,17 +124,21 @@ fun EditorCloseButton(
     val hoverInteractionSource = remember { MutableInteractionSource() }
     val hovered by hoverInteractionSource.collectIsHoveredAsState()
 
-    Text(
-        text = "\u2715",
-        fontWeight = FontWeight.Bold,
-        fontSize = MaterialTheme.typography.h5.fontSize,
-        color = DoodlerTheme.Colors.Editor.TabCloseButton(hovered),
+    Box(
         modifier = Modifier
-            .padding(3.dp)
-            .hoverable(hoverInteractionSource)
-            .clickable { close() }
             .drawBehind {
                 drawCircle(DoodlerTheme.Colors.Editor.TabCloseButtonBackground(hovered), size.width / 2f)
             }
-    )
+    ) {
+        Text(
+            text = "\u2715",
+            fontWeight = FontWeight.Bold,
+            fontSize = MaterialTheme.typography.h5.fontSize,
+            color = DoodlerTheme.Colors.Editor.TabCloseButton(hovered),
+            modifier = Modifier
+                .padding(3.dp)
+                .hoverable(hoverInteractionSource)
+                .clickable { close() }
+        )
+    }
 }
