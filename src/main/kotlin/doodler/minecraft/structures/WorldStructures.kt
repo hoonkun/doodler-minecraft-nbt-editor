@@ -53,7 +53,9 @@ class WorldDimensionHierarchy (
     val data: List<File>,
 ) {
 
+    @Deprecated("this properties are moved to ")
     val cachedTerrains: SnapshotStateMap<CachedTerrainInfo, ImageBitmap> = mutableStateMapOf()
+    @Deprecated("this properties are moved to ")
     val cachedValidY: MutableMap<AnvilLocation, List<IntRange>> = mutableMapOf()
 
     operator fun get(key: String): List<File> {
@@ -108,7 +110,7 @@ class WorldSpecification (
 
     val name = _name!!
 
-    val playerPos: Pair<String, BlockLocation>?
+    val playerPos: Pair<WorldDimension, BlockLocation>?
         get() {
             val player = levelInfo["Player"]?.getAs<CompoundTag>()
             val dimensionId = player?.get("Dimension")?.getAs<StringTag>()?.value
@@ -117,7 +119,8 @@ class WorldSpecification (
             val x = pos?.get(0)?.getAs<DoubleTag>()?.value?.toInt()
             val z = pos?.get(2)?.getAs<DoubleTag>()?.value?.toInt()
 
-            return if (x == null || z == null || dimensionId == null) null else dimensionId to BlockLocation(x, z)
+            return if (x == null || z == null || dimensionId == null) null
+                else WorldDimension.namespace(dimensionId) to BlockLocation(x, z)
         }
 
     fun reload() {

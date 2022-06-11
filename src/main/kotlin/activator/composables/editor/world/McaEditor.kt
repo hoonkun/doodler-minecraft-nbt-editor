@@ -40,10 +40,9 @@ fun BoxScope.McaEditor(
                     Pair(chunks, McaPayload(request, dimension, type, location, file))
                 }
                 is GlobalAnvilInitRequest -> {
-                    val (dimensionId, block) = worldSpec.playerPos
+                    val (dimension, block) = worldSpec.playerPos
                         ?: throw DoodleException("Internal Error", null, "Could not find dimension data of Player.")
 
-                    val dimension = WorldDimension.namespace(dimensionId)
                     val type = McaType.TERRAIN
                     val location = block.toChunkLocation().toAnvilLocation()
                     val file = tree[dimension][McaType.TERRAIN.pathName]

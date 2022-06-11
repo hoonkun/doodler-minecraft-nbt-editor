@@ -80,10 +80,14 @@ class AnvilNbtEditor(
     private val location: ChunkLocation,
     state: NbtEditorState
 ): NbtEditor(state) {
-    override val ident: String get() = "${anvil.absolutePath}/c.${location.x}.${location.z}"
+    override val ident: String get() = ident(anvil, location)
     override val name: String get() = "c.${location.x}.${location.z}"
 
     val path: String get() = "${WorldDimension[anvil.parentFile.parentFile.name].displayName}/${anvil.parentFile.name}/"
+
+    companion object {
+        fun ident(anvil: File, location: ChunkLocation) = "${anvil.absolutePath}/c.${location.x}.${location.z}"
+    }
 }
 
 sealed class McaEditor<K>(
@@ -93,10 +97,26 @@ sealed class McaEditor<K>(
 class GlobalMcaEditor(
     states: SnapshotStateMap<WorldDimension, McaEditorState> = mutableStateMapOf()
 ): McaEditor<WorldDimension>(states) {
-    val updateRequest: GlobalUpdateRequest? by mutableStateOf(null)
+    var payload: GlobalUpdateRequest? by mutableStateOf(null)
+
+    val state by derivedStateOf {
+        val dimension = payload?.dimension ?: return@derivedStateOf null
+        states[dimension]
+    }
 
     override val ident: String get() = this.javaClass.name
     override val name: String get() = "WorldMap"
+
+    fun state(defaultFactory: () -> McaEditorState): McaEditorState? {
+        val localState = state
+        if (localState != null) return localState
+
+        val dimension = payload?.dimension ?: return null
+
+        val newState = defaultFactory()
+        states[dimension] = newState
+        return newState
+    }
 
     companion object {
         val Identifier: String = GlobalMcaEditor::class.java.name
@@ -110,19 +130,23 @@ class SingleMcaEditor(
 ): McaEditor<SingleMcaRequest>(states) {
     var payload by mutableStateOf(_payload)
 
+    val state by derivedStateOf { states[payload] }
+
     override val ident: String get() = this.javaClass.name
     override val name: String by derivedStateOf { "${payload.location.x}.${payload.location.z}.mca" }
+
+    fun state(defaultFactory: () -> McaEditorState): McaEditorState {
+        val localState = state
+        if (localState != null) return localState
+
+        val newState = defaultFactory()
+        states[payload] = newState
+        return newState
+    }
 
     companion object {
         val Identifier: String = SingleMcaEditor::class.java.name
     }
-}
-
-fun <T> T.alwaysEquals() = AlwaysEquals(this)
-
-class AlwaysEquals<T>(args: T) {
-    override fun equals(other: Any?): Boolean = true
-    override fun hashCode(): Int = 31
 }
 
 sealed class OpenRequest
@@ -141,9 +165,10 @@ sealed class GlobalMcaRequest: McaOpenRequest()
 object GlobalOpenRequest: GlobalMcaRequest()
 
 class GlobalUpdateRequest(
-    val dimension: WorldDimension? = null,
-    val type: McaType? = null,
-    val region: AnvilLocation? = null
+    val dimension: WorldDimension,
+    val type: McaType,
+    val location: AnvilLocation,
+    val file: File
 ): GlobalMcaRequest()
 
 class SingleMcaRequest(
