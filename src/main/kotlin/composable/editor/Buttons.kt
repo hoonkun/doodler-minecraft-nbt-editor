@@ -22,6 +22,7 @@ import androidx.compose.ui.input.pointer.isPrimaryPressed
 import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.unit.TextUnit
 import doodler.nbt.TagType
+import doodler.unit.ScaledUnits.Editor.Companion.scaled
 import doodler.types.BooleanProvider
 import doodler.types.EmptyLambda
 import doodler.types.TrueProvider
@@ -42,7 +43,7 @@ fun ActionButton(
     Box(
         modifier = Modifier
             .wrapContentSize()
-            .padding(top = 4.dp, bottom = 4.dp)
+            .padding(top = 4.dp.scaled, bottom = 4.dp.scaled)
             .hoverable(hoverInteractionSource, enabled())
             .mouseClickable(enabled()) {
                 if (buttons.isPrimaryPressed) onClick()
@@ -52,11 +53,11 @@ fun ActionButton(
                 val color =
                     if (hovered) Color.Black.copy(alpha = 0.1176f)
                     else Color.Transparent
-                drawRoundRect(color = color, cornerRadius = CornerRadius(3.dp.value))
+                drawRoundRect(color = color, cornerRadius = CornerRadius(3.dp.scaled.value))
             }
             .alpha(if (enabled()) 1f else 0.3f),
         content = {
-            Box(modifier = Modifier.padding(5.dp), content = content)
+            Box(modifier = Modifier.padding(5.dp.scaled), content = content)
         }
     )
 }
@@ -68,7 +69,7 @@ fun TagCreatorButton(
     onClick: () -> Unit
 ) {
     ActionButton(enabled, onClick = onClick) {
-        TagDoodleTypeText(type, enabled = enabled, fontSize = MaterialTheme.typography.h5.fontSize)
+        TagDoodleTypeText(type, enabled = enabled, fontSize = MaterialTheme.typography.h5.fontSize.scaled)
     }
 }
 
@@ -76,7 +77,7 @@ fun TagCreatorButton(
 fun EditorActionButton(
     text: String,
     color: Color,
-    fontSize: TextUnit = MaterialTheme.typography.h5.fontSize,
+    fontSize: TextUnit = MaterialTheme.typography.h5.fontSize.scaled,
     rotate: Pair<Float, Int>? = null,
     enabled: BooleanProvider = TrueProvider,
     onRightClick: () -> Unit = EmptyLambda,

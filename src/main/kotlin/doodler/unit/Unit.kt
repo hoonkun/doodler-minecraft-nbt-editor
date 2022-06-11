@@ -1,5 +1,7 @@
 package doodler.unit
 
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -10,3 +12,40 @@ val Float.sp get() = (this * multiplier).sp
 
 val Int.dp get() = (this * multiplier).dp
 val Float.dp get() = (this * multiplier).dp
+
+class ScaledUnits {
+
+    class HierarchyView {
+
+        companion object {
+            private const val Value = 0.9f
+
+            val Dp.scaled get() = this * Value
+            val TextUnit.scaled get() = this * Value
+        }
+
+    }
+
+    class Editor {
+
+        companion object {
+            private const val Value = 0.75f
+
+            val Dp.scaled get() = this * Value
+            val TextUnit.scaled get() = this * Value
+        }
+
+    }
+
+    class Tabs {
+
+        companion object {
+            private const val Value = 0.9f
+
+            val Dp.scaled get() = this * Value
+            val TextUnit.scaled get() = this * Value
+        }
+
+    }
+
+}

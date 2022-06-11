@@ -38,6 +38,7 @@ import doodler.nbt.TagType
 import doodler.theme.DoodlerTheme
 import doodler.types.*
 import doodler.unit.dp
+import doodler.unit.ScaledUnits.Editor.Companion.scaled
 
 
 @Composable
@@ -46,7 +47,7 @@ fun DoodleItemRoot(
     content: @Composable RowScope.() -> Unit
 ) = Row(
     verticalAlignment = Alignment.CenterVertically,
-    modifier = Modifier.then(modifier).padding(start = 12.dp).height(40.dp),
+    modifier = Modifier.then(modifier).padding(start = 12.dp.scaled).height(40.dp.scaled),
     content = content
 )
 
@@ -54,24 +55,24 @@ fun DoodleItemRoot(
 fun DoodleText(
     text: String,
     color: Color,
-    fontSize: TextUnit = MaterialTheme.typography.h4.fontSize,
+    fontSize: TextUnit = MaterialTheme.typography.h4.fontSize.scaled,
     rotate: Pair<Float, Int>? = null
 ) = Text(
     text = text,
     color = color,
     fontSize = fontSize,
-    modifier = Modifier.let { if (rotate != null) it.rotate(rotate.first).absoluteOffset(x = rotate.second.dp) else it }
+    modifier = Modifier.let { if (rotate != null) it.rotate(rotate.first).absoluteOffset(x = rotate.second.dp.scaled) else it }
 )
 
 @Composable
 fun DoodleText(
     text: AnnotatedString,
-    fontSize: TextUnit = MaterialTheme.typography.h4.fontSize,
+    fontSize: TextUnit = MaterialTheme.typography.h4.fontSize.scaled,
     rotate: Pair<Float, Int>? = null
 ) = Text(
     text = text,
     fontSize = fontSize,
-    modifier = Modifier.let { if (rotate != null) it.rotate(rotate.first).absoluteOffset(x = rotate.second.dp) else it }
+    modifier = Modifier.let { if (rotate != null) it.rotate(rotate.first).absoluteOffset(x = rotate.second.dp.scaled) else it }
 )
 
 val arrayTypeTextSpan = listOf(
@@ -87,7 +88,7 @@ val disabledTypeTextSpan = listOf(
 @Composable
 fun TagDoodleTypeText(
     type: TagType,
-    fontSize: TextUnit = MaterialTheme.typography.h5.fontSize,
+    fontSize: TextUnit = MaterialTheme.typography.h5.fontSize.scaled,
     enabled: BooleanProvider
 ) = DoodleText(
     text =
@@ -107,20 +108,20 @@ fun TagDoodleTypeText(
 fun TagDoodleContentText(
     text: String,
     color: Color,
-    fontSize: TextUnit = MaterialTheme.typography.h4.fontSize
+    fontSize: TextUnit = MaterialTheme.typography.h4.fontSize.scaled
 ) = DoodleText(text = text, color = color, fontSize = fontSize)
 
 @Composable
 fun TagDoodleType(
     type: TagType,
-    fontSize: TextUnit = MaterialTheme.typography.h5.fontSize,
+    fontSize: TextUnit = MaterialTheme.typography.h5.fontSize.scaled,
     selected: BooleanProvider = FalseProvider
 ) = Box (
     contentAlignment = Alignment.Center,
     modifier = Modifier
         .wrapContentSize()
-        .background(DoodlerTheme.Colors.DoodleItem.TagTypeBackground(selected()), RoundedCornerShape(3.dp))
-        .padding(top = 2.dp, bottom = 2.dp, start = 3.dp, end = 3.dp),
+        .background(DoodlerTheme.Colors.DoodleItem.TagTypeBackground(selected()), RoundedCornerShape(3.dp.scaled))
+        .padding(vertical = 2.dp.scaled, horizontal = 3.dp.scaled),
     content = { TagDoodleTypeText(type = type, fontSize = fontSize, enabled = TrueProvider) }
 )
 
@@ -146,13 +147,13 @@ fun ExpandableTagDoodleValue(
 ) = Box(
     modifier = Modifier
         .wrapContentSize()
-        .background(DoodlerTheme.Colors.DoodleItem.TagTypeBackground(selected()), RoundedCornerShape(3.dp))
-        .padding(top = 2.dp, bottom = 2.dp, start = 6.dp, end = 6.dp),
+        .background(DoodlerTheme.Colors.DoodleItem.TagTypeBackground(selected()), RoundedCornerShape(3.dp.scaled))
+        .padding(vertical = 2.dp.scaled, horizontal = 6.dp.scaled),
     content = {
         TagDoodleContentText(
             text = value,
             color = DoodlerTheme.Colors.DoodleItem.ExpandableValueTextColor(selected()),
-            fontSize = MaterialTheme.typography.h5.fontSize
+            fontSize = MaterialTheme.typography.h5.fontSize.scaled
         )
     }
 )
@@ -164,13 +165,16 @@ fun ExpandableTagItemDoodleIndex(
 ) = Box (
     modifier = Modifier
         .wrapContentSize()
-        .background(DoodlerTheme.Colors.DoodleItem.TagTypeBackground(selected()), shape = RoundedCornerShape(3.dp))
-        .padding(top = 2.dp, bottom = 2.dp, start = 3.dp, end = 3.dp),
+        .background(
+            color = DoodlerTheme.Colors.DoodleItem.TagTypeBackground(selected()),
+            shape = RoundedCornerShape(3.dp.scaled)
+        )
+        .padding(vertical = 2.dp.scaled, horizontal = 3.dp.scaled),
     content = {
         TagDoodleContentText(
             text = "$index:",
             color = DoodlerTheme.Colors.DoodleItem.IndexTextColor(selected()),
-            fontSize = MaterialTheme.typography.h5.fontSize
+            fontSize = MaterialTheme.typography.h5.fontSize.scaled
         )
     }
 )
@@ -188,7 +192,7 @@ fun DepthLine(
     val hovered by hoverInteractionSource.collectIsHoveredAsState()
 
     Canvas(
-        modifier = Modifier.width(35.dp).fillMaxHeight()
+        modifier = Modifier.width(35.dp.scaled).fillMaxHeight()
             .onPointerEvent(PointerEventType.Enter) { focus() }
             .onPointerEvent(PointerEventType.Exit) { unFocus() }
             .hoverable(hoverInteractionSource)
@@ -209,11 +213,11 @@ fun TagDoodleKeyValue(
     val key = doodle.tag.name
     if (key != null) {
         TagDoodleName(name = key)
-        Spacer(modifier = Modifier.width(20.dp))
+        Spacer(modifier = Modifier.width(20.dp.scaled))
     }
     if (doodle.parent?.tag?.type?.isCompound() != true) {
         ExpandableTagItemDoodleIndex(index = doodle.index)
-        Spacer(modifier = Modifier.width(20.dp))
+        Spacer(modifier = Modifier.width(20.dp.scaled))
     }
     if (doodle.tag.type.isNumber()) NumberTagDoodleValue(doodle.value)
     else if (doodle.tag.type.isString()) StringTagDoodleValue(doodle.value)
@@ -225,7 +229,7 @@ fun TagDoodleContent(
     doodle: TagDoodle
 ) {
     TagDoodleType(doodle.tag.type)
-    Spacer(modifier = Modifier.width(20.dp))
+    Spacer(modifier = Modifier.width(20.dp.scaled))
     TagDoodleKeyValue(doodle)
 }
 
@@ -265,7 +269,7 @@ fun RowScope.ReadonlyDoodleContent(
                     is TagDoodle -> TagDoodleContent(doodle)
                     is ArrayValueDoodle -> ArrayValueDoodleContent(doodle.index, doodle.value)
                 }
-                Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(12.dp.scaled))
             }
         )
     }
@@ -297,8 +301,8 @@ fun ActionDoodleField(
                     strokeWidth = 2f
                 )
             }
-            .padding(3.dp)
-            .widthIn(max = if (wide) 270.dp else 150.dp)
+            .padding(3.dp.scaled)
+            .widthIn(max = if (wide) 270.dp.scaled else 150.dp.scaled)
     ) {
         BasicTextField(
             value = text.value,
@@ -306,7 +310,7 @@ fun ActionDoodleField(
             singleLine = true,
             textStyle = TextStyle(
                 fontFamily = DoodlerTheme.Fonts.JetbrainsMono,
-                fontSize = MaterialTheme.typography.h4.fontSize,
+                fontSize = MaterialTheme.typography.h4.fontSize.scaled,
                 color = color
             ),
             cursorBrush = SolidColor(color),
@@ -321,7 +325,7 @@ fun ActionDoodleField(
             Text(
                 text = hint,
                 color = Color.White.copy(alpha = 0.3f),
-                fontSize = MaterialTheme.typography.h4.fontSize,
+                fontSize = MaterialTheme.typography.h4.fontSize.scaled,
                 modifier = Modifier.align(Alignment.CenterStart)
             )
         }
@@ -342,7 +346,7 @@ fun ActionDoodleNameField(
         focus = true,
         transformation = NameTransformer()
     )
-    Spacer(modifier = Modifier.width(12.dp))
+    Spacer(modifier = Modifier.width(12.dp.scaled))
 }
 
 @Composable
@@ -405,7 +409,7 @@ fun RowScope.ActionDoodleContent(
         }
 
         TagDoodleType(type = tagType, selected = TrueProvider)
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(modifier = Modifier.width(12.dp.scaled))
 
         if (!doodle.parent.tag.type.isList())
             ActionDoodleNameField(name, isValidName)
@@ -417,7 +421,7 @@ fun RowScope.ActionDoodleContent(
 
     } else if (doodle is ArrayValueCreatorDoodle) {
         ExpandableTagItemDoodleIndex(doodle.parent.children.size)
-        Spacer(modifier = Modifier.width(6.dp))
+        Spacer(modifier = Modifier.width(6.dp.scaled))
         ActionDoodleValueField(value, isValidValue, doodle.parent.tag.type.arrayElementType(), focus = true)
     }
 
@@ -425,7 +429,7 @@ fun RowScope.ActionDoodleContent(
 
     EditorActionButton("Cancel", DoodlerTheme.Colors.DoodleAction.CancelAction) { cancel() }
 
-    Spacer(modifier = Modifier.width(12.dp))
+    Spacer(modifier = Modifier.width(12.dp.scaled))
 
     EditorActionButton(
         text = "Ok",
@@ -434,7 +438,7 @@ fun RowScope.ActionDoodleContent(
         onClick = { commit() }
     )
 
-    Spacer(modifier = Modifier.width(30.dp))
+    Spacer(modifier = Modifier.width(30.dp.scaled))
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -563,7 +567,7 @@ fun TagDoodlePreview(
     DoodleItemRoot(
         modifier = Modifier.then(modifier)
             .zIndex(99f)
-            .border(2.dp, DoodlerTheme.Colors.DoodleItem.DepthPreviewBorder)
+            .border(2.dp.scaled, DoodlerTheme.Colors.DoodleItem.DepthPreviewBorder)
             .drawWithContent {
                 drawRect(DoodlerTheme.Colors.DoodleItem.NormalItemBackground)
                 drawRect(

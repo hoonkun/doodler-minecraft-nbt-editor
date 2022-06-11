@@ -24,6 +24,7 @@ import doodler.editor.NbtEditor
 import doodler.theme.DoodlerTheme
 import doodler.types.BooleanProvider
 import doodler.unit.dp
+import doodler.unit.ScaledUnits.Tabs.Companion.scaled
 
 @Composable
 fun EditorTabGroup(
@@ -81,12 +82,12 @@ fun EditorTab(
                 drawRect(
                     color = DoodlerTheme.Colors.Primary,
                     topLeft = Offset(0f, size.height - 2.dp.value),
-                    size = Size(size.width, 2.dp.value)
+                    size = Size(size.width, 2.dp.scaled.value)
                 )
             }
-            .height(25.dp).wrapContentWidth()
+            .height(25.dp.scaled).wrapContentWidth()
     ) {
-        Spacer(modifier = Modifier.width(6.dp))
+        Spacer(modifier = Modifier.width(8.5f.dp.scaled))
 
         Row(verticalAlignment = Alignment.Bottom) {
 
@@ -94,9 +95,9 @@ fun EditorTab(
                 Text(
                     text = editor.path,
                     color = DoodlerTheme.Colors.Editor.TabPath,
-                    fontSize = MaterialTheme.typography.h6.fontSize
+                    fontSize = MaterialTheme.typography.h6.fontSize.scaled
                 )
-                Spacer(modifier = Modifier.width(3.dp))
+                Spacer(modifier = Modifier.width(3.dp.scaled))
             }
 
             Text(
@@ -104,16 +105,16 @@ fun EditorTab(
                 color =
                 if (editor is NbtEditor && editor.state.actionFlags.canBeSaved) DoodlerTheme.Colors.Editor.TabHasChanges
                 else DoodlerTheme.Colors.Text.IdeGeneral,
-                fontSize = MaterialTheme.typography.h5.fontSize
+                fontSize = MaterialTheme.typography.h5.fontSize.scaled
             )
 
         }
 
-        Spacer(modifier = Modifier.width(4.dp))
+        Spacer(modifier = Modifier.width(4.dp.scaled))
 
         EditorCloseButton { onCloseTab(editor) }
 
-        Spacer(modifier = Modifier.width(6.dp))
+        Spacer(modifier = Modifier.width(6.dp.scaled))
     }
 }
 
@@ -133,10 +134,10 @@ fun EditorCloseButton(
         Text(
             text = "\u2715",
             fontWeight = FontWeight.Bold,
-            fontSize = MaterialTheme.typography.h5.fontSize,
+            fontSize = MaterialTheme.typography.h5.fontSize.scaled,
             color = DoodlerTheme.Colors.Editor.TabCloseButton(hovered),
             modifier = Modifier
-                .padding(3.dp)
+                .padding(3.dp.scaled)
                 .hoverable(hoverInteractionSource)
                 .clickable { close() }
         )

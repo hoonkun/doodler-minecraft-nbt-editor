@@ -29,6 +29,7 @@ import doodler.theme.DoodlerTheme
 import doodler.types.BooleanProvider
 import doodler.unit.dp
 import doodler.unit.sp
+import doodler.unit.ScaledUnits.HierarchyView.Companion.scaled
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.ColorAlphaType
 import org.jetbrains.skia.ColorType
@@ -37,14 +38,14 @@ import org.jetbrains.skiko.toBufferedImage
 import java.io.File
 
 
-val Width = 225.dp
-val ItemHeight = 29.dp
+val Width = 225.dp.scaled
+val ItemHeight = 29.dp.scaled
 
 val ExtensionAlias = mapOf("mca" to "AVL", "dat" to "NBT", "png" to "IMG", "jpg" to "IMG", "json" to "JSN")
 
 val HierarchyScrollBarStyle = ScrollbarStyle(
-    minimalHeight = 70.dp,
-    thickness = 18.dp,
+    minimalHeight = 70.dp.scaled,
+    thickness = 13.dp.scaled,
     shape = RectangleShape,
     hoverDurationMillis = 1,
     unhoverColor = ThemedColor.ScrollBarNormal,
@@ -109,7 +110,7 @@ fun BoxScope.WorldHierarchy(
             } else if (it is FileHierarchyItem) {
                 FileTypeIcon(it.file.extension)
             }
-            Spacer(modifier = Modifier.width(7.dp))
+            Spacer(modifier = Modifier.width(7.dp.scaled))
             HierarchyText(
                 text = it.name,
                 bold = items.indexOf(it) == 0
@@ -156,7 +157,7 @@ fun HierarchyItemsColumn(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start,
                 modifier = Modifier
-                    .padding(start = item.padding, end = 15.dp)
+                    .padding(start = item.padding, end = 15.dp.scaled)
                     .height(ItemHeight)
                     .let {
                         if (onClick != null) it.fillMaxWidth().clickable { onClick(item) }
@@ -187,15 +188,15 @@ fun DirectoryToggleIcon(expandedProvider: BooleanProvider) {
     Image(
         painter = painterResource("/icons/icon_${if (expandedProvider()) "collapse" else "expand"}.png"),
         contentDescription = null,
-        modifier = Modifier.size(18.dp).alpha(0.6f)
+        modifier = Modifier.size(18.dp.scaled).alpha(0.6f)
     )
-    Spacer(modifier = Modifier.width(5.dp))
+    Spacer(modifier = Modifier.width(5.dp.scaled))
 }
 
 @Composable
 fun DirectoryToggleInteraction(onClick: () -> Unit) {
-    Spacer(modifier = Modifier.size(18.dp).clickable(onClick = onClick))
-    Spacer(modifier = Modifier.width(5.dp))
+    Spacer(modifier = Modifier.size(18.dp.scaled).clickable(onClick = onClick))
+    Spacer(modifier = Modifier.width(5.dp.scaled))
 }
 
 @Composable
@@ -203,7 +204,7 @@ fun WorldIcon(bitmap: ImageBitmap) {
     Image(
         bitmap = bitmap,
         contentDescription = null,
-        modifier = Modifier.size(size = 20.dp).clip(RoundedCornerShape(3.dp))
+        modifier = Modifier.size(size = 20.dp.scaled).clip(RoundedCornerShape(3.dp.scaled))
     )
 }
 
@@ -212,17 +213,17 @@ fun DirectoryIcon() {
     Image(
         painter = painterResource("/icons/editor_folder.png"),
         contentDescription = null,
-        modifier = Modifier.size(18.dp)
+        modifier = Modifier.size(15.dp.scaled)
     )
 }
 
 @Composable
 fun FileTypeIcon(extension: String) {
-    Spacer(modifier = Modifier.width(3.dp))
+    Spacer(modifier = Modifier.width(3.dp.scaled))
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(width = 20.dp, height = 16.dp)
+            .size(width = 20.dp.scaled, height = 16.dp.scaled)
             .background(
                 when (extension) {
                     "dat" -> DoodlerTheme.Colors.HierarchyView.Dat
@@ -236,7 +237,7 @@ fun FileTypeIcon(extension: String) {
         Text(
             text = ExtensionAlias[extension] ?: "",
             color = DoodlerTheme.Colors.HierarchyView.TextColor,
-            fontSize = 8.sp
+            fontSize = 8.sp.scaled
         )
     }
 }
@@ -245,7 +246,7 @@ fun FileTypeIcon(extension: String) {
 fun HierarchyText(
     text: String,
     bold: Boolean = false,
-    fontSize: TextUnit = MaterialTheme.typography.h5.fontSize
+    fontSize: TextUnit = MaterialTheme.typography.h5.fontSize.scaled
 ) {
     Text(
         text = text,
@@ -324,8 +325,13 @@ sealed class HierarchyItem(
     val depth: Int
 ) {
 
-    val padding: Dp get() =
-        7.dp + ((depth + 1) * 20 - (if (this is DirectoryHierarchyItem) 20 else 0)).coerceAtLeast(0).dp
+    val padding: Dp get() {
+        val initial = 7
+        val depthPadding = (depth + 1) * 16
+        val directoryOffset = if (this is DirectoryHierarchyItem) 20 else 0
+
+        return (initial + (depthPadding - directoryOffset).coerceAtLeast(0)).dp.scaled
+    }
 
 }
 
