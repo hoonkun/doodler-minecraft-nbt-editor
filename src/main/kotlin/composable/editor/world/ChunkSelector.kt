@@ -115,12 +115,12 @@ fun ChunkSelector(
     }
 
     val chunkUpdated = update@ {
-        resetBlock()
-
         val prevState = state.selectedChunk
         val newState = chunkOrNull()
 
         if (prevState == newState) return@update
+
+        resetBlock()
         setSelectedChunk(newState)
     }
 
