@@ -136,7 +136,7 @@ fun ChunkSelector(
             .fillMaxWidth()
             .zIndex(10f)
     ) {
-        Spacer(modifier = Modifier.width(5.dp))
+        DropdownSpacer()
         Dropdown(prefix = "block:", enabled = enabled) {
             Coordinate(
                 xValue = state.blockXValue, zValue = state.blockZValue,
@@ -146,7 +146,7 @@ fun ChunkSelector(
                 enabled = enabled
             )
         }
-        Spacer(modifier = Modifier.width(5.dp))
+        DropdownSpacer()
         Dropdown(prefix = "chunk:", accent = true, valid = state.selectedChunk != null, enabled = enabled) {
             Coordinate(
                 xValue = state.chunkXValue, zValue = state.chunkZValue,
@@ -157,7 +157,7 @@ fun ChunkSelector(
                 enabled = enabled
             )
         }
-        Spacer(modifier = Modifier.width(5.dp))
+        DropdownSpacer()
         Dropdown(
             prefix = "region:",
             onClick = if (availableAnvils.size != 1) ({ openPopup("region") }) else null,
@@ -172,20 +172,12 @@ fun ChunkSelector(
                     text = "r.$x.$z.mca",
                     spanStyles = listOf(
                         AnnotatedString.Range(
-                            SpanStyle(
-                                color =
-                                if (chunk && region) DoodlerTheme.Colors.Text.IdeGeneral
-                                else DoodlerTheme.Colors.Text.Invalid
-                            ),
+                            SpanStyle(color = DoodlerTheme.Colors.Text.NumberColor(chunk && region)),
                             start = 2,
                             end = 2 + x.length
                         ),
                         AnnotatedString.Range(
-                            SpanStyle(
-                                color =
-                                if (chunk && region) DoodlerTheme.Colors.Text.IdeGeneral
-                                else DoodlerTheme.Colors.Text.Invalid
-                            ),
+                            SpanStyle(color = DoodlerTheme.Colors.Text.NumberColor(chunk && region)),
                             start = 2 + x.length + 1,
                             end = 2 + x.length + 1 + z.length
                         )
@@ -193,7 +185,7 @@ fun ChunkSelector(
                 )
             )
         }
-        Spacer(modifier = Modifier.width(5.dp))
+        DropdownSpacer()
         Dropdown(
             prefix = "type:",
             onClick = if (editor is GlobalMcaEditor) ({ openPopup("type") }) else null,
@@ -201,7 +193,7 @@ fun ChunkSelector(
         ) {
             CoordinateText(payload.type.name)
         }
-        Spacer(modifier = Modifier.width(5.dp))
+        DropdownSpacer()
         Dropdown(
             prefix = "dim:",
             onClick = if (editor is GlobalMcaEditor) ({ openPopup("dimension") }) else null,
@@ -257,6 +249,9 @@ fun Dropdown(
         Spacer(modifier = Modifier.width(6.dp))
     }
 }
+
+@Composable
+fun DropdownSpacer() = Spacer(modifier = Modifier.width(5.dp))
 
 @Composable
 fun Coordinate(

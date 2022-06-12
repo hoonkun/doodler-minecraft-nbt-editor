@@ -197,6 +197,8 @@ class DoodlerTheme {
                 val Malformed = Color(0xff8c8c8c)
                 val Invalid = Color(0xfff57c00)
                 val Normal = Color(0xff7d7d7d)
+
+                fun NumberColor(valid: Boolean) = if (valid) IdeGeneral else Invalid
             }
 
         }
