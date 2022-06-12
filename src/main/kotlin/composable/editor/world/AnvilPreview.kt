@@ -47,6 +47,7 @@ fun AnvilPreview(
     properties: ChunkPreviewProperties,
     cache: TerrainCache,
     chunk: ChunkLocation?,
+    anvil: AnvilLocation,
     hasNbt: (ChunkLocation) -> Boolean,
     moveToSurroundings: (AnvilLocation) -> Unit,
     invalidateCache: () -> Unit,
@@ -68,6 +69,7 @@ fun AnvilPreview(
             cache = cache,
             terrainFile = terrain,
             chunk = chunk,
+            anvil = anvil,
             dimension = properties.dimension,
             yLimit = yLimit,
             overlay = { anvil ->
@@ -97,12 +99,13 @@ fun AnvilImageLoader(
     cache: TerrainCache,
     terrainFile: File?,
     chunk: ChunkLocation?,
+    anvil: AnvilLocation,
     dimension: WorldDimension,
     yLimit: Int,
     overlay: @Composable BoxScope.(AnvilLocation) -> Unit
 ) {
 
-    val location = remember(chunk) { chunk?.toAnvilLocation() } ?: return
+    val location = remember(chunk) { chunk?.toAnvilLocation() } ?: anvil
     val terrainInfo = CachedTerrainInfo(yLimit, location)
 
     val terrain = cache.terrains[terrainInfo]

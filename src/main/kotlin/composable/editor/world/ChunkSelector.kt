@@ -55,15 +55,15 @@ fun ChunkSelector(
     val state = editor.state(defaultStateProvider)
     val payload = editor.payload
 
-    val currentAnvil by remember(payload.location) {
-        derivedStateOf { state.selectedChunk?.toAnvilLocation() ?: payload.location }
+    val currentAnvil = remember(state.selectedChunk, payload.location) {
+        state.selectedChunk?.toAnvilLocation() ?: payload.location
     }
 
     val availableAnvils by remember(chunks) {
         derivedStateOf { chunks.map { it.toAnvilLocation() }.toSet().sortedBy { "${it.x}.${it.z}" } }
     }
 
-    val surroundingAnvils by remember {
+    val surroundingAnvils by remember(currentAnvil) {
         derivedStateOf { AnvilLocationSurroundings.fromBase(currentAnvil, availableAnvils) }
     }
 
@@ -166,7 +166,6 @@ fun ChunkSelector(
             onClick = if (availableAnvils.size != 1) ({ openPopup("region") }) else null,
             modifier = Modifier
         ) {
-            val chunk = chunkOrNull() != null
             val region = existingAnvil()
             val x = "${currentAnvil.x}"
             val z = "${currentAnvil.z}"
@@ -175,12 +174,12 @@ fun ChunkSelector(
                     text = "r.$x.$z.mca",
                     spanStyles = listOf(
                         AnnotatedString.Range(
-                            SpanStyle(color = DoodlerTheme.Colors.Text.NumberColor(chunk && region)),
+                            SpanStyle(color = DoodlerTheme.Colors.Text.NumberColor(region)),
                             start = 2,
                             end = 2 + x.length
                         ),
                         AnnotatedString.Range(
-                            SpanStyle(color = DoodlerTheme.Colors.Text.NumberColor(chunk && region)),
+                            SpanStyle(color = DoodlerTheme.Colors.Text.NumberColor(region)),
                             start = 2 + x.length + 1,
                             end = 2 + x.length + 1 + z.length
                         )
@@ -208,14 +207,14 @@ fun ChunkSelector(
 
     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
         AnvilPreview(
-            terrain = state.selectedChunk?.toAnvilLocation()?.let { anvil ->
-                terrains.find { it.name == "r.${anvil.x}.${anvil.z}.mca" }
-            },
+            terrain = terrains.find { it.name == "r.${currentAnvil.x}.${currentAnvil.z}.mca" },
             properties = ChunkPreviewProperties(payload.dimension, surroundingAnvils),
             cache = terrainCache,
             chunk = state.selectedChunk,
+            anvil = currentAnvil,
             hasNbt = { chunks.contains(it) },
             moveToSurroundings = {
+                resetChunk()
                 update(McaPayload(payload.dimension, payload.type, it, siblingAnvil(payload.file, it)))
             },
             invalidateCache = {
