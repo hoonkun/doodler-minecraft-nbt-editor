@@ -1,8 +1,6 @@
 package composable.editor.world
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.MaterialTheme
@@ -14,7 +12,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isPrimaryPressed
+import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -55,12 +56,13 @@ fun AnvilPreview(
     var yLimit by remember(properties.dimension) { mutableStateOf(properties.dimension.defaultYLimit) }
 
     var propertiesVisible by remember { mutableStateOf(false) }
-    var loaded by remember { mutableStateOf(false) }
 
     Box(
         contentAlignment = PropertiesAlignment,
-        modifier = Modifier.wrapContentWidth().fillMaxHeight()
+        modifier = Modifier
             .requiredSizeIn(minWidth = MinimumViewSize.dp.scaled, minHeight = MinimumViewSize.dp.scaled)
+            .fillMaxHeight()
+            .aspectRatio(1f)
     ) {
         AnvilImageLoader(
             cache = cache,
@@ -68,10 +70,15 @@ fun AnvilPreview(
             chunk = chunk,
             dimension = properties.dimension,
             yLimit = yLimit,
-            hasNbt = hasNbt,
-            onLoadStateChanged = { loaded = it },
-            onRightClick = { propertiesVisible = !propertiesVisible },
-            onItemClick = onItemClick
+            overlay = { anvil ->
+                ChunkButtons(
+                    chunk = chunk,
+                    anvil = anvil,
+                    hasNbt = hasNbt,
+                    onItemClick = onItemClick,
+                    onRightClick = { propertiesVisible = !propertiesVisible }
+                )
+            }
         )
         AnvilPreviewProperties(
             properties = properties,
@@ -79,7 +86,7 @@ fun AnvilPreview(
             moveToSurroundings = moveToSurroundings,
             changeYLimit = { yLimit = (yLimit - it).coerceIn(properties.dimension.yRange) },
             invalidateCache = invalidateCache,
-            visible = propertiesVisible && loaded
+            visible = propertiesVisible
         )
     }
 
@@ -92,10 +99,7 @@ fun AnvilImageLoader(
     chunk: ChunkLocation?,
     dimension: WorldDimension,
     yLimit: Int,
-    hasNbt: (ChunkLocation) -> Boolean,
-    onLoadStateChanged: (Boolean) -> Unit,
-    onRightClick: () -> Unit,
-    onItemClick: (ChunkLocation) -> Unit
+    overlay: @Composable BoxScope.(AnvilLocation) -> Unit
 ) {
 
     val location = remember(chunk) { chunk?.toAnvilLocation() } ?: return
@@ -181,7 +185,7 @@ fun AnvilImageLoader(
 
     }
 
-    LaunchedEffect(terrain) {
+    LaunchedEffect(terrainInfo, terrain) {
         if (terrain != null) return@LaunchedEffect
 
         withContext(Dispatchers.IO) { load() }
@@ -190,9 +194,7 @@ fun AnvilImageLoader(
     if (terrain == null) return
 
     Box(
-        modifier = Modifier.fillMaxHeight()
-            .aspectRatio(1f)
-            .zIndex(0f)
+        modifier = Modifier.fillMaxSize().zIndex(0f)
     ) {
         Image(
             bitmap = terrain,
@@ -200,8 +202,68 @@ fun AnvilImageLoader(
             filterQuality = FilterQuality.None,
             modifier = Modifier.fillMaxSize()
         )
+        overlay(location)
     }
 
+}
+
+@Composable
+fun ChunkButtons(
+    chunk: ChunkLocation?,
+    anvil: AnvilLocation,
+    hasNbt: (ChunkLocation) -> Boolean,
+    onItemClick: (ChunkLocation) -> Unit,
+    onRightClick: () -> Unit,
+) {
+    var hovered by remember { mutableStateOf(-1 to -1) }
+
+    Column(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        for (x in 0 until 32) {
+            Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                for (z in 0 until 32) {
+                    val chunkEach = ChunkLocation(31 - x + 32 * anvil.x, z + 32 * anvil.z)
+                    ChunkButton(
+                        hovered = hovered.first == x && hovered.second == z,
+                        selected = chunkEach == chunk,
+                        enabled = hasNbt(chunkEach),
+                        onHover = { hovered = x to z },
+                        onClick = { onItemClick(chunkEach) },
+                        onRightClick = onRightClick
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun RowScope.ChunkButton(
+    hovered: Boolean,
+    selected: Boolean,
+    enabled: Boolean,
+    onHover: () -> Unit,
+    onClick: () -> Unit,
+    onRightClick: () -> Unit
+) {
+    Canvas(
+        modifier = Modifier
+            .weight(1f).fillMaxHeight()
+            .onPointerEvent(PointerEventType.Enter) { onHover() }
+            .onPointerEvent(PointerEventType.Press) {
+                if (currentEvent.buttons.isPrimaryPressed) onClick()
+                else if (currentEvent.buttons.isSecondaryPressed) onRightClick()
+            }
+    ) {
+        if (hovered || !enabled) {
+            drawRect(if (!enabled) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.2f))
+        }
+        if (selected) {
+            drawRect(Color.White, style = Stroke(width = 2.dp.value))
+        }
+    }
 }
 
 @Composable
@@ -220,7 +282,7 @@ fun AnvilPreviewProperties(
         modifier = Modifier.requiredSize(MinimumViewSize.dp.scaled)
     ) {
         AnvilPreviewPropertyBackground()
-        Column(modifier = Modifier.width(350.dp).padding(top = 10.dp, start = 15.dp)) {
+        Column(modifier = Modifier.width(275.dp.scaled).padding(top = 10.dp.scaled, start = 15.dp.scaled)) {
             Row(modifier = Modifier.fillMaxWidth()) {
                 AnvilNavigateButton("above", properties.surroundings.above, moveToSurroundings)
                 AnvilNavigateButton("left", properties.surroundings.left, moveToSurroundings)
@@ -254,7 +316,7 @@ fun AnvilPreviewPropertyBackground() =
                 Brush.radialGradient(
                     colors = listOf(Color.Black, Color.Transparent),
                     center = Offset.Zero,
-                    radius = MinimumViewSize
+                    radius = MinimumViewSize.dp.scaled.value
                 )
             )
     )
@@ -288,14 +350,14 @@ fun PropertyButton(
 ) = Box(
     modifier = Modifier
         .wrapContentSize()
-        .padding(horizontal = 5.dp.scaled)
         .clickable(onClick = onClick)
         .background(DoodlerTheme.Colors.Editor.PropertyButtonBackground, RoundedCornerShape(2.dp)),
     content = {
         Text(
             text = text,
             color = DoodlerTheme.Colors.Text.IdeGeneral,
-            fontSize = MaterialTheme.typography.h6.fontSize.scaled
+            fontSize = MaterialTheme.typography.h6.fontSize.scaled,
+            modifier = Modifier.padding(horizontal = 5.dp.scaled)
         )
     }
 )
@@ -334,14 +396,15 @@ fun YLimitText(
             )
         ),
         color = DoodlerTheme.Colors.Text.IdeGeneral,
-        modifier = Modifier.padding(vertical = 3.dp)
+        fontSize = MaterialTheme.typography.h6.fontSize.scaled,
+        modifier = Modifier.padding(vertical = 3.dp.scaled)
             .onPointerEvent(PointerEventType.Scroll) { changeYLimit(currentEvent.changes[0].scrollDelta.y.toInt()) }
     )
 
 val PropertiesAlignment = Alignment.TopStart
 
-const val MinimumViewSize = 700f
-const val GradientYScale = 0.6f
+const val MinimumViewSize = 450f
+const val GradientYScale = 0.75f
 const val GradientOffset = -1 * MinimumViewSize * (1f - GradientYScale)
 
 val WorldDimension.yRange get() =

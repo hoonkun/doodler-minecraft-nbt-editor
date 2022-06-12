@@ -62,7 +62,7 @@ class ScaledUnits {
     class AnvilPreview {
 
         companion object {
-            private const val Value = 0.7f
+            private const val Value = 0.8f
 
             val TextUnit.scaled get() = this * Value
             val Dp.scaled get() = this * Value

@@ -90,7 +90,7 @@ class DoodlerTheme {
                 val SelectorDefault = Color(0xff2a2a2a)
                 val SelectorHover = Color(0xff323232)
 
-                val PropertyButtonBackground = Color(0xff585858)
+                val PropertyButtonBackground = Color(0xaa585858)
 
                 fun Tab(selected: Boolean, pressed: Boolean, focused: Boolean) =
                     if (selected) Color(255, 255, 255, 20)
