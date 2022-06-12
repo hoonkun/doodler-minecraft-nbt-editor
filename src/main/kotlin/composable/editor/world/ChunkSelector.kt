@@ -107,6 +107,8 @@ fun ChunkSelector(
     }
 
     val chunkUpdated = update@ {
+        resetBlock()
+
         val prevState = state.selectedChunk
         val newState = chunkOrNull()
 
@@ -150,8 +152,8 @@ fun ChunkSelector(
         Dropdown(prefix = "chunk:", accent = true, valid = state.selectedChunk != null, enabled = enabled) {
             Coordinate(
                 xValue = state.chunkXValue, zValue = state.chunkZValue,
-                onXChange = { state.chunkXValue = it; chunkUpdated() },
-                onZChange = { state.chunkZValue = it; chunkUpdated() },
+                onXChange = { state.chunkXValue = it; chunkUpdated(); },
+                onZChange = { state.chunkZValue = it; chunkUpdated(); },
                 xTransformer = { text -> transformChunkCoordinate(text) { chunks.hasX(it) } },
                 zTransformer = { text -> transformChunkCoordinate(text) { chunks.hasZ(it) } },
                 enabled = enabled
