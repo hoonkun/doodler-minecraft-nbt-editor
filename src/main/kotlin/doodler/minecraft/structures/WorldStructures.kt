@@ -39,7 +39,9 @@ class WorldHierarchy (
 
         return list.mapNotNull {
             if (world[it].isNotEmpty()) {
-                val files = world[it].map { file -> FileHierarchyItem(file, file.name, 3) }
+                val files = world[it]
+                    .sortedBy { file -> file.name }
+                    .map { file -> FileHierarchyItem(file, file.name, 3) }
                 DirectoryHierarchyItem(files, it, 2)
             } else null
         }
