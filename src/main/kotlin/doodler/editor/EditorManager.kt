@@ -165,7 +165,7 @@ sealed class McaOpenRequest: OpenRequest()
 object GlobalOpenRequest: McaOpenRequest()
 class SingleOpenRequest(val payload: McaPayload): McaOpenRequest()
 
-class McaPayload(
+data class McaPayload(
     val dimension: WorldDimension,
     val type: McaType,
     val location: AnvilLocation,

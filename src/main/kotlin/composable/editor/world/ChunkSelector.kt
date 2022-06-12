@@ -59,11 +59,11 @@ fun ChunkSelector(
         state.selectedChunk?.toAnvilLocation() ?: payload.location
     }
 
-    val availableAnvils by remember(chunks) {
-        derivedStateOf { chunks.map { it.toAnvilLocation() }.toSet().sortedBy { "${it.x}.${it.z}" } }
+    val availableAnvils = remember(chunks) {
+        chunks.map { it.toAnvilLocation() }.toSet().sortedBy { "${it.x}.${it.z}" }
     }
 
-    val surroundingAnvils by remember(currentAnvil) {
+    val surroundingAnvils by remember(currentAnvil, availableAnvils) {
         derivedStateOf { AnvilLocationSurroundings.fromBase(currentAnvil, availableAnvils) }
     }
 
@@ -115,6 +115,10 @@ fun ChunkSelector(
 
         if (prevState == newState) return@update
         state.selectedChunk = newState
+
+        newState?.toAnvilLocation()?.let {
+            update(payload.copy(location = it, file = siblingAnvil(payload.file, it)))
+        }
     }
 
     val blockUpdated = update@ {
@@ -215,7 +219,7 @@ fun ChunkSelector(
             hasNbt = { chunks.contains(it) },
             moveToSurroundings = {
                 resetChunk()
-                update(McaPayload(payload.dimension, payload.type, it, siblingAnvil(payload.file, it)))
+                update(payload.copy(location = it, file = siblingAnvil(payload.file, it)))
             },
             invalidateCache = {
                 terrainCache.terrains
