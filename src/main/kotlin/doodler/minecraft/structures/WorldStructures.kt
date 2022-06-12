@@ -94,6 +94,7 @@ enum class WorldDimension(
     }
 }
 
+@Deprecated("deprecated.")
 data class CachedTerrainInfo(val yLimit: Short, val location: AnvilLocation)
 
 class WorldSpecification (

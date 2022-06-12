@@ -4,6 +4,7 @@ import androidx.compose.runtime.*
 import doodler.minecraft.DatWorker
 import doodler.minecraft.structures.*
 import androidx.compose.runtime.snapshots.SnapshotStateMap
+import androidx.compose.ui.graphics.ImageBitmap
 import doodler.doodle.structures.TagDoodle
 import doodler.editor.states.McaEditorState
 import doodler.editor.states.NbtEditorState
@@ -14,6 +15,8 @@ import java.io.File
 class EditorManager {
     val editors = mutableStateListOf<Editor>()
     var selected by mutableStateOf<Editor?>(null)
+
+    val cache = TerrainCache(mutableStateMapOf(), mutableMapOf())
 
     fun hasItem(ident: String) = editors.find { it.ident == ident } != null
 
@@ -168,3 +171,10 @@ class McaPayload(
     val location: AnvilLocation,
     val file: File
 )
+
+data class TerrainCache(
+    val terrains: SnapshotStateMap<CachedTerrainInfo, ImageBitmap>,
+    val yRanges: MutableMap<AnvilLocation, List<IntRange>>
+)
+
+data class CachedTerrainInfo(val yLimit: Int, val location: AnvilLocation)

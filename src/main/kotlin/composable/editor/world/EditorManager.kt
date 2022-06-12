@@ -58,10 +58,10 @@ fun BoxScope.EditorManager(
             onCloseTab = { manager.close(it) }
         )
         Editors {
-            val selected = manager.selected
-
-            if (selected is NbtEditor) NbtEditor(selected)
-            if (selected is McaEditor<*>) McaEditor(selected, state.worldSpec, openChunkNbt, updateGlobal)
+            when (val selected = manager.selected) {
+                is NbtEditor -> NbtEditor(selected)
+                is McaEditor<*> -> McaEditor(selected, manager.cache, state.worldSpec, openChunkNbt, updateGlobal)
+            }
         }
     }
 

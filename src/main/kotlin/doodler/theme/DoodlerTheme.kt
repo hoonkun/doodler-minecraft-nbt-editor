@@ -90,6 +90,8 @@ class DoodlerTheme {
                 val SelectorDefault = Color(0xff2a2a2a)
                 val SelectorHover = Color(0xff323232)
 
+                val PropertyButtonBackground = Color(0xff585858)
+
                 fun Tab(selected: Boolean, pressed: Boolean, focused: Boolean) =
                     if (selected) Color(255, 255, 255, 20)
                     else if (pressed) Color(0, 0, 0, 80)
@@ -193,6 +195,8 @@ class DoodlerTheme {
                 val IdeNumberLiteral = Color(0xff6897bb)
                 val IdeStringLiteral = Color(0xff6a8759)
                 val IdeGeneral = Color(0xffa9b7c6)
+                val IdeKeyword = Color(0xffcc7832)
+                val IdeComment = Color(0xFF808080)
 
                 val Malformed = Color(0xff8c8c8c)
                 val Invalid = Color(0xfff57c00)

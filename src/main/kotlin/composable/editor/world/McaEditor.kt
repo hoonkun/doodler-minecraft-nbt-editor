@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.ImageBitmap
 import doodler.editor.*
 import doodler.editor.states.McaEditorState
 import doodler.minecraft.McaWorker
@@ -17,12 +16,11 @@ import java.io.File
 @Composable
 fun <K> BoxScope.McaEditor(
     editor: McaEditor<K>,
+    cache: TerrainCache,
     worldSpec: WorldSpecification,
     openChunkNbt: (ChunkLocation, File) -> Unit,
     update: (McaPayload) -> Unit
 ) {
-    val terrainCache = remember { mutableStateMapOf<CachedTerrainInfo, ImageBitmap>() }
-    val yRangeCache = remember { mutableMapOf<AnvilLocation, List<IntRange>>() }
 
     val chunks by remember {
         derivedStateOf {
@@ -41,7 +39,15 @@ fun <K> BoxScope.McaEditor(
         }
 
     ChunkSelectorColumn {
-        ChunkSelector(editor, chunks, update, openChunkNbt, defaultStateProvider)
+        ChunkSelector(
+            editor = editor,
+            terrains = worldSpec.tree[editor.payload.dimension][McaType.TERRAIN],
+            chunks = chunks,
+            terrainCache = cache,
+            update = update,
+            openChunkNbt = openChunkNbt,
+            defaultStateProvider = defaultStateProvider
+        )
     }
 }
 

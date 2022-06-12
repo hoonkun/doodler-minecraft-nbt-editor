@@ -33,10 +33,9 @@ import androidx.compose.ui.zIndex
 import doodler.editor.GlobalMcaEditor
 import doodler.editor.McaEditor
 import doodler.editor.McaPayload
+import doodler.editor.TerrainCache
 import doodler.editor.states.McaEditorState
-import doodler.minecraft.structures.AnvilLocationSurroundings
-import doodler.minecraft.structures.BlockLocation
-import doodler.minecraft.structures.ChunkLocation
+import doodler.minecraft.structures.*
 import doodler.theme.DoodlerTheme
 import doodler.unit.ScaledUnits.ChunkSelector.Companion.scaled
 import doodler.unit.dp
@@ -45,7 +44,9 @@ import java.io.File
 @Composable
 fun ChunkSelector(
     editor: McaEditor<*>,
+    terrains: List<File>,
     chunks: List<ChunkLocation>,
+    terrainCache: TerrainCache,
     update: (McaPayload) -> Unit,
     openChunkNbt: (ChunkLocation, File) -> Unit,
     defaultStateProvider: () -> McaEditorState
@@ -205,6 +206,32 @@ fun ChunkSelector(
         }
     }
 
+    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+        AnvilPreview(
+            terrain = state.selectedChunk?.toAnvilLocation()?.let { anvil ->
+                terrains.find { it.name == "r.${anvil.x}.${anvil.z}.mca" }
+            },
+            properties = ChunkPreviewProperties(payload.dimension, surroundingAnvils),
+            cache = terrainCache,
+            chunk = state.selectedChunk,
+            hasNbt = { chunks.contains(it) },
+            moveToSurroundings = {
+                update(McaPayload(payload.dimension, payload.type, it, siblingAnvil(payload.file, it)))
+            },
+            invalidateCache = {
+                terrainCache.terrains
+                    .filter { it.key.location == currentAnvil }.keys
+                    .forEach { terrainCache.terrains.remove(it) }
+            },
+            onItemClick = {
+                state.chunkXValue = TextFieldValue("${it.x}")
+                state.chunkZValue = TextFieldValue("${it.z}")
+                state.selectedChunk = it
+                resetBlock()
+            }
+        )
+    }
+
 }
 
 @Composable
@@ -341,6 +368,9 @@ fun CoordinateInput(
 
 private fun List<ChunkLocation>.hasX(x: Int) = map { it.x }.contains(x)
 private fun List<ChunkLocation>.hasZ(z: Int) = map { it.z }.contains(z)
+
+private fun siblingAnvil(file: File, location: AnvilLocation) =
+    File("${file.parentFile.absolutePath}/r.${location.x}.${location.z}.mca")
 
 val transformBlockCoordinate: (AnnotatedString) -> TransformedText = { annotated ->
     val int = annotated.text.toIntOrNull()
