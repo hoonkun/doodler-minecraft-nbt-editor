@@ -14,15 +14,15 @@ import java.io.File
 
 
 @Composable
-fun <K> BoxScope.McaEditor(
-    editor: McaEditor<K>,
+fun BoxScope.McaEditor(
+    editor: McaEditor<*>,
     cache: TerrainCache,
     worldSpec: WorldSpecification,
     openChunkNbt: (ChunkLocation, File) -> Unit,
     update: (McaPayload) -> Unit
 ) {
 
-    val chunks by remember {
+    val chunks by remember(editor) {
         derivedStateOf {
             val payload = editor.payload
             when (editor) {
