@@ -230,7 +230,8 @@ fun ChunkSelector(
                     .filter { it.key.location == currentAnvil }.keys
                     .forEach { terrainCache.terrains.remove(it) }
             },
-            onItemClick = {
+            onItemClick = onItemClick@ {
+                if (!chunks.contains(it)) return@onItemClick
                 state.chunkXValue = TextFieldValue("${it.x}")
                 state.chunkZValue = TextFieldValue("${it.z}")
                 state.selectedChunk = it

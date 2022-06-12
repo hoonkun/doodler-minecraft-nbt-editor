@@ -256,7 +256,7 @@ fun RowScope.ChunkButton(
             .weight(1f).fillMaxHeight()
             .onPointerEvent(PointerEventType.Enter) { onHover() }
             .onPointerEvent(PointerEventType.Press) {
-                if (currentEvent.buttons.isPrimaryPressed) onClick()
+                if (enabled && currentEvent.buttons.isPrimaryPressed) onClick()
                 else if (currentEvent.buttons.isSecondaryPressed) onRightClick()
             }
     ) {
