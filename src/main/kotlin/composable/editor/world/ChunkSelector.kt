@@ -107,6 +107,13 @@ fun ChunkSelector(
         resetBlock()
     }
 
+    val setSelectedChunk: (ChunkLocation?) -> Unit = { chunk ->
+        state.selectedChunk = chunk
+        chunk?.toAnvilLocation()?.let {
+            update(payload.copy(location = it, file = siblingAnvil(payload.file, it)))
+        }
+    }
+
     val chunkUpdated = update@ {
         resetBlock()
 
@@ -114,11 +121,7 @@ fun ChunkSelector(
         val newState = chunkOrNull()
 
         if (prevState == newState) return@update
-        state.selectedChunk = newState
-
-        newState?.toAnvilLocation()?.let {
-            update(payload.copy(location = it, file = siblingAnvil(payload.file, it)))
-        }
+        setSelectedChunk(newState)
     }
 
     val blockUpdated = update@ {
@@ -126,7 +129,8 @@ fun ChunkSelector(
         val chunk = block.toChunkLocation()
 
         state.chunkXValue = TextFieldValue("${chunk.x}")
-        state.chunkZValue = TextFieldValue("${chunk.x}")
+        state.chunkZValue = TextFieldValue("${chunk.z}")
+        setSelectedChunk(chunk)
     }
 
     val openPopup: (String) -> Unit = {
