@@ -41,7 +41,7 @@ fun BoxScope.McaEditor(
     ChunkSelectorColumn {
         ChunkSelector(
             editor = editor,
-            terrains = worldSpec.tree[editor.payload.dimension][McaType.TERRAIN],
+            terrains = worldSpec.tree[editor.payload.dimension][McaType.Terrain],
             chunks = chunks,
             terrainCache = cache,
             update = update,

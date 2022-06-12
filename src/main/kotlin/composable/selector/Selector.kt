@@ -50,7 +50,7 @@ private val File.typeId get() = if (isDirectory && !isFile) -1 else if (isFile) 
 
 private fun File.validateAs(type: DoodlerEditorType): File? {
     when(type) {
-        DoodlerEditorType.WORLD -> {
+        DoodlerEditorType.World -> {
             val level = File("${this.absolutePath}/level.dat")
             if (!level.exists()) return null
 
@@ -63,7 +63,7 @@ private fun File.validateAs(type: DoodlerEditorType): File? {
 
             return this
         }
-        DoodlerEditorType.STANDALONE -> {
+        DoodlerEditorType.Standalone -> {
             return try {
                 DatWorker.read(this.readBytes())
                 this

@@ -21,8 +21,8 @@ fun Intro(
         IntroContent {
             IntroStart {
                 DefaultH4(text = "doodler: Minecraft NBT Editor")
-                PrimaryLinkH1(text = "Select World!") { openSelector(DoodlerEditorType.WORLD) }
-                PrimaryLinkH5(text = "...or single NBT file") { openSelector(DoodlerEditorType.STANDALONE) }
+                PrimaryLinkH1(text = "Select World!") { openSelector(DoodlerEditorType.World) }
+                PrimaryLinkH5(text = "...or single NBT file") { openSelector(DoodlerEditorType.Standalone) }
                 Spacer(modifier = Modifier.height(20.dp))
             }
             ExternalLinkH5(

@@ -27,9 +27,9 @@ class WorldHierarchy (
 ) {
     operator fun get(key: WorldDimension): WorldDimensionHierarchy {
         return when (key) {
-            WorldDimension.OVERWORLD -> overworld
-            WorldDimension.THE_END -> end
-            WorldDimension.NETHER -> nether
+            WorldDimension.Overworld -> overworld
+            WorldDimension.TheEnd -> end
+            WorldDimension.Nether -> nether
         }
     }
 
@@ -78,12 +78,12 @@ enum class WorldDimension(
     val namespaceId: String,
     val displayName: String
 ) {
-    OVERWORLD("", "minecraft:overworld", "overworld"),
-    NETHER("DIM-1", "minecraft:the_nether", "nether"),
-    THE_END("DIM1", "minecraft:the_end", "the_end");
+    Overworld("", "minecraft:overworld", "overworld"),
+    Nether("DIM-1", "minecraft:the_nether", "nether"),
+    TheEnd("DIM1", "minecraft:the_end", "the_end");
 
     companion object {
-        operator fun get(pathName: String): WorldDimension = values().find { it.ident == pathName } ?: OVERWORLD
+        operator fun get(pathName: String): WorldDimension = values().find { it.ident == pathName } ?: Overworld
 
         fun fromMcaPath(path: String): WorldDimension {
             val segments = path.split("/").toMutableList()

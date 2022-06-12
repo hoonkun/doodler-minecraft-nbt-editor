@@ -412,13 +412,13 @@ const val GradientOffset = -1 * MinimumViewSize * (1f - GradientYScale)
 
 val WorldDimension.yRange get() =
     when (this) {
-        WorldDimension.OVERWORLD -> -64 until 319
+        WorldDimension.Overworld -> -64 until 319
         else -> 0 until 128
     }
 
 val WorldDimension.defaultYLimit get() =
     when(this) {
-        WorldDimension.NETHER -> 89
+        WorldDimension.Nether -> 89
         else -> this.yRange.last
     }
 

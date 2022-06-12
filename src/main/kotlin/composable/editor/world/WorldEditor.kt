@@ -72,7 +72,7 @@ fun openGlobalMcaEditor(state: WorldEditorState) {
         val (dimension, block) = worldSpec.playerPos
             ?: throw DoodleException("Internal Error", null, "Cannot read player data from level.dat")
 
-        val type = McaType.TERRAIN
+        val type = McaType.Terrain
         val anvil = block.toChunkLocation().toAnvilLocation()
         val file = worldSpec.tree[dimension][type].find { it.name == "r.${anvil.x}.${anvil.z}.mca" }
             ?: throw DoodleException("Internal Error", null, "Cannot find region file which player exists")

@@ -40,8 +40,8 @@ fun DoodlerWindow(
                 is SelectorDoodlerWindow -> DpSize(525.dp, 300.dp)
                 is EditorDoodlerWindow ->
                     when (window.type) {
-                        DoodlerEditorType.WORLD -> DpSize(750.dp, 625.dp)
-                        DoodlerEditorType.STANDALONE -> DpSize(850.dp, 775.dp)
+                        DoodlerEditorType.World -> DpSize(750.dp, 625.dp)
+                        DoodlerEditorType.Standalone -> DpSize(850.dp, 775.dp)
                     }
             }
     ),
@@ -75,8 +75,8 @@ fun DoodlerWindow(
                 }
                 is EditorDoodlerWindow -> {
                     when (window.type) {
-                        DoodlerEditorType.STANDALONE -> StandaloneNbtEditor(window.path)
-                        DoodlerEditorType.WORLD -> WorldEditor(window.path)
+                        DoodlerEditorType.Standalone -> StandaloneNbtEditor(window.path)
+                        DoodlerEditorType.World -> WorldEditor(window.path)
                     }
                 }
             }

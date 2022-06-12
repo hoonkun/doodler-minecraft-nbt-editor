@@ -272,17 +272,17 @@ fun createWorldTreeItems(hierarchy: WorldHierarchy): List<HierarchyItem> {
         DirectoryHierarchyItem(
             children = mutableListOf<HierarchyItem>().apply {
                 add(DirectoryHierarchyItem(
-                    children = hierarchy.listWorldFiles(WorldDimension.OVERWORLD),
+                    children = hierarchy.listWorldFiles(WorldDimension.Overworld),
                     name = "overworld",
                     depth = depth
                 ))
                 add(DirectoryHierarchyItem(
-                    children = hierarchy.listWorldFiles(WorldDimension.NETHER),
+                    children = hierarchy.listWorldFiles(WorldDimension.Nether),
                     name = "nether",
                     depth = depth
                 ))
                 add(DirectoryHierarchyItem(
-                    children = hierarchy.listWorldFiles(WorldDimension.THE_END),
+                    children = hierarchy.listWorldFiles(WorldDimension.TheEnd),
                     name = "the_end",
                     depth = depth
                 ))

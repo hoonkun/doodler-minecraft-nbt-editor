@@ -15,8 +15,8 @@ class WorldUtils {
 
             if (!world.exists()) throw FileNotFoundException()
 
-            val nether = "$path/${WorldDimension.NETHER.ident}"
-            val theEnd = "$path/${WorldDimension.THE_END.ident}"
+            val nether = "$path/${WorldDimension.Nether.ident}"
+            val theEnd = "$path/${WorldDimension.TheEnd.ident}"
 
             return (
                 WorldHierarchy(

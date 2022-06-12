@@ -56,7 +56,7 @@ fun BoxScope.ChunksPreview(
     }
 
     val load = load@ {
-        val bytes = tree[McaType.TERRAIN.pathName]
+        val bytes = tree[McaType.Terrain.pathName]
             .find { it.name == "r.${location.x}.${location.z}.mca" }?.readBytes() ?: return@load
         val subChunks = McaWorker.loadChunksWith(bytes) { chunkLoc, tag ->
             Pair(chunkLoc, SurfaceWorker.createSubChunk(tag))

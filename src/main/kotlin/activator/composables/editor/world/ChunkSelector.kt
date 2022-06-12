@@ -409,10 +409,10 @@ fun BoxScope.ChunkSelectorProperties(
 
     val dimension = dimensionProvider()
 
-    val maxYLimit = remember(dimension) { (if (dimension == WorldDimension.OVERWORLD) 319 else 128).toShort() }
-    val minYLimit = remember(dimension) { (if (dimension == WorldDimension.OVERWORLD) -64 else 0).toShort() }
+    val maxYLimit = remember(dimension) { (if (dimension == WorldDimension.Overworld) 319 else 128).toShort() }
+    val minYLimit = remember(dimension) { (if (dimension == WorldDimension.Overworld) -64 else 0).toShort() }
 
-    val defaultYLimit = remember(dimension) { (if (dimension == WorldDimension.OVERWORLD) 319 else 89).toShort() }
+    val defaultYLimit = remember(dimension) { (if (dimension == WorldDimension.Overworld) 319 else 89).toShort() }
 
     val previewerYLimit = remember(defaultYLimit) { mutableStateOf(defaultYLimit) }
 

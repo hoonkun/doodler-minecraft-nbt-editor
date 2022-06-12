@@ -20,5 +20,5 @@ class EditorDoodlerWindow(
 ): DoodlerWindow(title)
 
 enum class DoodlerEditorType(val displayName: String) {
-    WORLD("world"), STANDALONE("nbt file")
+    World("world"), Standalone("nbt file")
 }

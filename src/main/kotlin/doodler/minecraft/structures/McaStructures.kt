@@ -3,7 +3,7 @@ package doodler.minecraft.structures
 import doodler.exceptions.DoodleException
 
 enum class McaType(val pathName: String) {
-    TERRAIN("region"), ENTITY("entities"), POI("poi");
+    Terrain("region"), Entity("entities"), Poi("poi");
 
     companion object {
 

@@ -43,9 +43,9 @@ fun BoxScope.McaEditor(
                     val (dimension, block) = worldSpec.playerPos
                         ?: throw DoodleException("Internal Error", null, "Could not find dimension data of Player.")
 
-                    val type = McaType.TERRAIN
+                    val type = McaType.Terrain
                     val location = block.toChunkLocation().toAnvilLocation()
-                    val file = tree[dimension][McaType.TERRAIN.pathName]
+                    val file = tree[dimension][McaType.Terrain.pathName]
                         .find { it.name == "r.${location.x}.${location.z}.mca" }
                         ?: throw DoodleException(
                             "Internal Error",
@@ -53,7 +53,7 @@ fun BoxScope.McaEditor(
                             "Could not find terrain region file which player exists."
                         )
 
-                    val chunks = tree[dimension][McaType.TERRAIN.pathName].map {
+                    val chunks = tree[dimension][McaType.Terrain.pathName].map {
                         val segments = it.name.split(".")
                         val itLocation = AnvilLocation(segments[1].toInt(), segments[2].toInt())
                         McaWorker.loadChunkList(itLocation, it.readBytes())
