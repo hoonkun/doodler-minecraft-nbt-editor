@@ -143,9 +143,12 @@ fun ChunkSelector(
 
     val selectorItemPositions = remember { mutableMapOf<String, Offset>() }
 
-    val openDropdown: (String) -> Unit = { expandedDropdown = it }
-
     val closeDropdown: () -> Unit = { expandedDropdown = null }
+
+    val openDropdown: (String) -> Unit = {
+        if (expandedDropdown == it) closeDropdown()
+        else expandedDropdown = it
+    }
 
     val onItemPositioned: LayoutCoordinates.(String) -> Unit = { selectorItemPositions[it] = positionInParent() }
 
@@ -353,7 +356,7 @@ fun SelectorItem(
             }
             .let { if (requiredWidth != null) it.width(requiredWidth) else it }
     ) {
-        Spacer(modifier = Modifier.width(3.6.ddp))
+        Spacer(modifier = Modifier.width(5.ddp))
         if (ident != "UNSPECIFIED") {
             Text(
                 text = "$ident:",
@@ -363,7 +366,7 @@ fun SelectorItem(
             Spacer(modifier = Modifier.width(0.6.ddp))
         }
         content()
-        Spacer(modifier = Modifier.width(3.6.ddp))
+        Spacer(modifier = Modifier.width(5.ddp))
     }
 }
 
