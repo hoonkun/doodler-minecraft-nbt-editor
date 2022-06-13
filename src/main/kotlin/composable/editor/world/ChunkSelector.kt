@@ -4,6 +4,7 @@ import activator.composables.global.ThemedColor
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -25,6 +26,7 @@ import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
@@ -226,6 +228,15 @@ fun ChunkSelector(
         ) {
             CoordinateText(payload.dimension.name)
         }
+        Spacer(modifier = Modifier.weight(1f))
+        OpenButton(
+            enabled = { state.selectedChunk != null },
+            onClick = {
+                val chunk = state.selectedChunk
+                val file = chunk?.let { siblingAnvil(payload.file, chunk.toAnvilLocation()) }
+                if (chunk != null && file != null) openChunkNbt(chunk, file)
+            }
+        )
     }
 
     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -495,6 +506,41 @@ fun <K>Dropdown(
                 Spacer(modifier = Modifier.height(6.ddp))
             }
         }
+    }
+}
+
+@Composable
+fun OpenButton(
+    enabled: () -> Boolean,
+    onClick: () -> Unit
+) {
+    val hoverInteractionSource = remember { MutableInteractionSource() }
+    val pressInteractionSource = remember { MutableInteractionSource() }
+
+    val hovered by hoverInteractionSource.collectIsHoveredAsState()
+    val pressed by pressInteractionSource.collectIsPressedAsState()
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .hoverable(hoverInteractionSource).clickable(pressInteractionSource, null) { onClick() }
+            .width(30.ddp).height(30.ddp)
+            .alpha(if (enabled()) 1f else 0.5f)
+            .drawBehind {
+                drawRect(
+                    if (!enabled()) Color.Transparent
+                    else if (pressed) Color.White.copy(alpha = 0.0352f)
+                    else if (hovered) Color.White.copy(alpha = 0.0776f)
+                    else Color.Transparent
+                )
+            }
+    ) {
+        Text(
+            "->",
+            fontSize = MaterialTheme.typography.h4.fsp,
+            fontWeight = FontWeight.Bold,
+            color = Color.White.copy(alpha = 0.6862f)
+        )
     }
 }
 
