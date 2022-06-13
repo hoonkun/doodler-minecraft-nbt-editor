@@ -101,7 +101,8 @@ fun BoxScope.WorldHierarchy(
 
         HierarchyItemsColumn(
             horizontalScrollState = horizontalScrollState,
-            items = items
+            items = items,
+            disabled = { it is FileHierarchyItem && it.file.length() == 0L }
         ) {
             if (it is DirectoryHierarchyItem) {
                 if (it.depth >= 0) DirectoryToggleIcon { it.expanded }
@@ -144,6 +145,7 @@ fun BoxScope.WorldHierarchy(
 fun HierarchyItemsColumn(
     horizontalScrollState: ScrollState? = null,
     onClick: ((HierarchyItem) -> Unit)? = null,
+    disabled: ((HierarchyItem) -> Boolean)? = null,
     items: List<HierarchyItem>,
     content: @Composable RowScope.(HierarchyItem) -> Unit
 ) {
@@ -159,6 +161,7 @@ fun HierarchyItemsColumn(
                 modifier = Modifier
                     .padding(start = item.padding, end = 15.dp.scaled)
                     .height(ItemHeight)
+                    .alpha(if (disabled?.invoke(item) == true) 0.6f else 1f)
                     .let {
                         if (onClick != null) it.fillMaxWidth().clickable { onClick(item) }
                         else it
