@@ -191,7 +191,7 @@ fun DirectoryToggleIcon(expandedProvider: BooleanProvider) {
     Image(
         painter = painterResource("/icons/icon_${if (expandedProvider()) "collapse" else "expand"}.png"),
         contentDescription = null,
-        modifier = Modifier.size(18.dp.scaled).alpha(0.6f)
+        modifier = Modifier.size(14.dp.scaled).alpha(0.6f)
     )
     Spacer(modifier = Modifier.width(5.dp.scaled))
 }
@@ -226,7 +226,7 @@ fun FileTypeIcon(extension: String) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(width = 20.dp.scaled, height = 16.dp.scaled)
+            .size(width = 15.dp.scaled, height = 12.dp.scaled)
             .background(
                 when (extension) {
                     "dat" -> DoodlerTheme.Colors.HierarchyView.Dat
@@ -240,7 +240,7 @@ fun FileTypeIcon(extension: String) {
         Text(
             text = ExtensionAlias[extension] ?: "",
             color = DoodlerTheme.Colors.HierarchyView.TextColor,
-            fontSize = 8.sp.scaled
+            fontSize = 6.5f.sp.scaled
         )
     }
 }
