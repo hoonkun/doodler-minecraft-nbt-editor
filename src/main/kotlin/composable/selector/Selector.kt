@@ -111,7 +111,7 @@ enum class CandidateType(
 @Composable
 fun Selector(targetType: DoodlerEditorType, onSelect: (File, DoodlerEditorType) -> Unit) {
 
-    var path by remember { mutableStateOf(TextFieldValue("/minecraft/data-directory/saves/doodler_test_world/", selection = TextRange(1))) }
+    var path by remember { mutableStateOf(TextFieldValue("/", selection = TextRange(1))) }
     val entirePath by remember(path.text) { derivedStateOf { "$BasePath${path.text}" } }
 
     val keys = remember { KeySet(ctrl = false, shift = false) }

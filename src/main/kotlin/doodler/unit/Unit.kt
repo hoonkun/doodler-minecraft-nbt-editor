@@ -1,10 +1,9 @@
 package doodler.unit
 
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-const val GlobalMultiplier = 1.5f
+const val GlobalMultiplier = 1.0f
 
 val Int.ddp get() = this.times(GlobalMultiplier).dp
 val Float.ddp get() = this.times(GlobalMultiplier).dp
