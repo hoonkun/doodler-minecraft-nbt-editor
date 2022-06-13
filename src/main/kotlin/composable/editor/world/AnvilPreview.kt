@@ -213,6 +213,7 @@ fun AnvilImageLoader(
 
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ChunkButtons(
     chunk: ChunkLocation?,
@@ -225,6 +226,7 @@ fun ChunkButtons(
 
     Column(
         modifier = Modifier.fillMaxSize()
+            .onPointerEvent(PointerEventType.Exit) { hovered = -1 to -1 }
     ) {
         for (x in 0 until 32) {
             Row(modifier = Modifier.fillMaxWidth().weight(1f)) {
