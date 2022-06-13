@@ -10,8 +10,8 @@ import androidx.compose.ui.draw.alpha
 import composable.global.*
 import doodler.application.structure.DoodlerEditorType
 import doodler.theme.DoodlerTheme
-import doodler.unit.dp
-import doodler.unit.sp
+import doodler.unit.ddp
+import doodler.unit.dsp
 
 @Composable
 fun Intro(
@@ -23,11 +23,11 @@ fun Intro(
                 DefaultH4(text = "doodler: Minecraft NBT Editor")
                 PrimaryLinkH1(text = "Select World!") { openSelector(DoodlerEditorType.World) }
                 PrimaryLinkH5(text = "...or single NBT file") { openSelector(DoodlerEditorType.Standalone) }
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(20.ddp))
             }
             ExternalLinkH5(
                 text = "Getting Started?",
-                modifier = Modifier.alpha(0.65f).padding(top = 20.dp, bottom = 5.dp).align(Alignment.BottomEnd)
+                modifier = Modifier.alpha(0.65f).padding(top = 20.ddp, bottom = 5.ddp).align(Alignment.BottomEnd)
             )
         }
         IntroFooter(startText = "doodler, synced with 1.18.2", endText = "by @hoon_kiwicraft")
@@ -52,7 +52,7 @@ fun ColumnScope.IntroContent(
         modifier = Modifier
             .weight(1f)
             .fillMaxWidth()
-            .padding(top = 3.dp, bottom = 3.dp, start = 7.dp, end = 7.dp),
+            .padding(top = 3.ddp, bottom = 3.ddp, start = 7.ddp, end = 7.ddp),
         content = content
     )
 }
@@ -78,7 +78,7 @@ fun ColumnScope.IntroFooter(
         modifier = Modifier
             .background(DoodlerTheme.Colors.SecondaryBackground)
             .fillMaxWidth()
-            .padding(top = 5.dp, bottom = 5.dp, start = 7.dp, end = 7.dp),
+            .padding(top = 5.ddp, bottom = 5.ddp, start = 7.ddp, end = 7.ddp),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         IntroFooterText(startText)
@@ -90,5 +90,5 @@ fun ColumnScope.IntroFooter(
 fun IntroFooterText(
     text: String
 ) {
-    Text(text , fontSize = 8.sp, color = DoodlerTheme.Colors.OnBackground)
+    Text(text , fontSize = 8.dsp, color = DoodlerTheme.Colors.OnBackground)
 }

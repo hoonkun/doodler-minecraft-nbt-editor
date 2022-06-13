@@ -38,7 +38,7 @@ import doodler.file.StateFileList
 import doodler.file.toStateFile
 import doodler.file.toStateFileList
 import doodler.theme.DoodlerTheme
-import doodler.unit.dp
+import doodler.unit.ddp
 import java.io.File
 
 
@@ -111,7 +111,7 @@ enum class CandidateType(
 @Composable
 fun Selector(targetType: DoodlerEditorType, onSelect: (File, DoodlerEditorType) -> Unit) {
 
-    var path by remember { mutableStateOf(TextFieldValue("/", selection = TextRange(1))) }
+    var path by remember { mutableStateOf(TextFieldValue("/minecraft/data-directory/saves/doodler_test_world/", selection = TextRange(1))) }
     val entirePath by remember(path.text) { derivedStateOf { "$BasePath${path.text}" } }
 
     val keys = remember { KeySet(ctrl = false, shift = false) }
@@ -281,13 +281,13 @@ fun ColumnScope.Candidates(
                 Candidate(type, candidate, candidate == hintTarget && printTargets.items.size != 1)
             }
             if (chunked.size == 3) {
-                Spacer(modifier = Modifier.weight(1f).padding(end = 15.dp, bottom = 5.dp))
+                Spacer(modifier = Modifier.weight(1f).padding(end = 15.ddp, bottom = 5.ddp))
             }
         }
     }
     if (remaining > 0) Remaining(remaining, type)
 
-    Spacer(modifier = Modifier.height(15.dp))
+    Spacer(modifier = Modifier.height(15.ddp))
 }
 
 @Composable
@@ -295,7 +295,7 @@ fun RowScope.Candidate(
     type: CandidateType,
     candidate: StateFile,
     focused: Boolean
-) = Box(modifier = Modifier.weight(1f).padding(end = 15.dp, bottom = 5.dp)) {
+) = Box(modifier = Modifier.weight(1f).padding(end = 15.ddp, bottom = 5.ddp)) {
     Text(
         text = candidate.name,
         color = type.color,
@@ -325,9 +325,9 @@ fun SelectorRoot(
         contentAlignment = Alignment.TopCenter,
         modifier = Modifier
             .fillMaxSize()
-            .requiredWidthIn(min = 500.dp)
+            .requiredWidthIn(min = 500.ddp)
             .background(DoodlerTheme.Colors.Background)
-            .padding(start = 12.5f.dp, end = 12.5f.dp, top = 11.dp)
+            .padding(start = 12.5f.ddp, end = 12.5f.ddp, top = 11.ddp)
     ) {
         Column(
             content = content
@@ -337,10 +337,10 @@ fun SelectorRoot(
 
 @Composable
 fun ColumnScope.Padded(
-    top: Dp = 0.dp,
+    top: Dp = 0.ddp,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(modifier = Modifier.padding(start = 15.dp, end = 15.dp, top = top), content = content)
+    Column(modifier = Modifier.padding(start = 15.ddp, end = 15.ddp, top = top), content = content)
 }
 
 @Composable
@@ -350,7 +350,7 @@ fun ColumnScope.BasePathDocumentation(text: String) {
         color = DoodlerTheme.Colors.Text.IdeDocumentation,
         fontFamily = DoodlerTheme.Fonts.JetbrainsMono,
         fontSize = MaterialTheme.typography.h6.fontSize,
-        modifier = Modifier.padding(bottom = 8.dp)
+        modifier = Modifier.padding(bottom = 8.ddp)
     )
 }
 
@@ -369,21 +369,21 @@ fun ColumnScope.BasePathProperty(key: String, value: String) {
         ),
         color = DoodlerTheme.Colors.Text.IdeGeneral,
         fontSize = MaterialTheme.typography.h5.fontSize,
-        modifier = Modifier.padding(bottom = 1.dp)
+        modifier = Modifier.padding(bottom = 1.ddp)
     )
 }
 
 @Composable
 fun ColumnScope.PathInputBox(content: @Composable RowScope.() -> Unit) {
     Box(
-        modifier = Modifier.padding(top = 10.dp, bottom = 10.dp)
+        modifier = Modifier.padding(top = 10.ddp, bottom = 10.ddp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(40.dp)
-                .background(DoodlerTheme.Colors.Selector.PathInput, RoundedCornerShape(5.dp)),
+                .height(40.ddp)
+                .background(DoodlerTheme.Colors.Selector.PathInput, RoundedCornerShape(5.ddp)),
             content = content
         )
     }
@@ -412,7 +412,7 @@ fun RowScope.PathInput(
         modifier = Modifier.weight(1f)
             .onKeyEvent { onKeyEvent(it); true }
             .focusRequester(focusRequester)
-            .padding(start = 15.dp, end = 15.dp)
+            .padding(start = 15.ddp, end = 15.ddp)
     )
 }
 
@@ -425,7 +425,7 @@ fun RowScope.Select(
     val hovered by interactionSource.collectIsHoveredAsState()
 
     Box(
-        modifier = Modifier.width(60.dp).fillMaxHeight().padding(5.dp)
+        modifier = Modifier.width(60.ddp).fillMaxHeight().padding(5.ddp)
             .clickable { if (enabled) onClick() }
             .alpha(if (enabled) 1f else 0.6f)
     ) {
@@ -437,7 +437,7 @@ fun RowScope.Select(
                         color =
                             if (enabled && hovered) DoodlerTheme.Colors.Selector.SelectButtonHovered
                             else DoodlerTheme.Colors.Selector.SelectButton,
-                        cornerRadius = CornerRadius(5.dp.value, 5.dp.value)
+                        cornerRadius = CornerRadius(5.ddp.value, 5.ddp.value)
                     )
                 }
                 .fillMaxSize()

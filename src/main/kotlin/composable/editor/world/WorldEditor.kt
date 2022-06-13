@@ -13,8 +13,8 @@ import doodler.editor.*
 import doodler.exceptions.DoodleException
 import doodler.minecraft.structures.McaType
 import doodler.theme.DoodlerTheme
-import doodler.unit.dp
-import doodler.unit.sp
+import doodler.unit.ddp
+import doodler.unit.dsp
 
 @Composable
 fun WorldEditor(
@@ -46,11 +46,11 @@ fun WorldEditor(
         }
 
         BottomBar {
-            Spacer(modifier = Modifier.width(5.dp))
+            Spacer(modifier = Modifier.width(5.ddp))
             BottomBarText("TODO: print  log here.")
             Spacer(modifier = Modifier.weight(1f))
             BottomBarText("by kiwicraft")
-            Spacer(modifier = Modifier.width(5.dp))
+            Spacer(modifier = Modifier.width(5.ddp))
         }
     }
 }
@@ -109,7 +109,7 @@ fun ColumnScope.HierarchyBar(content: @Composable RowScope.() -> Unit) =
         horizontalArrangement = Arrangement.Start,
         modifier = Modifier
             .fillMaxWidth()
-            .height(28.dp)
+            .height(28.ddp)
             .drawBehind {
                 drawRect(DoodlerTheme.Colors.SecondaryBackground)
                 drawLine(
@@ -119,7 +119,7 @@ fun ColumnScope.HierarchyBar(content: @Composable RowScope.() -> Unit) =
                 )
             },
         content = {
-            Spacer(modifier = Modifier.width(10.dp))
+            Spacer(modifier = Modifier.width(10.ddp))
             content()
         }
     )
@@ -160,7 +160,7 @@ fun ColumnScope.BottomBar(content: @Composable RowScope.() -> Unit) =
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .height(18.dp)
+            .height(18.ddp)
             .drawBehind {
                 drawRect(DoodlerTheme.Colors.SecondaryBackground)
                 drawLine(
@@ -176,6 +176,6 @@ fun ColumnScope.BottomBar(content: @Composable RowScope.() -> Unit) =
 fun RowScope.BottomBarText(text: String) =
     Text(
         text = text,
-        fontSize = 8.sp,
+        fontSize = 8.dsp,
         color = DoodlerTheme.Colors.HierarchyView.TextColor
     )

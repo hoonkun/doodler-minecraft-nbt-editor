@@ -9,7 +9,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.DpSize
-import doodler.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import composable.editor.standalone.StandaloneNbtEditor
@@ -19,7 +18,8 @@ import composable.selector.Selector
 import doodler.application.state.DoodlerAppState
 import doodler.application.structure.*
 import doodler.theme.DoodlerTheme
-import doodler.unit.sp
+import doodler.unit.ddp
+import doodler.unit.dsp
 
 
 private val keys = mutableListOf<Key>()
@@ -36,12 +36,12 @@ fun DoodlerWindow(
     state = WindowState(
         size =
             when (window) {
-                is IntroDoodlerWindow -> DpSize(350.dp, 325.dp)
-                is SelectorDoodlerWindow -> DpSize(525.dp, 300.dp)
+                is IntroDoodlerWindow -> DpSize(350.ddp, 325.ddp)
+                is SelectorDoodlerWindow -> DpSize(525.ddp, 300.ddp)
                 is EditorDoodlerWindow ->
                     when (window.type) {
-                        DoodlerEditorType.World -> DpSize(750.dp, 625.dp)
-                        DoodlerEditorType.Standalone -> DpSize(850.dp, 775.dp)
+                        DoodlerEditorType.World -> DpSize(750.ddp, 625.ddp)
+                        DoodlerEditorType.Standalone -> DpSize(850.ddp, 775.ddp)
                     }
             }
     ),
@@ -56,12 +56,12 @@ fun DoodlerWindow(
     MaterialTheme(
         typography = Typography(
             defaultFontFamily = DoodlerTheme.Fonts.JetbrainsMono,
-            h1 = TextStyle(fontSize = 25.sp),
-            h2 = TextStyle(fontSize = 21.sp),
-            h3 = TextStyle(fontSize = 18.sp),
-            h4 = TextStyle(fontSize = 15.sp),
-            h5 = TextStyle(fontSize = 12.sp),
-            h6 = TextStyle(fontSize = 10.sp)
+            h1 = TextStyle(fontSize = 25.dsp),
+            h2 = TextStyle(fontSize = 21.dsp),
+            h3 = TextStyle(fontSize = 18.dsp),
+            h4 = TextStyle(fontSize = 15.dsp),
+            h5 = TextStyle(fontSize = 12.dsp),
+            h6 = TextStyle(fontSize = 10.dsp)
         )
     ) {
         CompositionLocalProvider(

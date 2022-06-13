@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.zIndex
 import doodler.editor.AnvilNbtEditor
@@ -23,8 +24,11 @@ import doodler.editor.EditorManager
 import doodler.editor.NbtEditor
 import doodler.theme.DoodlerTheme
 import doodler.types.BooleanProvider
-import doodler.unit.dp
-import doodler.unit.ScaledUnits.Tabs.Companion.scaled
+import doodler.unit.ddp
+import doodler.unit.dsp
+
+
+private val TextStyle.fsp get() = this.fontSize * 0.9f
 
 @Composable
 fun EditorTabGroup(
@@ -81,13 +85,13 @@ fun EditorTab(
                 if (!selectedProvider()) return@drawBehind
                 drawRect(
                     color = DoodlerTheme.Colors.Primary,
-                    topLeft = Offset(0f, size.height - 2.dp.value),
-                    size = Size(size.width, 2.dp.scaled.value)
+                    topLeft = Offset(0f, size.height - 2.ddp.value),
+                    size = Size(size.width, 1.8.ddp.value)
                 )
             }
-            .height(25.dp.scaled).wrapContentWidth()
+            .height(20.ddp).wrapContentWidth()
     ) {
-        Spacer(modifier = Modifier.width(8.5f.dp.scaled))
+        Spacer(modifier = Modifier.width(7.65.ddp))
 
         Row(verticalAlignment = Alignment.Bottom) {
 
@@ -95,9 +99,9 @@ fun EditorTab(
                 Text(
                     text = editor.path,
                     color = DoodlerTheme.Colors.Editor.TabPath,
-                    fontSize = MaterialTheme.typography.h6.fontSize.scaled
+                    fontSize = 7.5.dsp
                 )
-                Spacer(modifier = Modifier.width(3.dp.scaled))
+                Spacer(modifier = Modifier.width(2.7.ddp))
             }
 
             Text(
@@ -105,16 +109,16 @@ fun EditorTab(
                 color =
                 if (editor is NbtEditor && editor.state.actionFlags.canBeSaved) DoodlerTheme.Colors.Editor.TabHasChanges
                 else DoodlerTheme.Colors.Text.IdeGeneral,
-                fontSize = MaterialTheme.typography.h5.fontSize.scaled
+                fontSize = MaterialTheme.typography.h6.fsp
             )
 
         }
 
-        Spacer(modifier = Modifier.width(4.dp.scaled))
+        Spacer(modifier = Modifier.width(3.6.ddp))
 
         EditorCloseButton { onCloseTab(editor) }
 
-        Spacer(modifier = Modifier.width(6.dp.scaled))
+        Spacer(modifier = Modifier.width(5.4.ddp))
     }
 }
 
@@ -134,10 +138,10 @@ fun EditorCloseButton(
         Text(
             text = "\u2715",
             fontWeight = FontWeight.Bold,
-            fontSize = MaterialTheme.typography.h5.fontSize.scaled,
+            fontSize = MaterialTheme.typography.h6.fsp,
             color = DoodlerTheme.Colors.Editor.TabCloseButton(hovered),
             modifier = Modifier
-                .padding(3.dp.scaled)
+                .padding(start = 2.2.ddp, bottom = 2.2.ddp, top = 1.5.ddp, end = 1.5.ddp)
                 .hoverable(hoverInteractionSource)
                 .clickable { close() }
         )

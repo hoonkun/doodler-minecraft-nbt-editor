@@ -23,8 +23,7 @@ import doodler.editor.NbtEditor
 import doodler.editor.states.NbtEditorState
 import doodler.theme.DoodlerTheme
 import doodler.types.Provider
-import doodler.unit.dp
-import doodler.unit.ScaledUnits.Editor.Companion.scaled
+import doodler.unit.ddp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -139,7 +138,7 @@ fun BoxScope.LazyScrollbarDecoration(
     val items = itemsProvider()
     val selected = selectedProvider()
 
-    val minSize = 3.dp.scaled
+    val minSize = 2.25.ddp
     val size = 1f / items.size
     val positionUnit = 1f / items.lastIndex
 
@@ -195,7 +194,7 @@ fun BoxScope.LazyScrollbarDecorationItem(
 
             Canvas(
                 modifier = Modifier
-                    .fillMaxHeight(size).defaultMinSize(minSize).width(20.dp.scaled)
+                    .fillMaxHeight(size).defaultMinSize(minSize).width(15.ddp)
                     .hoverable(indicatorHoverSource)
             ) {
                 drawRect(

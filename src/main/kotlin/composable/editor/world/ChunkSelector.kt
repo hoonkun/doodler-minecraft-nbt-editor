@@ -38,10 +38,12 @@ import doodler.editor.TerrainCache
 import doodler.editor.states.McaEditorState
 import doodler.minecraft.structures.*
 import doodler.theme.DoodlerTheme
-import doodler.unit.ScaledUnits.ChunkSelector.Companion.scaled
-import doodler.unit.absoluteDp
-import doodler.unit.dp
+import doodler.unit.adp
+import doodler.unit.ddp
 import java.io.File
+
+
+private val TextStyle.fsp get() = this.fontSize * 0.6f
 
 @Composable
 fun ChunkSelector(
@@ -151,7 +153,7 @@ fun ChunkSelector(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .background(DoodlerTheme.Colors.Editor.McaEditorDropdownBackground)
-            .height(30.dp)
+            .height(30.ddp)
             .fillMaxWidth()
             .zIndex(10f)
     ) {
@@ -325,10 +327,10 @@ fun SelectorItem(
                         valid = valid,
                         hovered = hovered
                     ).copy(alpha = if (enabled) 1f else 0.6f),
-                    cornerRadius = CornerRadius(2.dp.value)
+                    cornerRadius = CornerRadius(1.2.ddp.value)
                 )
             }
-            .height(20.dp)
+            .height(20.ddp)
             .alpha(if (enabled) 1f else 0.6f)
             .let {
                 if (onClick != null) it.hoverable(hoverInteraction).clickable(onClick = { onClick(ident) })
@@ -340,22 +342,22 @@ fun SelectorItem(
             }
             .let { if (requiredWidth != null) it.width(requiredWidth) else it }
     ) {
-        Spacer(modifier = Modifier.width(6.dp))
+        Spacer(modifier = Modifier.width(3.6.ddp))
         if (ident != "UNSPECIFIED") {
             Text(
                 text = "$ident:",
-                fontSize = MaterialTheme.typography.h5.fontSize.scaled,
+                fontSize = MaterialTheme.typography.h5.fsp,
                 color = DoodlerTheme.Colors.Text.Normal
             )
-            Spacer(modifier = Modifier.width(1.dp))
+            Spacer(modifier = Modifier.width(0.6.ddp))
         }
         content()
-        Spacer(modifier = Modifier.width(6.dp))
+        Spacer(modifier = Modifier.width(3.6.ddp))
     }
 }
 
 @Composable
-fun SelectorItemSpacer() = Spacer(modifier = Modifier.width(5.dp))
+fun SelectorItemSpacer() = Spacer(modifier = Modifier.width(5.ddp))
 
 @Composable
 fun Coordinate(
@@ -399,7 +401,7 @@ fun CoordinateText(
     text: String, valid: Boolean = true
 ) = Text(
     text = text,
-    fontSize = MaterialTheme.typography.h4.fontSize.scaled,
+    fontSize = MaterialTheme.typography.h4.fsp,
     color = if (valid) DoodlerTheme.Colors.Text.IdeGeneral else DoodlerTheme.Colors.Text.Invalid,
     modifier = Modifier.focusable(false)
 )
@@ -409,7 +411,7 @@ fun CoordinateText(
     text: AnnotatedString
 ) = Text(
     text = text,
-    fontSize = MaterialTheme.typography.h4.fontSize.scaled,
+    fontSize = MaterialTheme.typography.h4.fsp,
     color = DoodlerTheme.Colors.Text.IdeGeneral,
     modifier = Modifier.focusable(false)
 )
@@ -424,7 +426,7 @@ fun CoordinateInput(
     value = value,
     onValueChange = onValueChange,
     textStyle = TextStyle(
-        fontSize = MaterialTheme.typography.h4.fontSize.scaled,
+        fontSize = MaterialTheme.typography.h4.fsp,
         color = DoodlerTheme.Colors.Text.IdeGeneral,
         fontFamily = DoodlerTheme.Fonts.JetbrainsMono
     ),
@@ -434,7 +436,7 @@ fun CoordinateInput(
     visualTransformation = transformer,
     enabled = enabled,
     modifier = Modifier
-        .width((value.text.length.coerceAtLeast(1) * 9.140625f).dp.scaled)
+        .width((value.text.length.coerceAtLeast(1) * 5.484375).ddp)
         .focusable(false)
         .onFocusChanged {
             if (!it.isFocused && value.text.isEmpty()) onValueChange(TextFieldValue("-"))
@@ -471,26 +473,26 @@ fun <K>Dropdown(
     Row {
         Text(
             text = "$ident:",
-            fontSize = MaterialTheme.typography.h5.fontSize.scaled,
+            fontSize = MaterialTheme.typography.h5.fsp,
             modifier = Modifier.alpha(0f)
         )
-        Spacer(modifier = Modifier.width(1.dp.scaled))
+        Spacer(modifier = Modifier.width(0.6.ddp))
         Column(
             modifier = Modifier
-                .absoluteOffset(x = anchor.x.absoluteDp)
-                .padding(top = 7.dp.scaled)
+                .absoluteOffset(x = anchor.x.adp)
+                .padding(top = 4.2.ddp)
                 .verticalScroll(scrollState)
                 .onGloballyPositioned { width = it.size.width }
         ) {
             for (item in items()) {
                 SelectorItem(
                     onClick = { onClick(item); onCloseRequest() },
-                    requiredWidth = width?.absoluteDp
+                    requiredWidth = width?.adp
                 ) {
                     CoordinateText(valueMapper(item))
-                    Spacer(modifier = Modifier.width(5.dp.scaled))
+                    Spacer(modifier = Modifier.width(3.ddp))
                 }
-                Spacer(modifier = Modifier.height(10.dp.scaled))
+                Spacer(modifier = Modifier.height(6.ddp))
             }
         }
     }

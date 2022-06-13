@@ -20,14 +20,16 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.isPrimaryPressed
 import androidx.compose.ui.input.pointer.isSecondaryPressed
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.TextUnit
 import doodler.nbt.TagType
-import doodler.unit.ScaledUnits.Editor.Companion.scaled
 import doodler.types.BooleanProvider
 import doodler.types.EmptyLambda
 import doodler.types.TrueProvider
-import doodler.unit.dp
+import doodler.unit.ddp
 
+
+private val TextStyle.fsp get() = this.fontSize * 0.75f
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -43,7 +45,7 @@ fun ActionButton(
     Box(
         modifier = Modifier
             .wrapContentSize()
-            .padding(top = 4.dp.scaled, bottom = 4.dp.scaled)
+            .padding(top = 1.ddp, bottom = 1.ddp)
             .hoverable(hoverInteractionSource, enabled())
             .mouseClickable {
                 if (buttons.isPrimaryPressed && enabled()) onClick()
@@ -53,11 +55,11 @@ fun ActionButton(
                 val color =
                     if (hovered) Color.Black.copy(alpha = 0.1176f)
                     else Color.Transparent
-                drawRoundRect(color = color, cornerRadius = CornerRadius(3.dp.scaled.value))
+                drawRoundRect(color = color, cornerRadius = CornerRadius(2.25.ddp.value))
             }
             .alpha(if (enabled()) 1f else 0.3f),
         content = {
-            Box(modifier = Modifier.padding(5.dp.scaled), content = content)
+            Box(modifier = Modifier.padding(3.75.ddp), content = content)
         }
     )
 }
@@ -69,7 +71,7 @@ fun TagCreatorButton(
     onClick: () -> Unit
 ) {
     ActionButton(enabled, onClick = onClick) {
-        TagDoodleTypeText(type, enabled = enabled, fontSize = MaterialTheme.typography.h5.fontSize.scaled)
+        TagDoodleTypeText(type, enabled = enabled, fontSize = MaterialTheme.typography.h5.fsp)
     }
 }
 
@@ -77,7 +79,7 @@ fun TagCreatorButton(
 fun EditorActionButton(
     text: String,
     color: Color,
-    fontSize: TextUnit = MaterialTheme.typography.h5.fontSize.scaled,
+    fontSize: TextUnit = MaterialTheme.typography.h5.fsp,
     rotate: Pair<Float, Int>? = null,
     enabled: BooleanProvider = TrueProvider,
     onRightClick: () -> Unit = EmptyLambda,

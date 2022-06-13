@@ -1,76 +1,20 @@
 package doodler.unit
 
-import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private const val multiplier = 1.0f
+const val GlobalMultiplier = 1.5f
 
-val Int.sp get() = (this * multiplier).sp
-val Float.sp get() = (this * multiplier).sp
+val Int.ddp get() = this.times(GlobalMultiplier).dp
+val Float.ddp get() = this.times(GlobalMultiplier).dp
+val Double.ddp get() = this.times(GlobalMultiplier).dp
 
-val Int.dp get() = (this * multiplier).dp
-val Float.dp get() = (this * multiplier).dp
+val Int.dsp get() = this.times(GlobalMultiplier).sp
+// val Float.dsp get() = this.times(GlobalMultiplier).sp
+val Double.dsp get() = this.times(GlobalMultiplier).sp
 
-val Float.absoluteDp get() = this.dp
-val Int.absoluteDp get() = this.dp
+val Int.adp get() = this.dp
+val Float.adp get() = this.dp
 
-class ScaledUnits {
-
-    class HierarchyView {
-
-        companion object {
-            private const val Value = 0.9f
-
-            val Dp.scaled get() = this * Value
-            val TextUnit.scaled get() = this * Value
-        }
-
-    }
-
-    class Editor {
-
-        companion object {
-            private const val Value = 0.75f
-
-            val Dp.scaled get() = this * Value
-            val TextUnit.scaled get() = this * Value
-        }
-
-    }
-
-    class Tabs {
-
-        companion object {
-            private const val Value = 0.9f
-
-            val Dp.scaled get() = this * Value
-            val TextUnit.scaled get() = this * Value
-        }
-
-    }
-
-    class ChunkSelector {
-
-        companion object {
-            private const val Value = 0.6f
-
-            val TextUnit.scaled get() = this * Value
-            val Dp.scaled get() = this * Value
-        }
-
-    }
-
-    class AnvilPreview {
-
-        companion object {
-            private const val Value = 0.8f
-
-            val TextUnit.scaled get() = this * Value
-            val Dp.scaled get() = this * Value
-        }
-
-    }
-
-}
+// val TextStyle.fsp get() = this.fontSize

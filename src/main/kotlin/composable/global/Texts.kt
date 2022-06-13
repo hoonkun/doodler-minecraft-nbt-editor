@@ -18,7 +18,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.TextUnit
 import doodler.theme.DoodlerTheme
-import doodler.unit.dp
+import doodler.unit.ddp
 
 @Composable
 fun DefaultH4(text: String) {
@@ -26,7 +26,7 @@ fun DefaultH4(text: String) {
         text,
         color = DoodlerTheme.Colors.OnBackground,
         fontSize = MaterialTheme.typography.h4.fontSize,
-        modifier = Modifier.alpha(0.75f).padding(bottom = 10.dp)
+        modifier = Modifier.alpha(0.75f).padding(bottom = 7.5.ddp)
     )
 }
 

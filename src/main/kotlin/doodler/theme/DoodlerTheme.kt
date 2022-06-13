@@ -99,7 +99,7 @@ class DoodlerTheme {
                     else Color.Transparent
 
                 fun TabCloseButton(hovered: Boolean) =
-                    if (hovered) Color(25, 25, 25, 200)
+                    if (hovered) Color(60, 60, 60, 200)
                     else Color(255, 255, 255, 100)
 
                 fun TabCloseButtonBackground(hovered: Boolean) =

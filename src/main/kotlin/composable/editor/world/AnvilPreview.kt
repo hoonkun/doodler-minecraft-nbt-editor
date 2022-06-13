@@ -19,6 +19,7 @@ import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.zIndex
 import doodler.editor.CachedTerrainInfo
 import doodler.editor.TerrainCache
@@ -30,8 +31,7 @@ import doodler.minecraft.structures.AnvilLocationSurroundings
 import doodler.minecraft.structures.ChunkLocation
 import doodler.minecraft.structures.WorldDimension
 import doodler.theme.DoodlerTheme
-import doodler.unit.dp
-import doodler.unit.ScaledUnits.AnvilPreview.Companion.scaled
+import doodler.unit.ddp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.skia.Bitmap
@@ -40,6 +40,9 @@ import org.jetbrains.skia.ColorType
 import org.jetbrains.skia.ImageInfo
 import org.jetbrains.skiko.toBufferedImage
 import java.io.File
+
+
+private val TextStyle.fsp get() = this.fontSize * 0.8f
 
 @Composable
 fun AnvilPreview(
@@ -61,7 +64,7 @@ fun AnvilPreview(
     Box(
         contentAlignment = PropertiesAlignment,
         modifier = Modifier
-            .requiredSizeIn(minWidth = MinimumViewSize.dp.scaled, minHeight = MinimumViewSize.dp.scaled)
+            .requiredSizeIn(minWidth = MinimumViewSize.ddp, minHeight = MinimumViewSize.ddp)
             .fillMaxHeight()
             .aspectRatio(1f)
     ) {
@@ -264,7 +267,7 @@ fun RowScope.ChunkButton(
             drawRect(if (!enabled) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.2f))
         }
         if (selected) {
-            drawRect(Color.White, style = Stroke(width = 2.dp.value))
+            drawRect(Color.White, style = Stroke(width = 2.ddp.value))
         }
     }
 }
@@ -282,10 +285,10 @@ fun AnvilPreviewProperties(
 
     Box(
         contentAlignment = PropertiesAlignment,
-        modifier = Modifier.requiredSize(MinimumViewSize.dp.scaled)
+        modifier = Modifier.requiredSize(MinimumViewSize.ddp)
     ) {
         AnvilPreviewPropertyBackground()
-        Column(modifier = Modifier.width(275.dp.scaled).padding(top = 10.dp.scaled, start = 15.dp.scaled)) {
+        Column(modifier = Modifier.width(220.ddp).padding(top = 8.ddp, start = 12.ddp)) {
             Row(modifier = Modifier.fillMaxWidth()) {
                 AnvilNavigateButton("above", properties.surroundings.above, moveToSurroundings)
                 AnvilNavigateButton("left", properties.surroundings.left, moveToSurroundings)
@@ -314,12 +317,12 @@ fun AnvilPreviewPropertyBackground() =
         modifier = Modifier
             .fillMaxSize()
             .scale(scaleX = 1f, scaleY = GradientYScale)
-            .absoluteOffset(y = GradientOffset.dp.scaled)
+            .absoluteOffset(y = GradientOffset.ddp)
             .background(
                 Brush.radialGradient(
                     colors = listOf(Color.Black, Color.Transparent),
                     center = Offset.Zero,
-                    radius = MinimumViewSize.dp.scaled.value
+                    radius = MinimumViewSize.ddp.value
                 )
             )
     )
@@ -335,7 +338,7 @@ fun RowScope.AnvilNavigateButton(
         if (destination == null) NullText()
         else PropertyButton("Go") { navigate(destination) }
     }
-    Spacer(modifier = Modifier.width(20.dp.scaled))
+    Spacer(modifier = Modifier.width(16.ddp))
 }
 
 @Composable
@@ -343,7 +346,7 @@ fun PropertyKeyText(text: String) =
     Text(
         text = text,
         color = DoodlerTheme.Colors.Text.IdeFunctionProperty,
-        fontSize = MaterialTheme.typography.h5.fontSize.scaled
+        fontSize = MaterialTheme.typography.h5.fsp
     )
 
 @Composable
@@ -354,13 +357,13 @@ fun PropertyButton(
     modifier = Modifier
         .wrapContentSize()
         .clickable(onClick = onClick)
-        .background(DoodlerTheme.Colors.Editor.PropertyButtonBackground, RoundedCornerShape(2.dp)),
+        .background(DoodlerTheme.Colors.Editor.PropertyButtonBackground, RoundedCornerShape(1.6.ddp)),
     content = {
         Text(
             text = text,
             color = DoodlerTheme.Colors.Text.IdeGeneral,
-            fontSize = MaterialTheme.typography.h6.fontSize.scaled,
-            modifier = Modifier.padding(horizontal = 5.dp.scaled)
+            fontSize = MaterialTheme.typography.h6.fsp,
+            modifier = Modifier.padding(horizontal = 4.ddp)
         )
     }
 )
@@ -370,11 +373,11 @@ fun NullText() =
     Text(
         text = "null",
         color = DoodlerTheme.Colors.Text.IdeKeyword,
-        fontSize = MaterialTheme.typography.h5.fontSize.scaled
+        fontSize = MaterialTheme.typography.h5.fsp
     )
 
 @Composable
-fun PropertyGroupSpacer() = Spacer(modifier = Modifier.height(10.dp.scaled))
+fun PropertyGroupSpacer() = Spacer(modifier = Modifier.height(8.ddp))
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -399,14 +402,14 @@ fun YLimitText(
             )
         ),
         color = DoodlerTheme.Colors.Text.IdeGeneral,
-        fontSize = MaterialTheme.typography.h6.fontSize.scaled,
-        modifier = Modifier.padding(vertical = 3.dp.scaled)
+        fontSize = MaterialTheme.typography.h6.fsp,
+        modifier = Modifier.padding(vertical = 2.4.ddp)
             .onPointerEvent(PointerEventType.Scroll) { changeYLimit(currentEvent.changes[0].scrollDelta.y.toInt()) }
     )
 
 val PropertiesAlignment = Alignment.TopStart
 
-const val MinimumViewSize = 450f
+const val MinimumViewSize = 360f
 const val GradientYScale = 0.75f
 const val GradientOffset = -1 * MinimumViewSize * (1f - GradientYScale)
 

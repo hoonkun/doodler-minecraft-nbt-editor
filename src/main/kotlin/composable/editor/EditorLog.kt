@@ -18,12 +18,15 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.TextUnit
 import doodler.editor.structures.EditorLog
 import doodler.types.Provider
-import doodler.unit.dp
-import doodler.unit.ScaledUnits.Editor.Companion.scaled
+import doodler.unit.ddp
 import kotlinx.coroutines.delay
+
+
+private val TextStyle.fsp get() = this.fontSize * 0.75
 
 @Composable
 fun BoxScope.Log(
@@ -60,26 +63,26 @@ fun BoxScope.Log(
     ) {
         Column(
             modifier = Modifier
-                .padding(20.dp.scaled)
+                .padding(15.ddp)
         ) {
             Column(modifier = Modifier
-                .background(log.level.background, RoundedCornerShape(6.dp.scaled))
-                .padding(top = 12.dp.scaled, end = 30.dp.scaled, bottom = 12.dp.scaled, start = 12.dp.scaled)
+                .background(log.level.background, RoundedCornerShape(4.5.ddp))
+                .padding(top = 9.ddp, end = 22.5.ddp, bottom = 9.ddp, start = 9.ddp)
             ) {
                 Row {
                     LogText(text = log.title, alpha = 0.85f)
                     if (log.summary != null) {
-                        Spacer(modifier = Modifier.width(10.dp.scaled))
+                        Spacer(modifier = Modifier.width(7.5.ddp))
                         LogText(
                             text = log.summary,
                             alpha = 0.7f,
-                            fontSize = MaterialTheme.typography.h5.fontSize.scaled
+                            fontSize = MaterialTheme.typography.h5.fsp
                         )
                     }
                 }
                 if (log.description != null) {
-                    Spacer(modifier = Modifier.height(2.dp.scaled))
-                    LogText(log.description, alpha = 0.45f, fontSize = MaterialTheme.typography.h5.fontSize.scaled)
+                    Spacer(modifier = Modifier.height(1.5.ddp))
+                    LogText(log.description, alpha = 0.45f, fontSize = MaterialTheme.typography.h5.fsp)
                 }
             }
         }
@@ -91,7 +94,7 @@ fun BoxScope.Log(
 fun LogText(
     text: String,
     alpha: Float,
-    fontSize: TextUnit = MaterialTheme.typography.h4.fontSize.scaled
+    fontSize: TextUnit = MaterialTheme.typography.h4.fsp
 ) {
     Text(
         text = text,

@@ -15,10 +15,8 @@ import doodler.editor.states.NbtEditorState
 import doodler.extension.toRanges
 import doodler.nbt.TagType
 import doodler.theme.DoodlerTheme
-import doodler.unit.ScaledUnits.Editor.Companion.scaled
 import doodler.types.Provider
-import doodler.unit.dp
-
+import doodler.unit.ddp
 
 @Composable
 fun BoxScope.Actions(
@@ -27,8 +25,8 @@ fun BoxScope.Actions(
     val state = stateProvider()
     if (state.action != null) return
 
-    Row(modifier = Modifier.align(Alignment.TopEnd).padding(20.dp.scaled)) {
-        Column(modifier = Modifier.wrapContentSize().padding(end = 15.dp.scaled)) {
+    Row(modifier = Modifier.align(Alignment.TopEnd).padding(15.ddp)) {
+        Column(modifier = Modifier.wrapContentSize().padding(end = 11.25.ddp)) {
             HistoryAction(state)
             ElevatorAction(state)
         }
@@ -41,17 +39,17 @@ fun BoxScope.Actions(
 }
 
 @Composable
-fun ActionSpacer() = Spacer(modifier = Modifier.height(15.dp.scaled))
+fun ActionSpacer() = Spacer(modifier = Modifier.height(15.ddp))
 
 @Composable
 fun ActionRoot(
     content: @Composable ColumnScope.() -> Unit
 ) = Column(
     modifier = Modifier
-        .background(DoodlerTheme.Colors.Editor.ActionBackground, RoundedCornerShape(4.dp.scaled))
+        .background(DoodlerTheme.Colors.Editor.ActionBackground, RoundedCornerShape(3.ddp))
         .wrapContentSize()
         .clickable {  }
-        .padding(5.dp.scaled),
+        .padding(3.75.ddp),
     content = content
 )
 
