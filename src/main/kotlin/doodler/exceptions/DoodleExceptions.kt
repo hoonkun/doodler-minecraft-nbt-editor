@@ -1,6 +1,6 @@
 package doodler.exceptions
 
-import activator.doodler.doodle.NbtDoodle
+import doodler.doodle.structures.TagDoodle
 import doodler.nbt.TagType
 
 open class DoodleException(
@@ -42,14 +42,6 @@ class AttemptToEditMultipleTagsException:
 class InvalidPasteTargetException(type: TagType):
     InvalidOperationException("Cannot paste", "These tags can only be pasted into '$type'")
 
-class InvalidValuePasteTargetException(type: TagType):
-    InvalidOperationException("Cannot paste", "These values can only be pasted into '$type'")
-
-class PasteTargetTypeMismatchException(
-    expected: TagType,
-    actual: TagType
-): InvalidOperationException("Cannot paste: Tag type mismatch", "Only $expected could be added, but given was $actual")
-
 class NameConflictException(
     action: String,
     conflictName: String,
@@ -80,4 +72,4 @@ class VirtualActionCancelException(action: String):
     InternalError("Cannot cancel creation", "Target must be selected to cancel $action.")
 
 class ParentNotFoundException:
-    InternalAssertionException(NbtDoodle::class.java.simpleName, "Nothing")
+    InternalAssertionException(TagDoodle::class.java.simpleName, "Nothing")

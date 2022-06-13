@@ -1,11 +1,5 @@
 package doodler.extension
 
-
-fun <T>MutableList<T>.replaceAt(index: Int, to: T) {
-    removeAt(index)
-    add(index, to)
-}
-
 fun <T>MutableList<T>.removeRange(range: IntRange): List<T> {
     val size = range.last - range.first
     val position = range.first

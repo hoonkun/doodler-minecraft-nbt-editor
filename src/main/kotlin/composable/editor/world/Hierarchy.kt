@@ -1,6 +1,5 @@
 package composable.editor.world
 
-import activator.composables.global.ThemedColor
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -50,8 +49,8 @@ val HierarchyScrollBarStyle = ScrollbarStyle(
     thickness = 11.7.ddp,
     shape = RectangleShape,
     hoverDurationMillis = 1,
-    unhoverColor = ThemedColor.ScrollBarNormal,
-    hoverColor = ThemedColor.ScrollBarHover
+    unhoverColor = Color.White.copy(alpha = 0.1960f),
+    hoverColor = Color.White.copy(alpha = 0.3921f)
 )
 
 @Composable
@@ -358,7 +357,7 @@ class DirectoryHierarchyItem(
         else listOf(this)
     }
 
-    fun children(): List<HierarchyItem> =
+    private fun children(): List<HierarchyItem> =
         mutableListOf<HierarchyItem>().apply {
             add(this@DirectoryHierarchyItem)
             addAll(

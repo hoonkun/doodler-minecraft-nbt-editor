@@ -23,7 +23,6 @@ data class ChunkLocation(val x: Int, val z: Int) {
     fun toAnvilLocation(): AnvilLocation {
         return AnvilLocation(floor(this.x / 32.0).toInt(), floor(this.z / 32.0).toInt())
     }
-    fun toStringPair(): Pair<String, String> = Pair("$x", "$z")
 }
 
 data class AnvilLocationSurroundings(

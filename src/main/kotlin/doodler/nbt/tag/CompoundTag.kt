@@ -3,7 +3,7 @@ package doodler.nbt.tag
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
-import activator.doodler.extensions.contentEquals
+import doodler.extension.contentEquals
 import doodler.nbt.AnyTag
 import doodler.nbt.Tag
 import doodler.nbt.TagType

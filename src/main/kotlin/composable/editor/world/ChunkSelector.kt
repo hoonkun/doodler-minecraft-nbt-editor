@@ -1,6 +1,5 @@
 package composable.editor.world
 
-import activator.composables.global.ThemedColor
 import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
@@ -467,7 +466,7 @@ fun DropdownBackground(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(ThemedColor.from(Color.Black, alpha = 150))
+            .background(Color.Black.copy(alpha = 0.5882f))
             .clickable(onClick = onCloseRequest)
     )
 }

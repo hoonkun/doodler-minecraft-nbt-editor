@@ -1,6 +1,5 @@
 package doodler.editor.states
 
-import activator.doodler.doodle.*
 import doodler.extension.removeRange
 import doodler.extension.toRanges
 import doodler.minecraft.DatWorker
@@ -189,7 +188,7 @@ class NbtEditorState(
     @Stable
     inner class Elevator: Action() {
 
-        val internal = Internal()
+        private val internal = Internal()
 
         fun moveUp(targets: SnapshotStateList<ReadonlyDoodle>) {
             internal.moveUp(targets)
@@ -418,7 +417,7 @@ class NbtEditorState(
             if (selected.size > 1) throw TooManyItemsSelectedException("create")
 
             val into = (selected.firstOrNull() ?: root) as? TagDoodle
-                ?: throw InternalAssertionException(NbtDoodle::class.java.simpleName, "null")
+                ?: throw InternalAssertionException(TagDoodle::class.java.simpleName, "null")
 
             into.expand()
 

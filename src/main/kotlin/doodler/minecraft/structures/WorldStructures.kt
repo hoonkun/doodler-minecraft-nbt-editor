@@ -1,8 +1,5 @@
 package doodler.minecraft.structures
 
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.snapshots.SnapshotStateMap
-import androidx.compose.ui.graphics.ImageBitmap
 import composable.editor.world.DirectoryHierarchyItem
 import composable.editor.world.FileHierarchyItem
 import composable.editor.world.HierarchyItem
@@ -54,12 +51,6 @@ class WorldDimensionHierarchy (
     private val poi: List<File>,
     val data: List<File>,
 ) {
-
-    @Deprecated("this properties are moved to ")
-    val cachedTerrains: SnapshotStateMap<CachedTerrainInfo, ImageBitmap> = mutableStateMapOf()
-    @Deprecated("this properties are moved to ")
-    val cachedValidY: MutableMap<AnvilLocation, List<IntRange>> = mutableMapOf()
-
     operator fun get(key: String): List<File> {
         return when (key) {
             "entities" -> entities
@@ -95,9 +86,6 @@ enum class WorldDimension(
             ?: throw DoodleException("Internal Error", null, "unknown dimension id: $namespaceId")
     }
 }
-
-@Deprecated("deprecated.")
-data class CachedTerrainInfo(val yLimit: Short, val location: AnvilLocation)
 
 class WorldSpecification (
     worldPath: String

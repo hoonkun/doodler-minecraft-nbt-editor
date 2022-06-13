@@ -6,12 +6,12 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import doodler.exceptions.InternalAssertionException
-import activator.composables.global.ThemedColor
 import doodler.nbt.TagType
 import doodler.nbt.tag.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import doodler.doodle.structures.*
+import doodler.theme.DoodlerTheme
 
 
 fun CompoundTag.doodle(parent: TagDoodle?, depth: Int): List<ReadonlyDoodle> {
@@ -64,12 +64,12 @@ fun TagType.shorten(): String {
 }
 
 fun TagType.color(): Color {
-    return if (this.isNumber()) ThemedColor.Editor.Tag.Number
-    else if (this.isString()) ThemedColor.Editor.Tag.String
-    else if (this.isArray()) ThemedColor.Editor.Tag.NumberArray
-    else if (this.isList()) ThemedColor.Editor.Tag.List
-    else if (this.isCompound()) ThemedColor.Editor.Tag.Compound
-    else ThemedColor.Editor.Tag.General
+    return if (this.isNumber()) DoodlerTheme.Colors.Text.IdeNumberLiteral
+    else if (this.isString()) DoodlerTheme.Colors.Text.IdeStringLiteral
+    else if (this.isArray()) DoodlerTheme.Colors.Text.IdeFunctionProperty
+    else if (this.isList()) DoodlerTheme.Colors.Text.IdeKeyword
+    else if (this.isCompound()) DoodlerTheme.Colors.Text.IdeFunctionName
+    else DoodlerTheme.Colors.Text.IdeGeneral
 }
 
 fun TagType.creationHint(): String {
@@ -94,7 +94,7 @@ fun transformText(text: String, valid: Boolean): TransformedText {
     return if (!valid) {
         TransformedText(AnnotatedString(
             text,
-            listOf(AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Selector.Invalid), 0, text.length))
+            listOf(AnnotatedString.Range(SpanStyle(color = DoodlerTheme.Colors.Text.Invalid), 0, text.length))
         ), OffsetMapping.Identity)
     } else {
         TransformedText(AnnotatedString(text), OffsetMapping.Identity)
@@ -138,7 +138,7 @@ fun NameTransformer(): (AnnotatedString) -> Pair<Boolean, TransformedText> = { s
     val text = string.text
     val checker = Regex("\\W")
     val invalids = checker.findAll(text).map {
-        AnnotatedString.Range(SpanStyle(color = ThemedColor.Editor.Selector.Invalid), it.range.first, it.range.last + 1)
+        AnnotatedString.Range(SpanStyle(color = DoodlerTheme.Colors.Text.Invalid), it.range.first, it.range.last + 1)
     }.toList()
     if (invalids.isNotEmpty()) {
         Pair(false, TransformedText(AnnotatedString(string.text, invalids), OffsetMapping.Identity))

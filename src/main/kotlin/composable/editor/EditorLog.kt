@@ -1,6 +1,5 @@
 package composable.editor
 
-import activator.composables.global.ThemedColor
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -108,7 +107,7 @@ fun DrawScope.drawBackgroundGradient() {
 
     drawRect(
         Brush.linearGradient(
-            listOf(ThemedColor.from(Color.Black, alpha = 200), Color.Transparent),
+            listOf(Color.Black.copy(alpha = 0.7843f), Color.Transparent),
             start = Offset(0f, amount * (size.width / size.height)),
             end = Offset(amount, 0f)
         )

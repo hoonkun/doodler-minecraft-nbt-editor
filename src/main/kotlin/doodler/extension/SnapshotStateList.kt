@@ -1,4 +1,4 @@
-package activator.doodler.extensions
+package doodler.extension
 
 import androidx.compose.runtime.snapshots.SnapshotStateList
 

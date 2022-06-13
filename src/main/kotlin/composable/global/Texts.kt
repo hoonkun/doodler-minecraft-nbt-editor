@@ -1,6 +1,5 @@
 package composable.global
 
-import activator.composables.global.JetBrainsMono
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -108,7 +107,7 @@ fun ClickableText(
         text,
         color = color,
         fontSize = fontSize,
-        fontFamily = JetBrainsMono,
+        fontFamily = DoodlerTheme.Fonts.JetbrainsMono,
         style = TextStyle(textDecoration = if (hovered) TextDecoration.Underline else TextDecoration.None),
         modifier = Modifier.then(modifier).hoverable(interactionSource).clickable(onClick = onClick)
     )
