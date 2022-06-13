@@ -13,6 +13,9 @@ val Float.sp get() = (this * multiplier).sp
 val Int.dp get() = (this * multiplier).dp
 val Float.dp get() = (this * multiplier).dp
 
+val Float.absoluteDp get() = this.dp
+val Int.absoluteDp get() = this.dp
+
 class ScaledUnits {
 
     class HierarchyView {

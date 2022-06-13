@@ -1,9 +1,7 @@
 package composable.editor.world
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
-import androidx.compose.foundation.hoverable
+import activator.composables.global.ThemedColor
+import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
@@ -11,17 +9,19 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -29,6 +29,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.zIndex
 import doodler.editor.GlobalMcaEditor
 import doodler.editor.McaEditor
@@ -38,6 +39,7 @@ import doodler.editor.states.McaEditorState
 import doodler.minecraft.structures.*
 import doodler.theme.DoodlerTheme
 import doodler.unit.ScaledUnits.ChunkSelector.Companion.scaled
+import doodler.unit.absoluteDp
 import doodler.unit.dp
 import java.io.File
 
@@ -133,11 +135,17 @@ fun ChunkSelector(
         setSelectedChunk(chunk)
     }
 
-    val openPopup: (String) -> Unit = {
+    var expandedDropdown by remember { mutableStateOf<String?>(null) }
 
-    }
+    val selectorItemPositions = remember { mutableMapOf<String, Offset>() }
 
-    val enabled = true
+    val openDropdown: (String) -> Unit = { expandedDropdown = it }
+
+    val closeDropdown: () -> Unit = { expandedDropdown = null }
+
+    val onItemPositioned: LayoutCoordinates.(String) -> Unit = { selectorItemPositions[it] = positionInParent() }
+
+    val coordinateEnabled by remember { derivedStateOf { expandedDropdown == null } }
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -147,32 +155,37 @@ fun ChunkSelector(
             .fillMaxWidth()
             .zIndex(10f)
     ) {
-        DropdownSpacer()
-        Dropdown(prefix = "block:", enabled = enabled) {
+        SelectorItemSpacer()
+        SelectorItem(ident = "block", enabled = coordinateEnabled) {
             Coordinate(
                 xValue = state.blockXValue, zValue = state.blockZValue,
                 onXChange = { state.blockXValue = it; blockUpdated() },
                 onZChange = { state.blockZValue = it; blockUpdated() },
                 transformer = transformBlockCoordinate,
-                enabled = enabled
+                enabled = coordinateEnabled
             )
         }
-        DropdownSpacer()
-        Dropdown(prefix = "chunk:", accent = true, valid = state.selectedChunk != null, enabled = enabled) {
+        SelectorItemSpacer()
+        SelectorItem(
+            ident = "chunk",
+            accent = true,
+            valid = state.selectedChunk != null,
+            enabled = coordinateEnabled
+        ) {
             Coordinate(
                 xValue = state.chunkXValue, zValue = state.chunkZValue,
                 onXChange = { state.chunkXValue = it; chunkUpdated(); },
                 onZChange = { state.chunkZValue = it; chunkUpdated(); },
                 xTransformer = { text -> transformChunkCoordinate(text) { chunks.hasX(it) } },
                 zTransformer = { text -> transformChunkCoordinate(text) { chunks.hasZ(it) } },
-                enabled = enabled
+                enabled = coordinateEnabled
             )
         }
-        DropdownSpacer()
-        Dropdown(
-            prefix = "region:",
-            onClick = if (availableAnvils.size != 1) ({ openPopup("region") }) else null,
-            modifier = Modifier
+        SelectorItemSpacer()
+        SelectorItem(
+            ident = "region",
+            onClick = if (availableAnvils.any { it != currentAnvil }) ({ openDropdown(it) }) else null,
+            onGloballyPositioned = onItemPositioned
         ) {
             val region = existingAnvil()
             val x = "${currentAnvil.x}"
@@ -195,19 +208,19 @@ fun ChunkSelector(
                 )
             )
         }
-        DropdownSpacer()
-        Dropdown(
-            prefix = "type:",
-            onClick = if (editor is GlobalMcaEditor) ({ openPopup("type") }) else null,
-            modifier = Modifier
+        SelectorItemSpacer()
+        SelectorItem(
+            ident = "type",
+            onClick = if (editor is GlobalMcaEditor) ({ openDropdown(it) }) else null,
+            onGloballyPositioned = onItemPositioned
         ) {
             CoordinateText(payload.type.name)
         }
-        DropdownSpacer()
-        Dropdown(
-            prefix = "dim:",
-            onClick = if (editor is GlobalMcaEditor) ({ openPopup("dimension") }) else null,
-            modifier = Modifier
+        SelectorItemSpacer()
+        SelectorItem(
+            ident = "dim",
+            onClick = if (editor is GlobalMcaEditor) ({ openDropdown(it) }) else null,
+            onGloballyPositioned = onItemPositioned
         ) {
             CoordinateText(payload.dimension.name)
         }
@@ -238,18 +251,65 @@ fun ChunkSelector(
                 resetBlock()
             }
         )
+
+        DropdownBackground(
+            enabled = expandedDropdown != null,
+            onCloseRequest = closeDropdown
+        )
+
+        Box(contentAlignment = Alignment.TopStart, modifier = Modifier.fillMaxSize()) {
+            when (expandedDropdown) {
+                "region" ->
+                    Dropdown(
+                        ident = "region",
+                        items = { availableAnvils.filter { it != currentAnvil } },
+                        valueMapper = { "r.${it.x}.${it.z}.mca" },
+                        anchor = selectorItemPositions.getValue("region"),
+                        onCloseRequest = closeDropdown,
+                        onClick = {
+                            resetChunk()
+                            update(payload.copy(location = it))
+                        }
+                    )
+                "type" ->
+                    Dropdown(
+                        ident = "type",
+                        items = { McaType.values().filter { it != payload.type } },
+                        valueMapper = { it.name },
+                        anchor = selectorItemPositions.getValue("type"),
+                        onCloseRequest = closeDropdown,
+                        onClick = {
+                            resetChunk()
+                            update(payload.copy(type = it))
+                        }
+                    )
+                "dim" ->
+                    Dropdown(
+                        ident = "dim",
+                        items = { WorldDimension.values().filter { it != payload.dimension } },
+                        valueMapper = { it.name },
+                        anchor = selectorItemPositions.getValue("dim"),
+                        onCloseRequest = closeDropdown,
+                        onClick = {
+                            resetChunk()
+                            update(payload.copy(dimension = it))
+                        }
+                    )
+            }
+        }
     }
 
 }
 
 @Composable
-fun Dropdown(
-    prefix: String,
+fun SelectorItem(
+    ident: String = "UNSPECIFIED",
     accent: Boolean = false,
     valid: Boolean = true,
     enabled: Boolean = true,
-    onClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier,
+    requiredWidth: Dp? = null,
+    onClick: ((String) -> Unit)? = null,
+    onGloballyPositioned: (LayoutCoordinates.(String) -> Unit)? = null,
     content: @Composable RowScope.() -> Unit
 ) {
     val hoverInteraction = remember { MutableInteractionSource() }
@@ -257,7 +317,7 @@ fun Dropdown(
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.then(modifier)
+        modifier = Modifier
             .drawBehind {
                 drawRoundRect(
                     DoodlerTheme.Colors.Editor.DropdownBackground(
@@ -271,24 +331,31 @@ fun Dropdown(
             .height(20.dp)
             .alpha(if (enabled) 1f else 0.6f)
             .let {
-                if (onClick != null) it.hoverable(hoverInteraction).clickable(onClick = onClick)
+                if (onClick != null) it.hoverable(hoverInteraction).clickable(onClick = { onClick(ident) })
                 else it
             }
+            .let {
+                if (onGloballyPositioned != null) it.onGloballyPositioned { lc -> lc.onGloballyPositioned(ident) }
+                else it
+            }
+            .let { if (requiredWidth != null) it.width(requiredWidth) else it }
     ) {
         Spacer(modifier = Modifier.width(6.dp))
-        Text(
-            text = prefix,
-            fontSize = MaterialTheme.typography.h5.fontSize.scaled,
-            color = DoodlerTheme.Colors.Text.Normal
-        )
-        Spacer(modifier = Modifier.width(1.dp))
+        if (ident != "UNSPECIFIED") {
+            Text(
+                text = "$ident:",
+                fontSize = MaterialTheme.typography.h5.fontSize.scaled,
+                color = DoodlerTheme.Colors.Text.Normal
+            )
+            Spacer(modifier = Modifier.width(1.dp))
+        }
         content()
         Spacer(modifier = Modifier.width(6.dp))
     }
 }
 
 @Composable
-fun DropdownSpacer() = Spacer(modifier = Modifier.width(5.dp))
+fun SelectorItemSpacer() = Spacer(modifier = Modifier.width(5.dp))
 
 @Composable
 fun Coordinate(
@@ -373,6 +440,61 @@ fun CoordinateInput(
             if (!it.isFocused && value.text.isEmpty()) onValueChange(TextFieldValue("-"))
         }
 )
+
+@Composable
+fun DropdownBackground(
+    enabled: Boolean,
+    onCloseRequest: () -> Unit
+) {
+    if (!enabled) return
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(ThemedColor.from(Color.Black, alpha = 150))
+            .clickable(onClick = onCloseRequest)
+    )
+}
+
+@Composable
+fun <K>Dropdown(
+    ident: String,
+    items: () -> List<K>,
+    valueMapper: (K) -> String,
+    anchor: Offset,
+    onCloseRequest: () -> Unit,
+    onClick: (K) -> Unit
+) {
+    val scrollState = rememberScrollState()
+    var width by remember { mutableStateOf<Int?>(null) }
+
+    Row {
+        Text(
+            text = "$ident:",
+            fontSize = MaterialTheme.typography.h5.fontSize.scaled,
+            modifier = Modifier.alpha(0f)
+        )
+        Spacer(modifier = Modifier.width(1.dp.scaled))
+        Column(
+            modifier = Modifier
+                .absoluteOffset(x = anchor.x.absoluteDp)
+                .padding(top = 7.dp.scaled)
+                .verticalScroll(scrollState)
+                .onGloballyPositioned { width = it.size.width }
+        ) {
+            for (item in items()) {
+                SelectorItem(
+                    onClick = { onClick(item); onCloseRequest() },
+                    requiredWidth = width?.absoluteDp
+                ) {
+                    CoordinateText(valueMapper(item))
+                    Spacer(modifier = Modifier.width(5.dp.scaled))
+                }
+                Spacer(modifier = Modifier.height(10.dp.scaled))
+            }
+        }
+    }
+}
 
 private fun List<ChunkLocation>.hasX(x: Int) = map { it.x }.contains(x)
 private fun List<ChunkLocation>.hasZ(z: Int) = map { it.z }.contains(z)
