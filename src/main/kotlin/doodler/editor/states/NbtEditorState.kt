@@ -26,8 +26,8 @@ class NbtEditorState(
     private val type: WorldFileType
 ) {
 
-     private val logs = mutableStateListOf<EditorLog>()
-     val currentLog = mutableStateOf<EditorLog?>(null)
+    private val logs = mutableStateListOf<EditorLog>()
+    val currentLog = mutableStateOf<EditorLog?>(null)
 
     val selected = mutableStateListOf<ReadonlyDoodle>()
     var focused by mutableStateOf<ReadonlyDoodle?>(null)

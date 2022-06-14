@@ -48,7 +48,6 @@ abstract class Tag<T: Any>(
 
     abstract fun valueEquals(other: AnyTag): Boolean
 
-    // TODO: 이거 SnapshotStateList.hashCode() 로 괜찮은가?
     abstract fun valueHashcode(): Int
 
     open fun prefix() = if (name.isNullOrEmpty()) "" else "\"${name}\": "
