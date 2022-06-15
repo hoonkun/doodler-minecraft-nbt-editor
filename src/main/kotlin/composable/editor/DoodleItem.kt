@@ -219,10 +219,12 @@ fun TagDoodleKeyValue(
 ) {
     val key = doodle.tag.name
     if (key != null) {
+        Spacer(modifier = Modifier.width(15.sdp))
         TagDoodleName(name = key)
         Spacer(modifier = Modifier.width(15.sdp))
     }
     if (doodle.parent?.tag?.type?.isCompound() != true) {
+        Spacer(modifier = Modifier.width(7.sdp))
         ExpandableTagItemDoodleIndex(index = doodle.index)
         Spacer(modifier = Modifier.width(15.sdp))
     }
@@ -236,7 +238,6 @@ fun TagDoodleContent(
     doodle: TagDoodle
 ) {
     TagDoodleType(doodle.tag.type)
-    Spacer(modifier = Modifier.width(15.sdp))
     TagDoodleKeyValue(doodle)
 }
 
@@ -246,6 +247,7 @@ fun ArrayValueDoodleContent(
     value: String
 ) {
     ExpandableTagItemDoodleIndex(index)
+    Spacer(modifier = Modifier.width(15.sdp))
     NumberTagDoodleValue(value)
 }
 

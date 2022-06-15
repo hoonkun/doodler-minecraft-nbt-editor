@@ -36,7 +36,12 @@ fun LongArrayTag.doodle(parent: TagDoodle, depth: Int): List<ReadonlyDoodle> {
 
 fun Doodle.hierarchy(): SnapshotStateList<TagDoodle> {
     val result = mutableListOf<TagDoodle>()
-    var parent = if (this is TagDoodle) parent else if (this is ActionDoodle) parent else null
+    var parent =
+        when (this) {
+            is TagDoodle -> parent
+            is ArrayValueDoodle -> parent
+            is ActionDoodle -> parent
+        }
     while (parent != null && parent.depth >= 0) {
         result.add(parent)
         parent = parent.parent
