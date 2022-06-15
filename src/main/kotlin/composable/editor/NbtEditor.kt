@@ -41,8 +41,10 @@ fun BoxScope.NbtEditor(
     val toggle: (ReadonlyDoodle) -> Unit = toggle@ { doodle ->
         if (doodle !is TagDoodle || !doodle.tag.canHaveChildren) return@toggle
 
-        if (doodle.expanded) doodle.collapse()
-        else doodle.expand()
+        if (doodle.expanded) {
+            val collapsed = doodle.collapse()
+            editor.state.selected.removeAll(collapsed)
+        } else doodle.expand()
     }
 
     val select: (ReadonlyDoodle) -> Unit = select@ {
@@ -64,7 +66,8 @@ fun BoxScope.NbtEditor(
     }
 
     val depthCollapse: (TagDoodle) -> Unit = { target ->
-        target.collapse()
+        val collapsed = target.collapse()
+        editor.state.selected.removeAll(collapsed)
 
         val baseIndex = editor.state.items.indexOf(target)
         if (editor.state.lazyState.firstVisibleItemIndex > baseIndex)
