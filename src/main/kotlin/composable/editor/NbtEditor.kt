@@ -197,7 +197,7 @@ fun BoxScope.LazyScrollbarDecorationItem(
 
             Canvas(
                 modifier = Modifier
-                    .fillMaxHeight(size).defaultMinSize(minSize).width(15.ddp)
+                    .fillMaxHeight(size).defaultMinSize(minSize).width(10.ddp)
                     .hoverable(indicatorHoverSource)
             ) {
                 drawRect(
