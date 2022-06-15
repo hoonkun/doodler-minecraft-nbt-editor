@@ -33,6 +33,7 @@ fun WorldEditor(
 
     WorldEditorRoot {
         HierarchyBar {
+            state.manager.selected
             HierarchyBarText(state.worldSpec.name)
         }
 
@@ -47,7 +48,7 @@ fun WorldEditor(
 
         BottomBar {
             Spacer(modifier = Modifier.width(5.ddp))
-            BottomBarText("TODO: print  log here.")
+            BottomBarText("")
             Spacer(modifier = Modifier.weight(1f))
             BottomBarText("by kiwicraft")
             Spacer(modifier = Modifier.width(5.ddp))

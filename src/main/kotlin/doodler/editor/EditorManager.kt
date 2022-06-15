@@ -5,6 +5,7 @@ import doodler.minecraft.DatWorker
 import doodler.minecraft.structures.*
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.ImageBitmap
+import doodler.doodle.structures.Doodle
 import doodler.doodle.structures.TagDoodle
 import doodler.editor.states.McaEditorState
 import doodler.editor.states.NbtEditorState
@@ -52,11 +53,30 @@ class EditorManager {
 sealed class Editor {
     abstract val ident: String
     abstract val name: String
+
+    val breadcrumb get() = breadcrumbs()
+
+    protected abstract fun breadcrumbs(): List<Breadcrumb>
 }
 
 sealed class NbtEditor(
     val state: NbtEditorState
-): Editor()
+): Editor() {
+
+    protected fun parentBreadcrumbs(): List<Breadcrumb> {
+        return mutableListOf<Breadcrumb>().apply {
+            val doodle = state.selected.first()
+            add(NbtBreadcrumb(doodle))
+
+            var current = doodle.parent
+            while (current != null) {
+                add(NbtBreadcrumb(current))
+                current = current.parent
+            }
+        }.reversed()
+    }
+
+}
 
 class StandaloneNbtEditor(
     private val file: File,
@@ -64,6 +84,16 @@ class StandaloneNbtEditor(
 ): NbtEditor(state) {
     override val ident: String get() = file.absolutePath
     override val name: String get() = file.name
+
+    override fun breadcrumbs(): List<Breadcrumb> {
+        val root = OtherBreadcrumb(OtherBreadcrumb.Type.DatFile, file.name)
+        val result = mutableListOf<Breadcrumb>(root)
+
+        if (state.selected.size > 1) result.add(MultipleNbtBreadcrumb(state.selected.size))
+        else if (state.selected.size == 1) result.addAll(parentBreadcrumbs())
+
+        return result
+    }
 
     companion object {
         fun fromFile(file: File): StandaloneNbtEditor =
@@ -88,6 +118,20 @@ class AnvilNbtEditor(
 
     val path: String get() = "${WorldDimension[anvil.parentFile.parentFile.name].displayName}/${anvil.parentFile.name}/"
 
+    override fun breadcrumbs(): List<Breadcrumb> {
+        val dimension = DimensionBreadcrumb(WorldDimension[anvil.parentFile.parentFile.name])
+        val type = McaTypeBreadcrumb(McaType[anvil.parentFile.name])
+        val mca = OtherBreadcrumb(OtherBreadcrumb.Type.McaFile, anvil.name)
+        val chunk = OtherBreadcrumb(OtherBreadcrumb.Type.Chunk, name)
+
+        val result = mutableListOf(dimension, type, mca, chunk)
+
+        if (state.selected.size > 1) result.add(MultipleNbtBreadcrumb(state.selected.size))
+        else if (state.selected.size == 1) result.addAll(parentBreadcrumbs())
+
+        return result
+    }
+
     companion object {
         fun ident(anvil: File, location: ChunkLocation) = "${anvil.absolutePath}/c.${location.x}.${location.z}"
     }
@@ -97,9 +141,22 @@ sealed class McaEditor<K>(
     val states: SnapshotStateMap<K, McaEditorState>,
     initialPayload: McaPayload,
 ): Editor() {
+
     var payload: McaPayload by mutableStateOf(initialPayload)
 
+    abstract val state: McaEditorState?
+
     abstract fun state(defaultFactory: () -> McaEditorState): McaEditorState
+
+    override fun breadcrumbs(): List<Breadcrumb> {
+        val dimension = DimensionBreadcrumb(payload.dimension)
+        val type = McaTypeBreadcrumb(payload.type)
+        val anvil = OtherBreadcrumb(OtherBreadcrumb.Type.McaFile, payload.file.name)
+        val chunk = state?.selectedChunk?.let { OtherBreadcrumb(OtherBreadcrumb.Type.Chunk, "$it") }
+
+        return mutableListOf(dimension, type, anvil).apply { if (chunk != null) add(chunk) }.toList()
+    }
+
 }
 
 class GlobalMcaEditor(
@@ -107,7 +164,7 @@ class GlobalMcaEditor(
     states: SnapshotStateMap<WorldDimension, McaEditorState> = mutableStateMapOf()
 ): McaEditor<WorldDimension>(states, initialPayload) {
 
-    val state by derivedStateOf { states[payload.dimension] }
+    override val state by derivedStateOf { states[payload.dimension] }
 
     override val ident: String get() = this.javaClass.name
     override val name: String get() = "WorldMap"
@@ -121,6 +178,11 @@ class GlobalMcaEditor(
         return newState
     }
 
+    override fun breadcrumbs(): List<Breadcrumb> {
+        return mutableListOf<Breadcrumb>(OtherBreadcrumb(OtherBreadcrumb.Type.WorldMap, "WorldMap"))
+            .apply { addAll(super.breadcrumbs()) }
+    }
+
     companion object {
         val Identifier: String = GlobalMcaEditor::class.java.name
     }
@@ -132,7 +194,7 @@ class SingleMcaEditor(
     initialPayload: McaPayload,
 ): McaEditor<McaPayload>(states, initialPayload) {
 
-    val state by derivedStateOf { states[payload] }
+    override val state by derivedStateOf { states[payload] }
 
     override val ident: String get() = this.javaClass.name
     override val name: String by derivedStateOf { "${payload.location.x}.${payload.location.z}.mca" }
@@ -146,8 +208,43 @@ class SingleMcaEditor(
         return newState
     }
 
+    override fun breadcrumbs(): List<Breadcrumb> {
+        return mutableListOf<Breadcrumb>(OtherBreadcrumb(OtherBreadcrumb.Type.McaMap, "McaMap"))
+            .apply { addAll(super.breadcrumbs()) }
+    }
+
     companion object {
         val Identifier: String = SingleMcaEditor::class.java.name
+    }
+}
+
+sealed class Breadcrumb
+class NbtBreadcrumb(
+    val doodle: Doodle
+): Breadcrumb()
+
+class MultipleNbtBreadcrumb(
+    val count: Int
+): Breadcrumb()
+
+class DimensionBreadcrumb(
+    val dimension: WorldDimension
+): Breadcrumb()
+
+class McaTypeBreadcrumb(
+    val type: McaType
+): Breadcrumb()
+
+class OtherBreadcrumb(
+    val type: Type,
+    val name: String
+): Breadcrumb() {
+    enum class Type {
+        WorldMap,
+        McaMap,
+        McaFile,
+        DatFile,
+        Chunk
     }
 }
 
