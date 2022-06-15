@@ -118,12 +118,13 @@ fun TagDoodleContentText(
 fun TagDoodleType(
     type: TagType,
     fontSize: TextUnit = MaterialTheme.typography.h5.fsp,
-    selected: BooleanProvider = FalseProvider
+    selected: BooleanProvider = FalseProvider,
+    backgroundColor: Color = DoodlerTheme.Colors.DoodleItem.TagTypeBackground(selected())
 ) = Box (
     contentAlignment = Alignment.Center,
     modifier = Modifier
         .wrapContentSize()
-        .background(DoodlerTheme.Colors.DoodleItem.TagTypeBackground(selected()), RoundedCornerShape(2.25.sdp))
+        .background(backgroundColor, RoundedCornerShape(2.25.sdp))
         .padding(vertical = 1.5.sdp, horizontal = 2.25.sdp),
     content = { TagDoodleTypeText(type = type, fontSize = fontSize, enabled = TrueProvider) }
 )
@@ -164,18 +165,21 @@ fun ExpandableTagDoodleValue(
 @Composable
 fun ExpandableTagItemDoodleIndex(
     index: Int,
-    selected: BooleanProvider = FalseProvider
+    selected: BooleanProvider = FalseProvider,
+    prefix: String = "",
+    suffix: String = ":",
+    backgroundColor: Color = DoodlerTheme.Colors.DoodleItem.TagTypeBackground(selected())
 ) = Box (
     modifier = Modifier
         .wrapContentSize()
         .background(
-            color = DoodlerTheme.Colors.DoodleItem.TagTypeBackground(selected()),
+            color = backgroundColor,
             shape = RoundedCornerShape(2.25.sdp)
         )
         .padding(vertical = 1.5.sdp, horizontal = 2.25.sdp),
     content = {
         TagDoodleContentText(
-            text = "$index:",
+            text = "$prefix$index$suffix",
             color = DoodlerTheme.Colors.DoodleItem.IndexTextColor(selected()),
             fontSize = MaterialTheme.typography.h5.fsp
         )

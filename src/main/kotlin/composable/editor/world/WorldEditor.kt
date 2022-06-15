@@ -1,7 +1,9 @@
 package composable.editor.world
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -33,8 +35,9 @@ fun WorldEditor(
 
     WorldEditorRoot {
         HierarchyBar {
-            state.manager.selected
             HierarchyBarText(state.worldSpec.name)
+            state.manager.selected?.let { Breadcrumb(it.breadcrumb) }
+            Spacer(modifier = Modifier.width(50.ddp))
         }
 
         MainArea {
@@ -104,13 +107,12 @@ fun WorldEditorRoot(content: @Composable ColumnScope.() -> Unit) =
     Column(modifier = Modifier.fillMaxSize(), content = content)
 
 @Composable
-fun ColumnScope.HierarchyBar(content: @Composable RowScope.() -> Unit) =
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Start,
+fun ColumnScope.HierarchyBar(content: @Composable RowScope.() -> Unit) {
+    val hs = rememberScrollState()
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(28.ddp)
             .drawBehind {
                 drawRect(DoodlerTheme.Colors.SecondaryBackground)
                 drawLine(
@@ -118,20 +120,28 @@ fun ColumnScope.HierarchyBar(content: @Composable RowScope.() -> Unit) =
                     start = Offset(0f, size.height),
                     end = Offset(size.width, size.height)
                 )
-            },
-        content = {
-            Spacer(modifier = Modifier.width(10.ddp))
-            content()
-        }
-    )
+            }
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start,
+            modifier = Modifier
+                .horizontalScroll(hs, reverseScrolling = true)
+                .height(28.ddp),
+            content = {
+                Spacer(modifier = Modifier.width(10.ddp))
+                content()
+            }
+        )
+    }
+}
 
 @Composable
-fun RowScope.HierarchyBarText(text: String, hasChanges: Boolean = false) =
+fun RowScope.HierarchyBarText(text: String) =
     Text(
         text = text,
         color =
-            if (!hasChanges) DoodlerTheme.Colors.HierarchyView.TextColor
-            else DoodlerTheme.Colors.Editor.TabHasChanges,
+            DoodlerTheme.Colors.Text.IdeGeneral,
         fontSize = MaterialTheme.typography.h6.fontSize
     )
 

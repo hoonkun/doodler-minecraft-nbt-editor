@@ -5,7 +5,9 @@ import doodler.minecraft.DatWorker
 import doodler.minecraft.structures.*
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.ImageBitmap
+import doodler.doodle.structures.CreatorDoodle
 import doodler.doodle.structures.Doodle
+import doodler.doodle.structures.EditorDoodle
 import doodler.doodle.structures.TagDoodle
 import doodler.editor.states.McaEditorState
 import doodler.editor.states.NbtEditorState
@@ -66,10 +68,15 @@ sealed class NbtEditor(
     protected fun parentBreadcrumbs(): List<Breadcrumb> {
         return mutableListOf<Breadcrumb>().apply {
             val doodle = state.selected.first()
-            add(NbtBreadcrumb(doodle))
+            when (val action = state.action) {
+                is CreatorDoodle -> add(NbtBreadcrumb(action))
+                is EditorDoodle -> add(NbtBreadcrumb(action))
+                else -> { /* no-op */ }
+            }
+            if (state.action !is EditorDoodle) add(NbtBreadcrumb(doodle))
 
             var current = doodle.parent
-            while (current != null) {
+            while (current != null && current != state.root) {
                 add(NbtBreadcrumb(current))
                 current = current.parent
             }
@@ -219,6 +226,7 @@ class SingleMcaEditor(
 }
 
 sealed class Breadcrumb
+
 class NbtBreadcrumb(
     val doodle: Doodle
 ): Breadcrumb()

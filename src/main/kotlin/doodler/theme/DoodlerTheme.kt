@@ -182,6 +182,14 @@ class DoodlerTheme {
 
         }
 
+        class Breadcrumb {
+
+            companion object {
+                val TagTypeBackground = Color(0xff373737)
+            }
+
+        }
+
         class Text {
 
             companion object {
