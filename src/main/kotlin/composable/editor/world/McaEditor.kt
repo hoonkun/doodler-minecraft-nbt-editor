@@ -35,11 +35,13 @@ fun BoxScope.McaEditor(
     val defaultStateProvider: (McaPayload) -> McaEditorState =
         when (editor) {
             is SingleMcaEditor -> ({
-                McaEditorState.new(chunks.find { it.isIn(AnvilLocation(0, 0)) } ?: chunks[0])
+                McaEditorState.new(chunks.find { it.isIn(AnvilLocation(0, 0)) } ?: chunks.firstOrNull())
             })
             is GlobalMcaEditor -> ({ payload ->
                 if (payload.dimension == worldSpec.playerPos?.first) McaEditorState.new(worldSpec.playerPos?.second)
-                else McaEditorState.new(chunks.find { it.isIn(AnvilLocation(0, 0)) } ?: chunks[0])
+                else McaEditorState.new(
+                    chunks.find { it.isIn(AnvilLocation(0, 0)) } ?: chunks.firstOrNull()
+                )
             })
         }
 

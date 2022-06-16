@@ -194,8 +194,8 @@ fun ChunkSelector(
             onGloballyPositioned = onItemPositioned
         ) {
             val region = existingAnvil()
-            val x = "${currentAnvil.x}"
-            val z = "${currentAnvil.z}"
+            val x = if (region) "${currentAnvil.x}" else "-"
+            val z = if (region) "${currentAnvil.z}" else "-"
             CoordinateText(
                 AnnotatedString(
                     text = "r.$x.$z.mca",
