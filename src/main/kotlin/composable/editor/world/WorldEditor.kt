@@ -118,7 +118,8 @@ fun ColumnScope.HierarchyBar(content: @Composable RowScope.() -> Unit) {
                 drawLine(
                     color = DoodlerTheme.Colors.SecondaryBackgroundBorder,
                     start = Offset(0f, size.height),
-                    end = Offset(size.width, size.height)
+                    end = Offset(size.width, size.height),
+                    strokeWidth = 2.ddp.value
                 )
             }
     ) {
@@ -177,7 +178,8 @@ fun ColumnScope.BottomBar(content: @Composable RowScope.() -> Unit) =
                 drawLine(
                     color = DoodlerTheme.Colors.SecondaryBackgroundBorder,
                     start = Offset(0f, 0f),
-                    end = Offset(size.width, 0f)
+                    end = Offset(size.width, 0f),
+                    strokeWidth = 1.ddp.value
                 )
             },
         content = content

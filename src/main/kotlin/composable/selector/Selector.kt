@@ -327,7 +327,7 @@ fun SelectorRoot(
             .fillMaxSize()
             .requiredWidthIn(min = 500.ddp)
             .background(DoodlerTheme.Colors.Background)
-            .padding(start = 12.5f.ddp, end = 12.5f.ddp, top = 11.ddp)
+            .padding(start = 12.5f.ddp, end = 12.5f.ddp, top = 16.ddp)
     ) {
         Column(
             content = content
@@ -376,13 +376,13 @@ fun ColumnScope.BasePathProperty(key: String, value: String) {
 @Composable
 fun ColumnScope.PathInputBox(content: @Composable RowScope.() -> Unit) {
     Box(
-        modifier = Modifier.padding(top = 10.ddp, bottom = 10.ddp)
+        modifier = Modifier.padding(vertical = 10.ddp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(40.ddp)
+                .height(35.ddp)
                 .background(DoodlerTheme.Colors.Selector.PathInput, RoundedCornerShape(5.ddp)),
             content = content
         )
@@ -402,7 +402,7 @@ fun RowScope.PathInput(
         onValueChange = onValueChange,
         textStyle = TextStyle(
             color = DoodlerTheme.Colors.Text.IdeGeneral,
-            fontSize = MaterialTheme.typography.h4.fontSize,
+            fontSize = MaterialTheme.typography.h5.fontSize,
             fontFamily = DoodlerTheme.Fonts.JetbrainsMono
         ),
         cursorBrush =
@@ -412,7 +412,7 @@ fun RowScope.PathInput(
         modifier = Modifier.weight(1f)
             .onKeyEvent { onKeyEvent(it); true }
             .focusRequester(focusRequester)
-            .padding(start = 15.ddp, end = 15.ddp)
+            .padding(start = 10.ddp, end = 10.ddp)
     )
 }
 
