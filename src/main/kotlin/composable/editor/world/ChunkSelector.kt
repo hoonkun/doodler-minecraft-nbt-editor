@@ -54,7 +54,7 @@ fun ChunkSelector(
     terrainCache: TerrainCache,
     update: (McaPayload) -> Unit,
     openChunkNbt: (ChunkLocation, File) -> Unit,
-    defaultStateProvider: () -> McaEditorState
+    defaultStateProvider: (McaPayload) -> McaEditorState
 ) {
 
     val state = editor.state(defaultStateProvider)

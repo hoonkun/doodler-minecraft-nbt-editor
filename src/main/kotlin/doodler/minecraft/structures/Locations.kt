@@ -24,6 +24,8 @@ data class ChunkLocation(val x: Int, val z: Int) {
         return AnvilLocation(floor(this.x / 32.0).toInt(), floor(this.z / 32.0).toInt())
     }
 
+    fun isIn(where: AnvilLocation) = where == this.toAnvilLocation()
+
     override fun toString(): String = "c.$x.$z"
 }
 

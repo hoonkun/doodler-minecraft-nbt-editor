@@ -153,7 +153,7 @@ sealed class McaEditor<K>(
 
     abstract val state: McaEditorState?
 
-    abstract fun state(defaultFactory: () -> McaEditorState): McaEditorState
+    abstract fun state(defaultFactory: (McaPayload) -> McaEditorState): McaEditorState
 
     override fun breadcrumbs(): List<Breadcrumb> {
         val dimension = DimensionBreadcrumb(payload.dimension)
@@ -176,11 +176,11 @@ class GlobalMcaEditor(
     override val ident: String get() = this.javaClass.name
     override val name: String get() = "WorldMap"
 
-    override fun state(defaultFactory: () -> McaEditorState): McaEditorState {
+    override fun state(defaultFactory: (McaPayload) -> McaEditorState): McaEditorState {
         val localState = state
         if (localState != null) return localState
 
-        val newState = defaultFactory()
+        val newState = defaultFactory(payload)
         states[payload.dimension] = newState
         return newState
     }
@@ -206,11 +206,11 @@ class SingleMcaEditor(
     override val ident: String get() = this.javaClass.name
     override val name: String by derivedStateOf { "${payload.location.x}.${payload.location.z}.mca" }
 
-    override fun state(defaultFactory: () -> McaEditorState): McaEditorState {
+    override fun state(defaultFactory: (McaPayload) -> McaEditorState): McaEditorState {
         val localState = state
         if (localState != null) return localState
 
-        val newState = defaultFactory()
+        val newState = defaultFactory(payload)
         states[payload] = newState
         return newState
     }
