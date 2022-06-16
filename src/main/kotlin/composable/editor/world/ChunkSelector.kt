@@ -283,7 +283,7 @@ fun ChunkSelector(
                         onCloseRequest = closeDropdown,
                         onClick = {
                             resetChunk()
-                            update(payload.copy(location = it))
+                            update(payload.copy(location = it, file = siblingAnvil(payload.file, it)))
                         }
                     )
                 "type" ->
@@ -295,7 +295,7 @@ fun ChunkSelector(
                         onCloseRequest = closeDropdown,
                         onClick = {
                             resetChunk()
-                            update(payload.copy(type = it))
+                            update(payload.copy(type = it, file = siblingAnvil(payload.file, it)))
                         }
                     )
                 "dim" ->
@@ -306,8 +306,8 @@ fun ChunkSelector(
                         anchor = selectorItemPositions.getValue("dim"),
                         onCloseRequest = closeDropdown,
                         onClick = {
-                            resetChunk()
-                            update(payload.copy(dimension = it))
+                            // 이 경우 전체 state 자체가 변경되므로 resetChunk 를 해도 의미가 없다.
+                            update(payload.copy(dimension = it, file = siblingAnvil(payload.file, it)))
                         }
                     )
             }
@@ -551,6 +551,16 @@ private fun List<ChunkLocation>.hasZ(z: Int) = map { it.z }.contains(z)
 
 private fun siblingAnvil(file: File, location: AnvilLocation) =
     File("${file.parentFile.absolutePath}/r.${location.x}.${location.z}.mca")
+
+private fun siblingAnvil(file: File, type: McaType) =
+    File("${file.parentFile.parentFile.absolutePath}/${type.pathName}/${file.name}")
+
+private fun siblingAnvil(file: File, dimension: WorldDimension): File {
+    val basePath = file.parentFile.parentFile.parentFile.absolutePath
+    val dimensionPath = dimension.ident.let { if (it.isNotEmpty()) "/$it" else "" }
+    val remainingPath = "/${file.parentFile.name}/${file.name}"
+    return File("$basePath$dimensionPath$remainingPath")
+}
 
 val transformBlockCoordinate: (AnnotatedString) -> TransformedText = { annotated ->
     val int = annotated.text.toIntOrNull()
