@@ -132,6 +132,11 @@ fun LazyScrollEffect(
         coroutine.launch { state.scrollToAction() }
 }
 
+
+// TODO: 아무리 생각해도 이거 구현 방식이 바람직하지 못함.
+//  이상적이려면 Canvas 하나에 모든 녹색 인디케이터를 그리고, 포인터 이벤트 같은걸로 어느 인디케이터 위에 있는지,
+//  그 인디케이터가 가리키는 Doodle이 뭔지를 찾고 그것만 보여줘서 결론적으로 컴포저블이 딱 두개여야 함
+//  하나하나 순회하면서 인디케이터를 그리지도 말고 이전에 만들어뒀던 Collection<Int>.toRanges() 함수를 잘 사용하자.
 @Composable
 fun BoxScope.LazyScrollbarDecoration(
     itemsProvider: Provider<List<ReadonlyDoodle>>,
@@ -141,7 +146,7 @@ fun BoxScope.LazyScrollbarDecoration(
     val items = itemsProvider()
     val selected = selectedProvider()
 
-    val minSize = 2.25.ddp
+    val minSize = 4.ddp
     val size = 1f / items.size
     val positionUnit = 1f / items.lastIndex
 
@@ -149,11 +154,10 @@ fun BoxScope.LazyScrollbarDecoration(
         contentAlignment = Alignment.TopEnd,
         modifier = Modifier.align(Alignment.TopEnd).fillMaxHeight().wrapContentWidth().zIndex(99f)
     ) {
-        for (item in items) {
+        for (item in selected) {
             LazyScrollbarDecorationItem(
                 size = size, minSize = minSize, position = positionUnit * items.indexOf(item),
                 doodleProvider = { item },
-                isSelectedProvider = { selected.contains(item) },
                 scrollTo = scrollTo
             )
         }
@@ -167,7 +171,6 @@ fun BoxScope.LazyScrollbarDecorationItem(
     minSize: Dp,
     position: Float,
     doodleProvider: Provider<ReadonlyDoodle>,
-    isSelectedProvider: Provider<Boolean>,
     scrollTo: (ReadonlyDoodle) -> Unit
 ) {
     val indicatorHoverSource = remember { MutableInteractionSource() }
@@ -178,7 +181,7 @@ fun BoxScope.LazyScrollbarDecorationItem(
 
     Row {
 
-        if ((indicatorHovered || previewHovered) && isSelectedProvider()) {
+        if ((indicatorHovered || previewHovered)) {
             Column {
                 if (position > 0) Spacer(modifier = Modifier.weight(position))
 
@@ -197,16 +200,15 @@ fun BoxScope.LazyScrollbarDecorationItem(
 
             Canvas(
                 modifier = Modifier
-                    .fillMaxHeight(size).defaultMinSize(minSize).width(10.ddp)
+                    .requiredHeightIn(min = minSize).fillMaxHeight(size).width(10.ddp)
                     .hoverable(indicatorHoverSource)
             ) {
                 drawRect(
-                    if (isSelectedProvider()) DoodlerTheme.Colors.Editor.ScrollbarDecorSelected
-                    else Color.Transparent,
+                    DoodlerTheme.Colors.Editor.ScrollbarDecorSelected,
                     size = this.size
                 )
                 drawRect(
-                    if (!isSelectedProvider() || indicatorHovered) Color.Transparent
+                    if (indicatorHovered) Color.Transparent
                     else DoodlerTheme.Colors.Background.copy(alpha = 0.35f),
                     size = this.size
                 )
