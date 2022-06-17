@@ -16,6 +16,8 @@ class DoodlerTheme {
 
         companion object {
             val Background = Color(0xff2b2b2b)
+            val BackgroundDark = Color(0xff202020)
+
             val OnBackground = Color(0xffa9b7c6)
             val Primary = Color(0xff689f38)
 
@@ -23,8 +25,6 @@ class DoodlerTheme {
             val SecondaryBackgroundBorder = Color(0xff323232)
 
             val ExternalLink = Color(0xff64b5f6)
-
-            val PrimaryLink = Color(0xffaed581)
         }
 
         class Selector {
@@ -182,6 +182,16 @@ class DoodlerTheme {
 
         }
 
+        class Intro {
+
+            companion object {
+
+                val IconBackgroundColor = Color.White.copy(alpha = 0.2352f)
+
+            }
+
+        }
+
         class Breadcrumb {
 
             companion object {
@@ -205,6 +215,8 @@ class DoodlerTheme {
                 val Malformed = Color(0xff8c8c8c)
                 val Invalid = Color(0xfff57c00)
                 val Normal = Color(0xff7d7d7d)
+
+                val LightGray = Color(0xff9b9b9b)
 
                 fun NumberColor(valid: Boolean) = if (valid) IdeGeneral else Invalid
             }
