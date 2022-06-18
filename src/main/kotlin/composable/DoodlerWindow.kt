@@ -1,14 +1,16 @@
 package composable
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredSizeIn
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Typography
 import androidx.compose.material.ripple.LocalRippleTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import composable.editor.standalone.StandaloneNbtEditor
@@ -33,18 +35,7 @@ fun DoodlerWindow(
     window: DoodlerWindow
 ) = Window(
     onCloseRequest = { if (window is IntroDoodlerWindow) appState.eraseAll() else appState.erase(window) },
-    state = WindowState(
-        size =
-            when (window) {
-                is IntroDoodlerWindow -> DpSize(350.ddp, 325.ddp)
-                is SelectorDoodlerWindow -> DpSize(525.ddp, 300.ddp)
-                is EditorDoodlerWindow ->
-                    when (window.type) {
-                        DoodlerEditorType.World -> DpSize(750.ddp, 625.ddp)
-                        DoodlerEditorType.Standalone -> DpSize(850.ddp, 775.ddp)
-                    }
-            }
-    ),
+    state = WindowState(size = window.initialSize),
     onPreviewKeyEvent = {
         if (it.type == KeyEventType.KeyDown) keys.add(it.key)
         else keys.remove(it.key)
@@ -67,16 +58,23 @@ fun DoodlerWindow(
         CompositionLocalProvider(
             LocalRippleTheme provides DoodlerTheme.ClearRippleTheme
         ) {
-            when (window) {
-                is IntroDoodlerWindow -> Intro { appState.sketch(SelectorDoodlerWindow("doodler: open '${it.displayName}'", it)) }
-                is SelectorDoodlerWindow -> Selector(window.targetType) { file, type ->
-                    appState.erase(window)
-                    appState.sketch(EditorDoodlerWindow("", type, file.absolutePath))
-                }
-                is EditorDoodlerWindow -> {
-                    when (window.type) {
-                        DoodlerEditorType.Standalone -> StandaloneNbtEditor(window.path)
-                        DoodlerEditorType.World -> WorldEditor(window.path)
+            Box(
+                modifier = Modifier
+                    .requiredSizeIn(minWidth = window.initialSize.width, minHeight = window.initialSize.height - 30.ddp)
+            ) {
+                when (window) {
+                    is IntroDoodlerWindow -> Intro {
+                        appState.sketch(SelectorDoodlerWindow("doodler: open '${it.displayName}'", it))
+                    }
+                    is SelectorDoodlerWindow -> Selector(window.targetType) { file, type ->
+                        appState.erase(window)
+                        appState.sketch(EditorDoodlerWindow("", type, file.absolutePath))
+                    }
+                    is EditorDoodlerWindow -> {
+                        when (window.type) {
+                            DoodlerEditorType.Standalone -> StandaloneNbtEditor(window.path)
+                            DoodlerEditorType.World -> WorldEditor(window.path)
+                        }
                     }
                 }
             }
