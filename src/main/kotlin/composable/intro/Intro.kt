@@ -1,9 +1,6 @@
 package composable.intro
 
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
@@ -13,14 +10,15 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
@@ -29,8 +27,14 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import composable.global.ClickableText
 import doodler.application.structure.DoodlerEditorType
+import doodler.extension.ellipsisLast
+import doodler.extension.ellipsisStart
+import doodler.local.LocalDataState
+import doodler.local.RecentOpen
 import doodler.theme.DoodlerTheme
 import doodler.unit.ddp
+import java.io.File
+import javax.imageio.ImageIO
 
 private val TextStyle.fsp get() = this.fontSize
 
@@ -41,10 +45,13 @@ private val Padding = 12.5.sdp
 
 @Composable
 fun Intro(
+    localApplicationData: LocalDataState,
+    openRecent: (DoodlerEditorType, File) -> Unit,
     openSelector: (DoodlerEditorType) -> Unit
 ) {
 
     val openWorld = { openSelector(DoodlerEditorType.World) }
+    val openStandalone = { openSelector(DoodlerEditorType.Standalone) }
 
     val title = "doodler :1.0 with 1.18.2"
 
@@ -147,7 +154,7 @@ fun Intro(
                     text = "Standalone",
                     suffix = "view single nbt file",
                     image = "/icons/intro/open_new_standalone.png",
-                    onClick = openWorld
+                    onClick = openStandalone
                 )
             }
             MainBottomColumn {
@@ -158,20 +165,7 @@ fun Intro(
                     color = DoodlerTheme.Colors.Text.LightGray
                 )
                 Spacer(modifier = Modifier.height(4.sdp))
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxWidth()
-                        .background(DoodlerTheme.Colors.BackgroundDark, shape = RoundedCornerShape(5.sdp))
-                ) {
-                    Text(
-                        text = "No recently opened worlds or files... :(\nTry to open something!",
-                        textAlign = TextAlign.Center,
-                        color = DoodlerTheme.Colors.Text.IdeComment,
-                        fontSize = MaterialTheme.typography.h5.fsp,
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
+                Recent(localApplicationData, openRecent)
             }
         }
     }
@@ -259,6 +253,169 @@ fun RowScope.OpenNewButton(
             }
         }
     }
+}
+
+@Composable
+fun ColumnScope.Recent(
+    localApplicationData: LocalDataState,
+    openRecent: (DoodlerEditorType, File) -> Unit
+) {
+    val hs = rememberScrollState()
+
+    val openWorld: (File) -> Unit = { file -> openRecent(DoodlerEditorType.World, file) }
+    val openStandalone: (File) -> Unit = { file -> openRecent(DoodlerEditorType.Standalone, file) }
+
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxWidth()
+            .background(DoodlerTheme.Colors.BackgroundDark, shape = RoundedCornerShape(5.sdp))
+    ) {
+        Box (
+            modifier = Modifier
+                .padding(4.sdp)
+                .horizontalScroll(hs)
+        ) {
+            if (localApplicationData.recent.isEmpty()) {
+                Text(
+                    text = "No recently opened worlds or files... :(\nTry to open something!",
+                    textAlign = TextAlign.Center,
+                    color = DoodlerTheme.Colors.Text.IdeComment,
+                    fontSize = MaterialTheme.typography.h5.fsp,
+                    modifier = Modifier.align(Alignment.Center)
+                )
+            } else {
+                Row {
+                    for (item in localApplicationData.recent) {
+                        if (item.type == DoodlerEditorType.World) {
+                            key(item.path) { WorldRecentItem(item, openWorld) }
+                        } else {
+                            key(item.path) { StandaloneRecentItem(item, openStandalone) }
+                        }
+                    }
+                }
+            }
+        }
+        HorizontalScrollbar(
+            adapter = ScrollbarAdapter(hs),
+            style = DoodlerTheme.ScrollBar.Intro,
+            modifier = Modifier.align(Alignment.BottomStart)
+        )
+    }
+}
+
+@Composable
+fun WorldRecentItem(
+    data: RecentOpen,
+    reopen: (File) -> Unit
+) {
+    val hoverInteractionSource = remember { MutableInteractionSource() }
+    val hovered by hoverInteractionSource.collectIsHoveredAsState()
+
+    val file = remember(data.path) { File("${data.path}/icon.png") }
+
+    val worldIconPainter = remember(file) { if (file.exists()) ImageIO.read(file).toComposeImageBitmap() else null }
+    val fallbackWorldIcon = painterResource("/icons/intro/open_new_world.png")
+
+    val contentDescription = remember { "world preview icon of ${data.name}" }
+    val imageModifier = Modifier
+        .size(42.sdp)
+        .clip(RoundedCornerShape(3.sdp))
+
+    Box(
+        modifier = Modifier
+            .hoverable(hoverInteractionSource)
+            .clickable { reopen(File(data.path)) }
+            .drawBehind {
+                drawRoundRect(
+                    if (hovered) Color.Black.copy(alpha = 0.15f)
+                    else Color.Transparent,
+                    cornerRadius = CornerRadius(x = 3.sdp.value, y = 3.sdp.value)
+                )
+            }
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxHeight().padding(horizontal = 7.sdp, vertical = 5.sdp)
+        ) {
+            if (worldIconPainter != null) {
+                Image(
+                    bitmap = worldIconPainter,
+                    contentDescription = contentDescription,
+                    filterQuality = FilterQuality.None,
+                    modifier = imageModifier
+                )
+            } else {
+                Image(
+                    painter = fallbackWorldIcon,
+                    contentDescription = contentDescription,
+                    modifier = imageModifier
+                )
+            }
+            Spacer(modifier = Modifier.height(6.sdp))
+            RecentItemTexts(data)
+        }
+    }
+}
+
+@Composable
+fun StandaloneRecentItem(
+    data: RecentOpen,
+    reopen: (File) -> Unit
+) {
+    val hoverInteractionSource = remember { MutableInteractionSource() }
+    val hovered by hoverInteractionSource.collectIsHoveredAsState()
+
+    val icon = painterResource("/icons/intro/open_new_standalone.png")
+
+    val imageModifier = Modifier
+        .size(42.sdp)
+        .clip(RoundedCornerShape(3.sdp))
+
+    Box(
+        modifier = Modifier
+            .hoverable(hoverInteractionSource)
+            .clickable { reopen(File(data.path)) }
+            .drawBehind {
+                drawRoundRect(
+                    if (hovered) Color.Black.copy(alpha = 0.15f)
+                    else Color.Transparent,
+                    cornerRadius = CornerRadius(x = 3.sdp.value, y = 3.sdp.value)
+                )
+            }
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxHeight().padding(horizontal = 7.sdp, vertical = 5.sdp)
+        ) {
+            Image(
+                painter = icon,
+                contentDescription = null,
+                modifier = imageModifier
+            )
+            Spacer(modifier = Modifier.height(6.sdp))
+            RecentItemTexts(data)
+        }
+    }
+}
+
+@Composable
+fun RecentItemTexts(
+    data: RecentOpen
+) {
+    Text(
+        text = data.name.ellipsisLast(10),
+        color = Color.White.copy(alpha = 0.85f),
+        fontSize = MaterialTheme.typography.h5.fsp * 0.65f
+    )
+    Spacer(modifier = Modifier.height(3.sdp))
+    Text(
+        text = data.path.ellipsisStart(15),
+        color = Color.White.copy(alpha = 0.65f),
+        fontSize = MaterialTheme.typography.h6.fsp * 0.65f
+    )
 }
 
 @Composable

@@ -6,9 +6,12 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import doodler.application.structure.DoodlerWindow
 import doodler.application.structure.IntroDoodlerWindow
+import doodler.local.LocalDataState
 
 @Stable
 class DoodlerAppState {
+
+    val data = LocalDataState()
 
     val windows = mutableStateListOf<DoodlerWindow>(
         IntroDoodlerWindow("doodler")

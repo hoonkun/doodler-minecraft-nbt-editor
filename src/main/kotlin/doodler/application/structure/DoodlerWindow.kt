@@ -12,7 +12,7 @@ sealed class DoodlerWindow(
 class IntroDoodlerWindow(
     title: String
 ): DoodlerWindow(title) {
-    override val initialSize: DpSize = DpSize(425.ddp, 387.ddp)
+    override val initialSize: DpSize = DpSize(425.ddp, 375.ddp)
 }
 
 class SelectorDoodlerWindow(

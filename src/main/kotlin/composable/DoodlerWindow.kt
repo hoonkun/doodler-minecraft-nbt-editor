@@ -19,9 +19,14 @@ import composable.intro.Intro
 import composable.selector.Selector
 import doodler.application.state.DoodlerAppState
 import doodler.application.structure.*
+import doodler.local.RecentOpen
+import doodler.minecraft.DatWorker
+import doodler.nbt.tag.CompoundTag
+import doodler.nbt.tag.StringTag
 import doodler.theme.DoodlerTheme
 import doodler.unit.ddp
 import doodler.unit.dsp
+import java.io.File
 
 
 private val keys = mutableListOf<Key>()
@@ -63,10 +68,30 @@ fun DoodlerWindow(
                     .requiredSizeIn(minWidth = window.initialSize.width, minHeight = window.initialSize.height - 30.ddp)
             ) {
                 when (window) {
-                    is IntroDoodlerWindow -> Intro {
-                        appState.sketch(SelectorDoodlerWindow("doodler: open '${it.displayName}'", it))
-                    }
+                    is IntroDoodlerWindow -> Intro(
+                        localApplicationData = appState.data,
+                        openRecent = { type, file ->
+                            appState.sketch(EditorDoodlerWindow("", type, file.absolutePath))
+                        },
+                        openSelector = {
+                            appState.sketch(SelectorDoodlerWindow("doodler: open '${it.displayName}'", it))
+                        }
+                    )
                     is SelectorDoodlerWindow -> Selector(window.targetType) { file, type ->
+                        val name =
+                            if (type == DoodlerEditorType.World) {
+                                DatWorker.read(File("${file.absolutePath}/level.dat").readBytes())["Data"]
+                                    ?.getAs<CompoundTag>()?.get("LevelName")
+                                    ?.getAs<StringTag>()?.value ?: return@Selector
+                            } else {
+                                file.name
+                            }
+
+                        appState.data.recent.removeIf { it.path == file.path }
+
+                        appState.data.recent.add(0, RecentOpen(type = type, name = name, path = file.absolutePath))
+                        appState.data.save()
+
                         appState.erase(window)
                         appState.sketch(EditorDoodlerWindow("", type, file.absolutePath))
                     }
