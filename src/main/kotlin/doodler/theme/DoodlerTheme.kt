@@ -189,7 +189,7 @@ class DoodlerTheme {
 
             companion object {
 
-                val IconBackgroundColor = Color.White.copy(alpha = 0.2352f)
+                val IconBackgroundColor = Color.White.copy(alpha = 0.1352f)
 
             }
 
