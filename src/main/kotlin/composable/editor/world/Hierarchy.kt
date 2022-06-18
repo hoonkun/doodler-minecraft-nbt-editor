@@ -12,6 +12,7 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -28,12 +29,8 @@ import doodler.theme.DoodlerTheme
 import doodler.types.BooleanProvider
 import doodler.unit.ddp
 import doodler.unit.dsp
-import org.jetbrains.skia.Bitmap
-import org.jetbrains.skia.ColorAlphaType
-import org.jetbrains.skia.ColorType
-import org.jetbrains.skia.ImageInfo
-import org.jetbrains.skiko.toBufferedImage
 import java.io.File
+import javax.imageio.ImageIO
 
 
 private val TextStyle.fsp get() = this.fontSize * 0.9f
@@ -58,7 +55,8 @@ fun BoxScope.WorldHierarchy(
 
     var selected by remember { mutableStateOf<HierarchyItem?>(null) }
 
-    val worldIcon = remember { loadImageFile(hierarchy.icon) }
+    val worldIcon = if (hierarchy.icon.exists()) remember { loadImageFile(hierarchy.icon) } else null
+    val fallbackWorldIcon = painterResource("/icons/intro/open_new_world.png")
 
     val onItemClick: (HierarchyItem) -> Unit = itemClick@ {
         if (it is FileHierarchyItem && it.file.length() == 0L) return@itemClick
@@ -97,7 +95,7 @@ fun BoxScope.WorldHierarchy(
         ) {
             if (it is DirectoryHierarchyItem) {
                 if (it.depth >= 0) DirectoryToggleIcon { it.expanded }
-                if (it.depth < 0) WorldIcon(worldIcon)
+                if (it.depth < 0) WorldIcon(worldIcon, fallbackWorldIcon)
                 else DirectoryIcon()
             } else if (it is FileHierarchyItem) {
                 FileTypeIcon(it.file.extension)
@@ -194,12 +192,20 @@ fun DirectoryToggleInteraction(onClick: () -> Unit) {
 }
 
 @Composable
-fun WorldIcon(bitmap: ImageBitmap) {
-    Image(
-        bitmap = bitmap,
-        contentDescription = null,
-        modifier = Modifier.size(size = 15.ddp).clip(RoundedCornerShape(2.7.ddp))
-    )
+fun WorldIcon(bitmap: ImageBitmap?, fallback: Painter) {
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap,
+            contentDescription = null,
+            modifier = Modifier.size(size = 15.ddp).clip(RoundedCornerShape(2.7.ddp))
+        )
+    } else {
+        Image(
+            painter = fallback,
+            contentDescription = null,
+            modifier = Modifier.size(size = 15.ddp).clip(RoundedCornerShape(2.7.ddp))
+        )
+    }
 }
 
 @Composable
@@ -251,11 +257,7 @@ fun HierarchyText(
 }
 
 fun loadImageFile(file: File): ImageBitmap {
-    val image = org.jetbrains.skia.Image.makeFromEncoded(file.readBytes())
-    val bitmap = Bitmap()
-    bitmap.allocPixels(ImageInfo(64, 64, ColorType.N32, ColorAlphaType.OPAQUE))
-    image.readPixels(bitmap)
-    return bitmap.toBufferedImage().toComposeImageBitmap()
+    return ImageIO.read(file).toComposeImageBitmap()
 }
 
 fun createWorldTreeItems(hierarchy: WorldHierarchy): List<HierarchyItem> {
