@@ -31,7 +31,7 @@ class EditorDoodlerWindow(
         get() {
             return when (type) {
                 DoodlerEditorType.World -> DpSize(750.ddp, 625.ddp)
-                DoodlerEditorType.Standalone -> DpSize(850.ddp, 775.ddp)
+                DoodlerEditorType.Standalone -> DpSize(575.ddp, 575.ddp)
             }
         }
 }
