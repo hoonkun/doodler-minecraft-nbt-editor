@@ -73,8 +73,11 @@ fun DoodlerWindow(
                         openRecent = openRecent@ { type, file ->
                             val item = appState.data.recent.find { it.type == type && it.path == file.absolutePath }
                                 ?: return@openRecent
+
                             appState.data.recent.remove(item)
                             appState.data.recent.add(0, item)
+                            appState.data.save()
+
                             appState.sketch(EditorDoodlerWindow("", type, file.absolutePath))
                         },
                         openSelector = {
