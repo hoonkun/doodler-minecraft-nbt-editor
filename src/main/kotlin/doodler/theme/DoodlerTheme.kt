@@ -1,14 +1,17 @@
 package doodler.theme
 
+import androidx.compose.foundation.ScrollbarStyle
 import androidx.compose.material.ripple.RippleAlpha
 import androidx.compose.material.ripple.RippleTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.platform.Font
 import doodler.extension.offsetRGB
+import doodler.unit.ddp
 
 class DoodlerTheme {
 
@@ -235,6 +238,32 @@ class DoodlerTheme {
                     style = FontStyle.Normal
                 )
             )
+        }
+
+    }
+
+    class ScrollBar {
+
+        companion object {
+
+            val Default = ScrollbarStyle(
+                minimalHeight = 63.ddp,
+                thickness = 8.7.ddp,
+                shape = RectangleShape,
+                hoverDurationMillis = 1,
+                unhoverColor = Color.White.copy(alpha = 0.1960f),
+                hoverColor = Color.White.copy(alpha = 0.3921f)
+            )
+
+            val Intro = ScrollbarStyle(
+                minimalHeight = 30.ddp,
+                thickness = 7.7.ddp,
+                shape = RectangleShape,
+                hoverDurationMillis = 1,
+                unhoverColor = Color.White.copy(alpha = 0.1f),
+                hoverColor = Color.White.copy(alpha = 0.25f)
+            )
+
         }
 
     }

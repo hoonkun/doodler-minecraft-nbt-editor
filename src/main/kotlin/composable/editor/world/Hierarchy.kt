@@ -12,7 +12,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -43,15 +42,6 @@ val Width = 202.5.ddp
 val ItemHeight = 22.ddp
 
 val ExtensionAlias = mapOf("mca" to "AVL", "dat" to "NBT", "png" to "IMG", "jpg" to "IMG", "json" to "JSN")
-
-val HierarchyScrollBarStyle = ScrollbarStyle(
-    minimalHeight = 63.ddp,
-    thickness = 11.7.ddp,
-    shape = RectangleShape,
-    hoverDurationMillis = 1,
-    unhoverColor = Color.White.copy(alpha = 0.1960f),
-    hoverColor = Color.White.copy(alpha = 0.3921f)
-)
 
 @Composable
 fun BoxScope.WorldHierarchy(
@@ -130,13 +120,13 @@ fun BoxScope.WorldHierarchy(
 
     VerticalScrollbar(
         adapter = ScrollbarAdapter(verticalScrollState),
-        style = HierarchyScrollBarStyle,
+        style = DoodlerTheme.ScrollBar.Default,
         modifier = Modifier.align(Alignment.TopEnd)
     )
 
     HorizontalScrollbar(
         adapter = ScrollbarAdapter(horizontalScrollState),
-        style = HierarchyScrollBarStyle,
+        style = DoodlerTheme.ScrollBar.Default,
         modifier = Modifier.align(Alignment.BottomStart)
     )
 
