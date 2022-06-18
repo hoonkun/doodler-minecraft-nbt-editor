@@ -13,6 +13,7 @@ import doodler.file.toStateFile
 import doodler.minecraft.McaWorker
 import doodler.minecraft.structures.ChunkLocation
 import doodler.minecraft.structures.McaFileType
+import doodler.types.pass
 import java.io.File
 
 @Composable
@@ -61,6 +62,7 @@ fun BoxScope.EditorManager(
             when (val selected = manager.selected) {
                 is NbtEditor -> NbtEditor(selected)
                 is McaEditor<*> -> McaEditor(selected, manager.cache, state.worldSpec, openChunkNbt, updateGlobal)
+                else -> pass
             }
         }
     }
