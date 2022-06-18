@@ -16,8 +16,6 @@ repositories {
     mavenCentral()
 
     maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
-    mavenLocal()
-
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
 }
 
