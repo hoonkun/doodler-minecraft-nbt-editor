@@ -5,6 +5,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import doodler.application.structure.DoodlerWindow
+import doodler.application.structure.EditorDoodlerWindow
 import doodler.application.structure.IntroDoodlerWindow
 import doodler.local.LocalDataState
 
@@ -26,6 +27,7 @@ class DoodlerAppState {
     }
 
     fun sketch(that: DoodlerWindow) {
+        if (windows.any { it is EditorDoodlerWindow && that is EditorDoodlerWindow && it.path == that.path }) return
         windows.add(that)
     }
 
