@@ -10,6 +10,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.*
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
@@ -41,6 +42,8 @@ fun DoodlerWindow(
 ) = Window(
     onCloseRequest = { if (window is IntroDoodlerWindow) appState.eraseAll() else appState.erase(window) },
     state = WindowState(size = window.initialSize),
+    icon = painterResource("/icons/intro/doodler_icon_large.png"),
+    resizable = false,
     onPreviewKeyEvent = {
         if (it.type == KeyEventType.KeyDown) keys.add(it.key)
         else keys.remove(it.key)
@@ -78,7 +81,13 @@ fun DoodlerWindow(
                             appState.data.recent.add(0, item)
                             appState.data.save()
 
-                            appState.sketch(EditorDoodlerWindow("", type, file.absolutePath))
+                            appState.sketch(
+                                EditorDoodlerWindow(
+                                    title = "doodler - ${item.name}[${type.name}]",
+                                    type = type,
+                                    path = file.absolutePath
+                                )
+                            )
                         },
                         openSelector = {
                             appState.sketch(SelectorDoodlerWindow("doodler: open '${it.displayName}'", it))
@@ -100,7 +109,13 @@ fun DoodlerWindow(
                         appState.data.save()
 
                         appState.erase(window)
-                        appState.sketch(EditorDoodlerWindow("", type, file.absolutePath))
+                        appState.sketch(
+                            EditorDoodlerWindow(
+                                title = "doodler - $name[${type.name}]",
+                                type = type,
+                                path = file.absolutePath
+                            )
+                        )
                     }
                     is EditorDoodlerWindow -> {
                         when (window.type) {
