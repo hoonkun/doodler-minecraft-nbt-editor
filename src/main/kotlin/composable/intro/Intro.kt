@@ -16,8 +16,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -28,9 +32,12 @@ import doodler.application.structure.DoodlerEditorType
 import doodler.theme.DoodlerTheme
 import doodler.unit.ddp
 
-private val TextStyle.fsp get() = this.fontSize * 0.75f
+private val TextStyle.fsp get() = this.fontSize
 
-private val Padding = 12.5.ddp
+private val Int.sdp get() = this.ddp * 1.25f
+private val Double.sdp get() = this.ddp * 1.25f
+
+private val Padding = 12.5.sdp
 
 @Composable
 fun Intro(
@@ -42,118 +49,145 @@ fun Intro(
     val title = "doodler :1.0 with 1.18.2"
 
     IntroRoot {
-        MainTopColumn {
-            Row(modifier = Modifier.padding(15.ddp)) {
-                Image(
-                    painter = painterResource("/icons/intro/doodler_icon_large.png"),
-                    contentDescription = null,
-                    modifier = Modifier.height(39.ddp).offset(y = 0.5.ddp)
-                )
-                Spacer(modifier = Modifier.width(7.ddp))
-                Column {
-                    Text(
-                        AnnotatedString(
-                            text = title,
-                            spanStyles = listOf(
-                                AnnotatedString.Range(
-                                    SpanStyle(
-                                        fontSize = MaterialTheme.typography.h6.fsp,
-                                        color = Color.White.copy(alpha = 0.6f)
-                                    ),
-                                    start = 8,
-                                    end = title.length
-                                )
-                            )
-                        ),
-                        fontSize = MaterialTheme.typography.h1.fsp,
-                        color = Color.White
+        Image(
+            painter = painterResource("/doodler_header.png"),
+            contentDescription = null,
+            contentScale = ContentScale.FillWidth,
+            modifier = Modifier
+                .drawWithContent {
+                    drawContent()
+                    drawRect(
+                        brush = Brush.linearGradient(
+                            colors = listOf(
+                                DoodlerTheme.Colors.Background.copy(alpha = 0.4f),
+                                DoodlerTheme.Colors.Background
+                            ),
+                            end = Offset(0f, size.height * 2 / 3)
+                        )
                     )
-                    Spacer(modifier = Modifier.height(3.ddp))
-                    Row {
-                        ClickableText(
-                            text = "Getting Started?",
-                            color = DoodlerTheme.Colors.ExternalLink,
-                            fontSize = MaterialTheme.typography.h6.fsp,
-                            onClick = { },
-                            modifier = Modifier.padding(bottom = 2.5.ddp)
-                        )
-                        Spacer(modifier = Modifier.width(10.ddp))
-                        ClickableText(
-                            text = "README.md",
-                            color = DoodlerTheme.Colors.ExternalLink,
-                            fontSize = MaterialTheme.typography.h6.fsp,
-                            onClick = { },
-                            modifier = Modifier.padding(bottom = 2.5.ddp)
-                        )
-                        Spacer(modifier = Modifier.width(10.ddp))
+                }
+        )
+        IntroContent {
+            MainTopColumn {
+                Row(modifier = Modifier.padding(15.sdp)) {
+                    Image(
+                        painter = painterResource("/icons/intro/doodler_icon_large.png"),
+                        contentDescription = null,
+                        modifier = Modifier.height(39.sdp).offset(y = 0.5.sdp)
+                    )
+                    Spacer(modifier = Modifier.width(7.sdp))
+                    Column {
                         Text(
-                            text = "by ",
-                            color = Color.White.copy(alpha = 0.2f),
-                            fontSize = MaterialTheme.typography.h6.fsp
+                            AnnotatedString(
+                                text = title,
+                                spanStyles = listOf(
+                                    AnnotatedString.Range(
+                                        SpanStyle(
+                                            fontSize = MaterialTheme.typography.h6.fsp,
+                                            color = Color.White.copy(alpha = 0.6f)
+                                        ),
+                                        start = 8,
+                                        end = title.length
+                                    )
+                                )
+                            ),
+                            fontSize = MaterialTheme.typography.h1.fsp,
+                            color = Color.White
                         )
-                        ClickableText(
-                            text = AnnotatedString("@hoon_kiwicraft"),
-                            color = DoodlerTheme.Colors.Text.IdeDocumentation,
-                            hoverAlpha = 1.0f,
-                            normalAlpha = 0.5f,
-                            fontSize = MaterialTheme.typography.h6.fsp,
-                            onClick = {  }
-                        )
+                        Spacer(modifier = Modifier.height(3.sdp))
+                        Row {
+                            ClickableText(
+                                text = "Getting Started?",
+                                color = DoodlerTheme.Colors.ExternalLink,
+                                fontSize = MaterialTheme.typography.h6.fsp,
+                                onClick = { },
+                                modifier = Modifier.padding(bottom = 2.5.sdp)
+                            )
+                            Spacer(modifier = Modifier.width(10.sdp))
+                            ClickableText(
+                                text = "README.md",
+                                color = DoodlerTheme.Colors.ExternalLink,
+                                fontSize = MaterialTheme.typography.h6.fsp,
+                                onClick = { },
+                                modifier = Modifier.padding(bottom = 2.5.sdp)
+                            )
+                            Spacer(modifier = Modifier.width(10.sdp))
+                            Text(
+                                text = "by ",
+                                color = Color.White.copy(alpha = 0.2f),
+                                fontSize = MaterialTheme.typography.h6.fsp
+                            )
+                            ClickableText(
+                                text = AnnotatedString("@hoon_kiwicraft"),
+                                color = DoodlerTheme.Colors.Text.IdeDocumentation,
+                                hoverAlpha = 1.0f,
+                                normalAlpha = 0.5f,
+                                fontSize = MaterialTheme.typography.h6.fsp,
+                                onClick = { }
+                            )
+                        }
                     }
                 }
-            }
-            Spacer(modifier = Modifier.height(9.ddp))
-            Text(
-                text = "New here?",
-                fontSize = MaterialTheme.typography.h5.fsp,
-                color = DoodlerTheme.Colors.Text.LightGray
-            )
-            Spacer(modifier = Modifier.height(4.ddp))
-        }
-        MainMiddleColumn {
-            OpenNewButton(
-                text = "World",
-                suffix = "view files in world",
-                image = "/icons/intro/open_new_world.png",
-                onClick = openWorld
-            )
-            OpenNewButton(
-                text = "Standalone",
-                suffix = "view single nbt file",
-                image = "/icons/intro/open_new_standalone.png",
-                onClick = openWorld
-            )
-        }
-        MainBottomColumn {
-            Spacer(modifier = Modifier.height(16.ddp))
-            Text(
-                text = "Recent...",
-                fontSize = MaterialTheme.typography.h5.fsp,
-                color = DoodlerTheme.Colors.Text.LightGray
-            )
-            Spacer(modifier = Modifier.height(4.ddp))
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .background(DoodlerTheme.Colors.BackgroundDark, shape = RoundedCornerShape(5.ddp))
-            ) {
+                Spacer(modifier = Modifier.height(9.sdp))
                 Text(
-                    text = "No recently opened worlds or files... :(\nTry to open something!",
-                    textAlign = TextAlign.Center,
-                    color = DoodlerTheme.Colors.Text.IdeComment,
+                    text = "New here?",
                     fontSize = MaterialTheme.typography.h5.fsp,
-                    modifier = Modifier.align(Alignment.Center)
+                    color = DoodlerTheme.Colors.Text.LightGray
                 )
+                Spacer(modifier = Modifier.height(4.sdp))
+            }
+            MainMiddleColumn {
+                OpenNewButton(
+                    text = "World",
+                    suffix = "view files in world",
+                    image = "/icons/intro/open_new_world.png",
+                    onClick = openWorld
+                )
+                OpenNewButton(
+                    text = "Standalone",
+                    suffix = "view single nbt file",
+                    image = "/icons/intro/open_new_standalone.png",
+                    onClick = openWorld
+                )
+            }
+            MainBottomColumn {
+                Spacer(modifier = Modifier.height(16.sdp))
+                Text(
+                    text = "Recent...",
+                    fontSize = MaterialTheme.typography.h5.fsp,
+                    color = DoodlerTheme.Colors.Text.LightGray
+                )
+                Spacer(modifier = Modifier.height(4.sdp))
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .background(DoodlerTheme.Colors.BackgroundDark, shape = RoundedCornerShape(5.sdp))
+                ) {
+                    Text(
+                        text = "No recently opened worlds or files... :(\nTry to open something!",
+                        textAlign = TextAlign.Center,
+                        color = DoodlerTheme.Colors.Text.IdeComment,
+                        fontSize = MaterialTheme.typography.h5.fsp,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun IntroRoot(content: @Composable ColumnScope.() -> Unit) =
-    Column(
+fun IntroRoot(content: @Composable BoxScope.() -> Unit) =
+    Box(
         modifier = Modifier.fillMaxSize().background(DoodlerTheme.Colors.Background),
+        content = content
+    )
+
+@Composable
+fun IntroContent(content: @Composable ColumnScope.() -> Unit) =
+    Column(
+        modifier = Modifier.fillMaxSize(),
         content = content
     )
 
@@ -167,7 +201,7 @@ fun MainTopColumn(content: @Composable ColumnScope.() -> Unit) =
 @Composable
 fun MainMiddleColumn(content: @Composable RowScope.() -> Unit) =
     Row(
-        modifier = Modifier.padding(horizontal = 8.25.ddp),
+        modifier = Modifier.padding(horizontal = 8.25.sdp),
         content = content
     )
 
@@ -196,26 +230,26 @@ fun RowScope.OpenNewButton(
                 drawRoundRect(
                     if (hovered) Color.Black.copy(alpha = 0.125f)
                     else Color.Transparent,
-                    cornerRadius = CornerRadius(x = 3.ddp.value, y = 3.ddp.value)
+                    cornerRadius = CornerRadius(x = 3.sdp.value, y = 3.sdp.value)
                 )
             }
             .weight(1f)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(4.ddp)
+            modifier = Modifier.padding(4.sdp)
         ) {
             Box(
                 modifier = Modifier
-                    .background(DoodlerTheme.Colors.Intro.IconBackgroundColor, shape = RoundedCornerShape(3.ddp))
+                    .background(DoodlerTheme.Colors.Intro.IconBackgroundColor, shape = RoundedCornerShape(3.sdp))
             ) {
                 Image(
                     painter = painterResource(image),
                     contentDescription = null,
-                    modifier = Modifier.size(29.ddp).padding(2.ddp)
+                    modifier = Modifier.size(29.sdp).padding(2.sdp)
                 )
             }
-            Column(modifier = Modifier.padding(start = 7.ddp)) {
+            Column(modifier = Modifier.padding(start = 7.sdp)) {
                 SmallText(text = suffix)
                 Text(
                     text = text,
