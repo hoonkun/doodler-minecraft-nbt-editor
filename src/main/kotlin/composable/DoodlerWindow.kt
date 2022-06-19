@@ -8,11 +8,13 @@ import androidx.compose.material.ripple.LocalRippleTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.window.Window
+import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.WindowState
 import composable.editor.standalone.StandaloneNbtEditor
 import composable.editor.world.WorldEditor
@@ -41,7 +43,7 @@ fun DoodlerWindow(
     window: DoodlerWindow
 ) = Window(
     onCloseRequest = { if (window is IntroDoodlerWindow) appState.eraseAll() else appState.erase(window) },
-    state = WindowState(size = window.initialSize),
+    state = WindowState(size = window.initialSize, position = WindowPosition(Alignment.Center)),
     icon = painterResource("/icons/intro/doodler_icon_large.png"),
     resizable = false,
     onPreviewKeyEvent = {
