@@ -213,7 +213,8 @@ class DoodlerTheme {
                 val IdeFunctionName = Color(0xffffc66d)
                 val IdeGeneral = Color(0xffa9b7c6)
                 val IdeKeyword = Color(0xffcc7832)
-                val IdeComment = Color(0xFF808080)
+                val IdeComment = Color(0xff808080)
+                val IdePropertyName = Color(0xff9876aa)
 
                 val Malformed = Color(0xff8c8c8c)
                 val Invalid = Color(0xfff57c00)

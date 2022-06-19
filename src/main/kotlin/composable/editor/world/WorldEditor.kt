@@ -46,6 +46,7 @@ fun WorldEditor(
             }
             EditorArea {
                 if (state.manager.editors.size != 0) EditorManager(state)
+                else EmptyTab()
             }
         }
 
