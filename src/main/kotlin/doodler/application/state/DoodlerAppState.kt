@@ -26,9 +26,11 @@ class DoodlerAppState {
         windows.remove(that)
     }
 
-    fun sketch(that: DoodlerWindow) {
-        if (windows.any { it is EditorDoodlerWindow && that is EditorDoodlerWindow && it.path == that.path }) return
+    fun sketch(that: DoodlerWindow): Boolean {
+        if (windows.any { it is EditorDoodlerWindow && that is EditorDoodlerWindow && it.path == that.path })
+            return false
         windows.add(that)
+        return true
     }
 
 }

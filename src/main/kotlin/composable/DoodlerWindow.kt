@@ -1,21 +1,30 @@
 package composable
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.requiredSizeIn
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
 import androidx.compose.material.Typography
 import androidx.compose.material.ripple.LocalRippleTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.WindowPosition
-import androidx.compose.ui.window.WindowState
+import androidx.compose.ui.window.*
 import composable.editor.standalone.StandaloneNbtEditor
 import composable.editor.world.WorldEditor
 import composable.intro.Intro
@@ -54,6 +63,9 @@ fun DoodlerWindow(
     },
     title = window.title
 ) {
+
+    var existsWarning by mutableStateOf(false)
+
     MaterialTheme(
         typography = Typography(
             defaultFontFamily = DoodlerTheme.Fonts.JetbrainsMono,
@@ -83,7 +95,7 @@ fun DoodlerWindow(
                             appState.data.recent.add(0, item)
                             appState.data.save()
 
-                            appState.sketch(
+                            existsWarning = !appState.sketch(
                                 EditorDoodlerWindow(
                                     title = "doodler - ${item.name}[${type.name}]",
                                     type = type,
@@ -111,7 +123,7 @@ fun DoodlerWindow(
                         appState.data.save()
 
                         appState.erase(window)
-                        appState.sketch(
+                        existsWarning = !appState.sketch(
                             EditorDoodlerWindow(
                                 title = "doodler - $name[${type.name}]",
                                 type = type,
@@ -126,6 +138,65 @@ fun DoodlerWindow(
                         }
                     }
                 }
+            }
+        }
+
+        if (existsWarning) {
+            Dialog(
+                onCloseRequest = { existsWarning = false },
+                title = "",
+                state = DialogState(width = 275.ddp, height = 125.ddp),
+            ) {
+                EditorAlreadyExistsWarning { existsWarning = false }
+            }
+        }
+
+    }
+
+}
+
+@Composable
+private fun EditorAlreadyExistsWarning(onCloseRequest: () -> Unit) {
+
+    val hoverInteractionSource = remember { MutableInteractionSource() }
+    val hovered by hoverInteractionSource.collectIsHoveredAsState()
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier.background(DoodlerTheme.Colors.Background).fillMaxSize()
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = ":(",
+                color = DoodlerTheme.Colors.Text.IdeFunctionName,
+                fontSize = MaterialTheme.typography.h4.fontSize,
+                modifier = Modifier.padding(bottom = 3.ddp)
+            )
+            Text(
+                text = "Cannot re-open already existing editor!!",
+                color = DoodlerTheme.Colors.Text.IdeGeneral,
+                fontSize = MaterialTheme.typography.h6.fontSize * 0.9f,
+                modifier = Modifier.padding(bottom = 15.ddp)
+            )
+            Box(
+                modifier = Modifier.hoverable(hoverInteractionSource).clickable { onCloseRequest() }
+                    .drawBehind {
+                        if (hovered) drawRoundRect(
+                            color = Color.White.copy(alpha = 0.1f),
+                            cornerRadius = CornerRadius(3.ddp.value, 3.ddp.value)
+                        )
+                        else drawRoundRect(
+                            color = Color.White.copy(alpha = 0.17f),
+                            cornerRadius = CornerRadius(3.ddp.value, 3.ddp.value)
+                        )
+                    }
+            ) {
+                Text(
+                    text = "back",
+                    color = DoodlerTheme.Colors.Text.IdeGeneral,
+                    fontSize = MaterialTheme.typography.h6.fontSize,
+                    modifier = Modifier.padding(horizontal = 7.ddp, vertical = 3.ddp)
+                )
             }
         }
     }
