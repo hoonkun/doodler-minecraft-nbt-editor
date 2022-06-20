@@ -21,12 +21,15 @@ import doodler.unit.ddp
 
 @Composable
 fun Breadcrumb(
-    items: List<Breadcrumb>
+    items: List<Breadcrumb>,
+    disableFirstSlash: Boolean = false
 ) {
 
-    Spacer(modifier = Modifier.width(3.ddp))
-    Text("/", color = Color.White, modifier = Modifier.alpha(0.1f))
-    Spacer(modifier = Modifier.width(3.ddp))
+    if (!disableFirstSlash) {
+        Spacer(modifier = Modifier.width(3.ddp))
+        Text("/", color = Color.White, modifier = Modifier.alpha(0.1f))
+        Spacer(modifier = Modifier.width(3.ddp))
+    }
 
     for (item in items) {
         when (item) {
