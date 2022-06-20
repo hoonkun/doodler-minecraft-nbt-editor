@@ -11,6 +11,7 @@ import doodler.doodle.structures.EditorDoodle
 import doodler.doodle.structures.TagDoodle
 import doodler.editor.states.McaEditorState
 import doodler.editor.states.NbtEditorState
+import doodler.editor.structures.EditorLog
 import doodler.file.toStateFile
 import java.io.File
 
@@ -18,6 +19,15 @@ import java.io.File
 class EditorManager {
     val editors = mutableStateListOf<Editor>()
     var selected by mutableStateOf<Editor?>(null)
+
+    val globalLogs by derivedStateOf {
+        mutableListOf<EditorLog>()
+            .apply {
+                editors.filterIsInstance<NbtEditor>()
+                    .forEach { addAll(it.state.logs) }
+            }
+            .sortedBy { it.createdAt }
+    }
 
     val cache = TerrainCache(mutableStateMapOf(), mutableMapOf())
 

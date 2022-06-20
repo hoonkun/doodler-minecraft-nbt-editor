@@ -15,5 +15,6 @@ data class EditorLog(
     val level: EditorLogLevel,
     val title: String,
     val summary: String?,
-    val description: String?
+    val description: String?,
+    val createdAt: Long = System.currentTimeMillis()
 )
