@@ -82,8 +82,8 @@ fun TagCrumb(doodle: TagDoodle) {
     } else {
         BreadcrumbTagIndex(doodle.index)
         if (doodle.tag.type.let { it.isString() || it.isNumber() }) NbtBreadcrumbSpacer()
-        if (doodle.tag.type.isString()) StringTagDoodleValue("*${doodle.value}")
-        else if (doodle.tag.type.isNumber()) NumberTagDoodleValue("*${doodle.value}")
+        if (doodle.tag.type.isString()) StringTagDoodleValue(doodle.value)
+        else if (doodle.tag.type.isNumber()) NumberTagDoodleValue(doodle.value)
     }
 }
 
