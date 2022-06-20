@@ -34,8 +34,8 @@ fun WorldEditor(
     }
 
     WorldEditorRoot {
-        HierarchyBar {
-            HierarchyBarText(state.worldSpec.name)
+        BreadcrumbsBar {
+            RootBreadcrumbText(state.worldSpec.name)
             state.manager.selected?.let { Breadcrumb(it.breadcrumb) }
             Spacer(modifier = Modifier.width(50.ddp))
         }
@@ -111,7 +111,7 @@ fun WorldEditorRoot(content: @Composable ColumnScope.() -> Unit) =
     Column(modifier = Modifier.fillMaxSize(), content = content)
 
 @Composable
-fun ColumnScope.HierarchyBar(content: @Composable RowScope.() -> Unit) {
+fun ColumnScope.BreadcrumbsBar(content: @Composable RowScope.() -> Unit) {
     val hs = rememberScrollState()
 
     Box(
@@ -142,7 +142,7 @@ fun ColumnScope.HierarchyBar(content: @Composable RowScope.() -> Unit) {
 }
 
 @Composable
-fun RowScope.HierarchyBarText(text: String) =
+fun RowScope.RootBreadcrumbText(text: String) =
     Text(
         text = text,
         color =

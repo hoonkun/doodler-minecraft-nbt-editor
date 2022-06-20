@@ -9,7 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import composable.editor.NbtEditor
 import composable.editor.world.Breadcrumb
-import composable.editor.world.HierarchyBar
+import composable.editor.world.BreadcrumbsBar
 import doodler.doodle.structures.TagDoodle
 import doodler.editor.StandaloneNbtEditor
 import doodler.editor.states.NbtEditorState
@@ -37,7 +37,7 @@ fun StandaloneNbtEditor(
     }
 
     Column(modifier = Modifier.fillMaxSize().background(DoodlerTheme.Colors.Background)) {
-        HierarchyBar {
+        BreadcrumbsBar {
             Breadcrumb(editor.breadcrumb, disableFirstSlash = true)
             Spacer(modifier = Modifier.width(50.ddp))
         }
