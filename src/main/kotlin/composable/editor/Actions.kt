@@ -112,7 +112,7 @@ fun ColumnScope.SaveAction(
         EditorActionButton(
             text = "SAV",
             color = DoodlerTheme.Colors.DoodleAction.SaveAction,
-            enabled = { state.actionFlags.canBeSaved },
+            enabled = { true },
             onRightClick = save,
             onClick = save
         )
