@@ -37,6 +37,7 @@ fun ActionButton(
     enabled: BooleanProvider = TrueProvider,
     onRightClick: () -> Unit = EmptyLambda,
     onClick: () -> Unit,
+    onDisabledClick: () -> Unit = EmptyLambda,
     content: @Composable BoxScope.() -> Unit
 ) {
     val hoverInteractionSource = remember { MutableInteractionSource() }
@@ -48,7 +49,10 @@ fun ActionButton(
             .padding(top = 1.ddp, bottom = 1.ddp)
             .hoverable(hoverInteractionSource, enabled())
             .mouseClickable {
-                if (buttons.isPrimaryPressed && enabled()) onClick()
+                if (buttons.isPrimaryPressed) {
+                    if (enabled()) onClick()
+                    else onDisabledClick()
+                }
                 if (buttons.isSecondaryPressed) onRightClick()
             }
             .drawBehind {
@@ -68,9 +72,10 @@ fun ActionButton(
 fun TagCreatorButton(
     type: TagType,
     enabled: BooleanProvider = TrueProvider,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDisabledClick: () -> Unit = EmptyLambda
 ) {
-    ActionButton(enabled, onClick = onClick) {
+    ActionButton(enabled, onClick = onClick, onDisabledClick = onDisabledClick) {
         TagDoodleTypeText(type, enabled = enabled, fontSize = MaterialTheme.typography.h5.fsp)
     }
 }
@@ -83,9 +88,10 @@ fun EditorActionButton(
     rotate: Pair<Float, Int>? = null,
     enabled: BooleanProvider = TrueProvider,
     onRightClick: () -> Unit = EmptyLambda,
+    onDisabledClick: () -> Unit = EmptyLambda,
     onClick: () -> Unit
 ) {
-    ActionButton(enabled, onClick = onClick, onRightClick = onRightClick) {
+    ActionButton(enabled, onClick = onClick, onRightClick = onRightClick, onDisabledClick = onDisabledClick) {
         DoodleText(
             text = text,
             color = color,

@@ -65,6 +65,7 @@ fun BoxScope.Log(
                 .padding(15.ddp)
         ) {
             Column(modifier = Modifier
+                .requiredSizeIn(maxWidth = 300.ddp)
                 .background(log.level.background, RoundedCornerShape(4.5.ddp))
                 .padding(top = 9.ddp, end = 22.5.ddp, bottom = 9.ddp, start = 9.ddp)
             ) {

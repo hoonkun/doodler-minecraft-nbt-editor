@@ -99,6 +99,12 @@ class NbtEditorState(
         currentLog.value = new
     }
 
+    fun writeLog(log: EditorLog) {
+        if (logs.size > 10) logs.removeFirst()
+        logs.add(log)
+        currentLog.value = log
+    }
+
     @Stable
     inner class NbtEditorActions {
 
@@ -129,6 +135,9 @@ class NbtEditorState(
         val canBePasted by derivedStateOf { actions.clipboard.pasteEnabled }
 
         val canBeEdited by derivedStateOf { actions.editor.canBeEdited }
+
+        val pasteCriteria by derivedStateOf { actions.clipboard.criteria }
+        val isClipboardEmpty by derivedStateOf { actions.clipboard.isStackEmpty }
 
     }
 
@@ -275,7 +284,9 @@ class NbtEditorState(
 
         private val stack = mutableStateListOf<Pair<PasteCriteria, List<ReadonlyDoodle>>>()
 
-        private val criteria by derivedStateOf {
+        val isStackEmpty by derivedStateOf { stack.isEmpty() }
+
+        val criteria by derivedStateOf {
             val targets = selected
             val attributes = setOf(
                 *targets.map {

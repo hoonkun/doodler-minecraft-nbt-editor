@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import doodler.doodle.structures.TagDoodle
 import doodler.editor.states.NbtEditorState
+import doodler.editor.structures.*
 import doodler.extension.toRanges
 import doodler.nbt.TagType
 import doodler.theme.DoodlerTheme
@@ -137,19 +138,22 @@ fun ColumnScope.AlterAction(
             text = "CPY",
             color = DoodlerTheme.Colors.Text.IdeGeneral,
             enabled = { available && state.actionFlags.canBeCopied },
-            onClick = { state.action { clipboard.copy() } }
+            onClick = { state.action { clipboard.copy() } },
+            onDisabledClick = { if (state.selected.size > 0) state.writeLog(CannotCopy()) }
         )
         EditorActionButton(
             text = "PST",
             color = DoodlerTheme.Colors.Text.IdeGeneral,
             enabled = { available && state.actionFlags.canBePasted },
-            onClick = { state.action { clipboard.paste() } }
+            onClick = { state.action { clipboard.paste() } },
+            onDisabledClick = { state.writeLog(CannotPaste(state)) }
         )
         EditorActionButton(
             text = "EDT",
             color = DoodlerTheme.Colors.Text.IdeGeneral,
             enabled = { available && state.actionFlags.canBeEdited },
-            onClick = { state.action { editor.prepare() } }
+            onClick = { state.action { editor.prepare() } },
+            onDisabledClick = { if (state.selected.size > 1) state.writeLog(CannotEditMultipleItems()) }
         )
     }
 
@@ -181,7 +185,8 @@ fun ColumnScope.CreateAction(
             TagCreatorButton(
                 type = tagType,
                 enabled = { available && selected?.canHold(tagType) == true },
-                onClick = { state.action { creator.prepare(tagType) } }
+                onClick = { state.action { creator.prepare(tagType) } },
+                onDisabledClick = { state.writeLog(CannotCreate(tagType, state)) }
             )
         }
     }

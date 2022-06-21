@@ -171,7 +171,7 @@ fun TagType.transformer(): (AnnotatedString) -> Pair<Boolean, TransformedText> {
 
 fun TagType.displayName(): String {
     return when (this) {
-        TagType.TAG_END -> "noop"
+        TagType.TAG_END -> "end"
         TagType.TAG_COMPOUND -> "compound"
         TagType.TAG_LIST -> "list"
         TagType.TAG_LONG_ARRAY -> "long array"

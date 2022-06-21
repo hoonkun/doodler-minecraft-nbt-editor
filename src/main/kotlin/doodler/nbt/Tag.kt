@@ -157,6 +157,13 @@ enum class TagType(val id: Byte) {
         else -> throw InternalAssertionException("Array Tag", "$this")
     }
 
+    fun parentArrayType(): TagType = when (this) {
+        TAG_BYTE -> TAG_BYTE_ARRAY
+        TAG_INT -> TAG_INT_ARRAY
+        TAG_LONG -> TAG_LONG_ARRAY
+        else -> throw InternalAssertionException("Array Element Tag", "$this")
+    }
+
     companion object {
         private val reversed = values().associateBy { it.id }
         operator fun get(id: Byte): TagType = reversed[id] ?: throw Exception("unknown tag id: $id")
