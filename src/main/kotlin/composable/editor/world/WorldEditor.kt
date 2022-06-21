@@ -53,8 +53,9 @@ fun WorldEditor(
         BottomBar {
             Spacer(modifier = Modifier.width(5.ddp))
             BottomBarText(
-                text = state.manager.globalLogs.lastOrNull()?.let { "[${it.title}] ${it.summary}: ${it.description}" }
-                    ?: ""
+                text = state.manager.globalLogs.lastOrNull()?.let {
+                    "[${it.title}] ${it.summary?.plus(": ") ?: ""}${it.description?.replace("\n", " ")}"
+                } ?: ""
             )
             Spacer(modifier = Modifier.weight(1f))
             BottomBarText("by kiwicraft")
