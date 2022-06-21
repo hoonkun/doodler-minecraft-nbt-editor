@@ -65,7 +65,7 @@ fun ColumnScope.HistoryAction(
             onClick = { state.action { history.undo() } }
         )
         EditorActionButton(
-            text = "UND",
+            text = "RED",
             color = DoodlerTheme.Colors.Text.IdeGeneral,
             enabled = { state.actionFlags.canBeRedo },
             onClick = { state.action { history.redo() } }
