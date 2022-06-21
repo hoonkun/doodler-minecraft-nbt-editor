@@ -500,6 +500,7 @@ class NbtEditorState(
         private var editTarget: ReadonlyDoodle? = null
 
         val canBeEdited by derivedStateOf {
+            if (selected.size > 1) return@derivedStateOf false
             val first = selected.firstOrNull() ?: return@derivedStateOf false
             if (first !is TagDoodle) return@derivedStateOf true
 
