@@ -16,7 +16,7 @@ enum class EditorLogLevel(
 ) {
     Fatal(Color(0xff573f35)),
     Success(Color(0xff354757)),
-    Warn(Color(0xff575236))
+    Warn(Color(0xff685c3e))
 }
 
 @Stable
