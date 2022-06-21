@@ -72,10 +72,8 @@ fun CannotCopy() =
         level = EditorLogLevel.Warn,
         title = "Cannot Copy",
         summary = null,
-        description = lines(
-            "To operate copy action, selection must contains",
-            "only one of \"named\" or \"unnamed\", or \"array value\" tag."
-        )
+        description = "To operate copy action, selection must contains" +
+                " only one of \"named\" or \"unnamed\", or \"array value\" tag."
     )
 
 fun CannotPaste(it: NbtEditorState): EditorLog {
@@ -147,8 +145,7 @@ private val CannotPasteInvalidCriteria: (AnyTag, PasteCriteria) -> EditorLog = l
         title = "Cannot Paste",
         summary = null,
         description = lines(
-            "Current clipboard item can only be pasted into $criteriaName,",
-            "but selected is $currentName"
+            "Current clipboard item can only be pasted into $criteriaName, but selected is $currentName"
         )
     )
 }
