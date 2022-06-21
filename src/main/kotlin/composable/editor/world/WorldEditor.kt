@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.text.style.TextOverflow
 import doodler.editor.*
 import doodler.exceptions.DoodleException
 import doodler.minecraft.structures.McaType
@@ -55,7 +56,8 @@ fun WorldEditor(
             BottomBarText(
                 text = state.manager.globalLogs.lastOrNull()?.let {
                     "[${it.title}] ${it.summary?.plus(": ") ?: ""}${it.description?.replace("\n", " ")}"
-                } ?: ""
+                } ?: "",
+                modifier = Modifier.requiredWidthIn(max = 550.ddp)
             )
             Spacer(modifier = Modifier.weight(1f))
             BottomBarText("by kiwicraft")
@@ -191,9 +193,15 @@ fun ColumnScope.BottomBar(content: @Composable RowScope.() -> Unit) =
     )
 
 @Composable
-fun RowScope.BottomBarText(text: String) =
+fun RowScope.BottomBarText(
+    text: String,
+    modifier: Modifier = Modifier
+) =
     Text(
         text = text,
         fontSize = 8.dsp,
-        color = DoodlerTheme.Colors.HierarchyView.TextColor
+        color = DoodlerTheme.Colors.HierarchyView.TextColor,
+        overflow = TextOverflow.Ellipsis,
+        maxLines = 1,
+        modifier = modifier
     )
