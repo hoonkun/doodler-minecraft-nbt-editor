@@ -12,7 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.style.TextOverflow
+import doodler.application.structure.WorldEditorDoodlerWindow
 import doodler.editor.*
+import doodler.editor.states.*
 import doodler.exceptions.DoodleException
 import doodler.minecraft.structures.McaType
 import doodler.theme.DoodlerTheme
@@ -21,10 +23,10 @@ import doodler.unit.dsp
 
 @Composable
 fun WorldEditor(
-    worldPath: String
+    window: WorldEditorDoodlerWindow
 ) {
 
-    val state = rememberWorldEditorState(worldPath)
+    val state = window.state
 
     val onOpenRequest: (OpenRequest) -> Unit = handleRequest@ { request ->
         when (request) {
@@ -88,14 +90,16 @@ fun openGlobalMcaEditor(state: WorldEditorState) {
         val file = worldSpec.tree[dimension][type].find { it.name == "r.${anvil.x}.${anvil.z}.mca" }
             ?: throw DoodleException("Internal Error", null, "Cannot find region file which player exists")
 
-        state.manager.open(GlobalMcaEditor(
+        state.manager.open(
+            GlobalMcaEditor(
             McaPayload(
                 dimension = dimension,
                 type = type,
                 location = anvil,
                 file = file
             )
-        ))
+        )
+        )
     }
 }
 

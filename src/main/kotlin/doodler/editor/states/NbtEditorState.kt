@@ -24,7 +24,7 @@ class NbtEditorState(
     val root: TagDoodle,
     private val file: StateFile,
     private val type: WorldFileType
-) {
+): EditorState() {
 
     val logs = mutableStateListOf<EditorLog>()
     val currentLog = mutableStateOf<EditorLog?>(null)

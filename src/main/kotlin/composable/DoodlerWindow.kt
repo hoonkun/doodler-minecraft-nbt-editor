@@ -95,13 +95,7 @@ fun DoodlerWindow(
                             appState.data.recent.add(0, item)
                             appState.data.save()
 
-                            existsWarning = !appState.sketch(
-                                EditorDoodlerWindow(
-                                    title = "doodler - ${item.name}[${type.name}]",
-                                    type = type,
-                                    path = file.absolutePath
-                                )
-                            )
+                            existsWarning = !appState.sketchEditor(item.name, item.type, file)
                         },
                         openSelector = {
                             appState.sketch(SelectorDoodlerWindow("doodler: open '${it.displayName}'", it))
@@ -123,20 +117,10 @@ fun DoodlerWindow(
                         appState.data.save()
 
                         appState.erase(window)
-                        existsWarning = !appState.sketch(
-                            EditorDoodlerWindow(
-                                title = "doodler - $name[${type.name}]",
-                                type = type,
-                                path = file.absolutePath
-                            )
-                        )
+                        existsWarning = !appState.sketchEditor(name, type, file)
                     }
-                    is EditorDoodlerWindow -> {
-                        when (window.type) {
-                            DoodlerEditorType.Standalone -> StandaloneNbtEditor(window.path)
-                            DoodlerEditorType.World -> WorldEditor(window.path)
-                        }
-                    }
+                    is StandaloneEditorDoodlerWindow -> StandaloneNbtEditor(window)
+                    is WorldEditorDoodlerWindow -> WorldEditor(window)
                 }
             }
         }
