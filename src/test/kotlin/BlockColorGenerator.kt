@@ -79,7 +79,7 @@ class BlockColorGenerator: StringSpec() {
                 .toMutableList()
             validBlocks.sortBy { it.name }
 
-            val outputFile = File("$projectRoot/src/activator.main/resources/minecraft/block_colors/blocks.json")
+            val outputFile = File("$projectRoot/src/main/resources/minecraft/block_colors/blocks.json")
             outputFile.writeBytes(
                 "{\n${validBlocks.joinToString(",\n") {
                     val key = it.key.let { namespaceKey -> "${namespaceKey.namespace}:${namespaceKey.key}" }
