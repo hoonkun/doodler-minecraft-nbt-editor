@@ -13,10 +13,12 @@ version = "1.0"
 
 repositories {
     google()
+
+    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     mavenCentral()
 
     maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
-    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+    mavenLocal()
 }
 
 @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
