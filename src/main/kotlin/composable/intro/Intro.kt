@@ -35,10 +35,8 @@ import doodler.unit.dsp
 import java.io.File
 import javax.imageio.ImageIO
 
-private val Int.sdp get() = this.ddp * 1.25f
-private val Double.sdp get() = this.ddp * 1.25f
 
-private val Padding = 12.5.sdp
+private val Padding = 15.625.ddp
 
 @Composable
 fun Intro(
@@ -73,13 +71,13 @@ fun Intro(
         )
         IntroContent {
             MainTopColumn {
-                Row(modifier = Modifier.padding(15.sdp)) {
+                Row(modifier = Modifier.padding(18.75.ddp)) {
                     Image(
                         painter = painterResource("/icons/intro/doodler_icon_large.png"),
                         contentDescription = null,
-                        modifier = Modifier.height(39.sdp).offset(y = 0.5.sdp)
+                        modifier = Modifier.height(48.75.ddp).offset(y = 0.625.ddp)
                     )
-                    Spacer(modifier = Modifier.width(7.sdp))
+                    Spacer(modifier = Modifier.width(8.75.ddp))
                     Column {
                         Text(
                             AnnotatedString(
@@ -98,24 +96,24 @@ fun Intro(
                             fontSize = 25.dsp,
                             color = Color.White
                         )
-                        Spacer(modifier = Modifier.height(3.sdp))
+                        Spacer(modifier = Modifier.height(3.75.ddp))
                         Row {
                             ClickableText(
                                 text = "Getting Started?",
                                 color = DoodlerTheme.Colors.ExternalLink,
                                 fontSize = 10.dsp,
                                 onClick = { },
-                                modifier = Modifier.padding(bottom = 2.5.sdp)
+                                modifier = Modifier.padding(bottom = 3.125.ddp)
                             )
-                            Spacer(modifier = Modifier.width(10.sdp))
+                            Spacer(modifier = Modifier.width(12.5.ddp))
                             ClickableText(
                                 text = "README.md",
                                 color = DoodlerTheme.Colors.ExternalLink,
                                 fontSize = 10.dsp,
                                 onClick = { },
-                                modifier = Modifier.padding(bottom = 2.5.sdp)
+                                modifier = Modifier.padding(bottom = 3.125.ddp)
                             )
-                            Spacer(modifier = Modifier.width(10.sdp))
+                            Spacer(modifier = Modifier.width(12.5.ddp))
                             Text(
                                 text = "by ",
                                 color = Color.White.copy(alpha = 0.2f),
@@ -132,13 +130,13 @@ fun Intro(
                         }
                     }
                 }
-                Spacer(modifier = Modifier.height(9.sdp))
+                Spacer(modifier = Modifier.height(11.25.ddp))
                 Text(
                     text = "New here?",
                     fontSize = 12.dsp,
                     color = DoodlerTheme.Colors.Text.LightGray
                 )
-                Spacer(modifier = Modifier.height(4.sdp))
+                Spacer(modifier = Modifier.height(5.ddp))
             }
             MainMiddleColumn {
                 OpenNewButton(
@@ -155,13 +153,13 @@ fun Intro(
                 )
             }
             MainBottomColumn {
-                Spacer(modifier = Modifier.height(16.sdp))
+                Spacer(modifier = Modifier.height(20.ddp))
                 Text(
                     text = "Recent...",
                     fontSize = 12.dsp,
                     color = DoodlerTheme.Colors.Text.LightGray
                 )
-                Spacer(modifier = Modifier.height(4.sdp))
+                Spacer(modifier = Modifier.height(5.ddp))
                 Recent(localApplicationData, openRecent)
             }
         }
@@ -192,7 +190,7 @@ fun MainTopColumn(content: @Composable ColumnScope.() -> Unit) =
 @Composable
 fun MainMiddleColumn(content: @Composable RowScope.() -> Unit) =
     Row(
-        modifier = Modifier.padding(horizontal = 8.25.sdp),
+        modifier = Modifier.padding(horizontal = 10.3125.ddp),
         content = content
     )
 
@@ -221,26 +219,26 @@ fun RowScope.OpenNewButton(
                 drawRoundRect(
                     if (hovered) Color.Black.copy(alpha = 0.125f)
                     else Color.Transparent,
-                    cornerRadius = CornerRadius(x = 3.sdp.value, y = 3.sdp.value)
+                    cornerRadius = CornerRadius(x = 3.75.ddp.value, y = 3.75.ddp.value)
                 )
             }
             .weight(1f)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(4.sdp)
+            modifier = Modifier.padding(5.ddp)
         ) {
             Box(
                 modifier = Modifier
-                    .background(DoodlerTheme.Colors.Intro.IconBackgroundColor, shape = RoundedCornerShape(3.sdp))
+                    .background(DoodlerTheme.Colors.Intro.IconBackgroundColor, shape = RoundedCornerShape(3.75.ddp))
             ) {
                 Image(
                     painter = painterResource(image),
                     contentDescription = null,
-                    modifier = Modifier.size(29.sdp).padding(2.sdp)
+                    modifier = Modifier.size(36.25.ddp).padding(2.5.ddp)
                 )
             }
-            Column(modifier = Modifier.padding(start = 7.sdp)) {
+            Column(modifier = Modifier.padding(start = 8.75.ddp)) {
                 SmallText(text = suffix)
                 Text(
                     text = text,
@@ -266,11 +264,11 @@ fun ColumnScope.Recent(
         modifier = Modifier
             .weight(1f)
             .fillMaxWidth()
-            .background(DoodlerTheme.Colors.BackgroundDark, shape = RoundedCornerShape(5.sdp))
+            .background(DoodlerTheme.Colors.BackgroundDark, shape = RoundedCornerShape(6.25.ddp))
     ) {
         Box (
             modifier = Modifier
-                .padding(4.sdp)
+                .padding(5.ddp)
                 .horizontalScroll(hs)
         ) {
             if (localApplicationData.recent.isEmpty()) {
@@ -316,8 +314,8 @@ fun WorldRecentItem(
 
     val contentDescription = remember { "world preview icon of ${data.name}" }
     val imageModifier = Modifier
-        .size(42.sdp)
-        .clip(RoundedCornerShape(3.sdp))
+        .size(52.5.ddp)
+        .clip(RoundedCornerShape(3.75.ddp))
 
     Box(
         modifier = Modifier
@@ -327,14 +325,14 @@ fun WorldRecentItem(
                 drawRoundRect(
                     if (hovered) Color.Black.copy(alpha = 0.15f)
                     else Color.Transparent,
-                    cornerRadius = CornerRadius(x = 3.sdp.value, y = 3.sdp.value)
+                    cornerRadius = CornerRadius(x = 3.75.ddp.value, y = 3.75.ddp.value)
                 )
             }
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxHeight().padding(horizontal = 7.sdp, vertical = 5.sdp)
+            modifier = Modifier.fillMaxHeight().padding(horizontal = 8.75.ddp, vertical = 6.25.ddp)
         ) {
             if (worldIconPainter != null) {
                 Image(
@@ -350,7 +348,7 @@ fun WorldRecentItem(
                     modifier = imageModifier
                 )
             }
-            Spacer(modifier = Modifier.height(6.sdp))
+            Spacer(modifier = Modifier.height(7.5.ddp))
             RecentItemTexts(data)
         }
     }
@@ -367,8 +365,8 @@ fun StandaloneRecentItem(
     val icon = painterResource("/icons/intro/open_new_standalone.png")
 
     val imageModifier = Modifier
-        .size(42.sdp)
-        .clip(RoundedCornerShape(3.sdp))
+        .size(52.5.ddp)
+        .clip(RoundedCornerShape(3.75.ddp))
 
     Box(
         modifier = Modifier
@@ -378,21 +376,21 @@ fun StandaloneRecentItem(
                 drawRoundRect(
                     if (hovered) Color.Black.copy(alpha = 0.15f)
                     else Color.Transparent,
-                    cornerRadius = CornerRadius(x = 3.sdp.value, y = 3.sdp.value)
+                    cornerRadius = CornerRadius(x = 3.75.ddp.value, y = 3.75.ddp.value)
                 )
             }
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxHeight().padding(horizontal = 7.sdp, vertical = 5.sdp)
+            modifier = Modifier.fillMaxHeight().padding(horizontal = 8.75.ddp, vertical = 6.25.ddp)
         ) {
             Image(
                 painter = icon,
                 contentDescription = null,
                 modifier = imageModifier
             )
-            Spacer(modifier = Modifier.height(6.sdp))
+            Spacer(modifier = Modifier.height(7.5.ddp))
             RecentItemTexts(data)
         }
     }
@@ -407,7 +405,7 @@ fun RecentItemTexts(
         color = Color.White.copy(alpha = 0.85f),
         fontSize = 7.8.dsp
     )
-    Spacer(modifier = Modifier.height(3.sdp))
+    Spacer(modifier = Modifier.height(3.75.ddp))
     Text(
         text = data.path.ellipsisStart(15),
         color = Color.White.copy(alpha = 0.65f),
