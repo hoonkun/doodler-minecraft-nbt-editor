@@ -7,7 +7,7 @@ import androidx.compose.ui.zIndex
 import composable.editor.NbtEditor
 import doodler.doodle.structures.TagDoodle
 import doodler.editor.*
-import doodler.editor.states.NbtEditorState
+import doodler.editor.states.*
 import doodler.exceptions.InternalAssertionException
 import doodler.file.toStateFile
 import doodler.minecraft.McaWorker
