@@ -9,7 +9,9 @@ import doodler.local.LocalDataState
 import java.io.File
 
 @Stable
-class DoodlerAppState {
+class DoodlerAppState(
+    val exit: () -> Unit
+) {
 
     val data = LocalDataState()
 
@@ -19,6 +21,7 @@ class DoodlerAppState {
 
     fun eraseAll() {
         windows.clear()
+        exit()
     }
 
     fun erase(that: DoodlerWindow) {
@@ -53,4 +56,4 @@ class DoodlerAppState {
 }
 
 @Composable
-fun rememberDoodlerApplicationState() = remember { DoodlerAppState() }
+fun rememberDoodlerApplicationState(exit: () -> Unit) = remember { DoodlerAppState(exit) }

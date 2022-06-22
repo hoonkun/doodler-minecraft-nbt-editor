@@ -4,7 +4,7 @@ import composable.DoodlerWindow
 import doodler.application.state.rememberDoodlerApplicationState
 
 fun main() = application {
-    val doodlerAppState = rememberDoodlerApplicationState()
+    val doodlerAppState = rememberDoodlerApplicationState(this::exitApplication)
 
     for (window in doodlerAppState.windows) {
         key(window) { DoodlerWindow(doodlerAppState, window) }
