@@ -25,7 +25,7 @@ repositories {
 dependencies {
     testImplementation("org.jetbrains.kotlin:kotlin-test:1.5.31")
     testImplementation("io.kotlintest:kotlintest-runner-junit5:3.4.2")
-    testImplementation("org.spigotmc:spigot:1.18.2-R0.1-SNAPSHOT")
+    testImplementation("org.spigotmc:spigot:1.19-R0.1-SNAPSHOT")
     implementation(compose.desktop.currentOs)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
     testImplementation(compose.uiTestJUnit4)
