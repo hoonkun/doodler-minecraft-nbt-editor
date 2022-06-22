@@ -281,7 +281,7 @@ fun createWorldTreeItems(hierarchy: WorldHierarchy): List<HierarchyItem> {
             },
             name = "dimensions",
             depth = rootDepth
-        )
+        ).apply { toggle() }
     )
     result.add(DirectoryHierarchyItem(
         children = hierarchy.advancements.map { FileHierarchyItem(it, it.name, depth) },
@@ -294,7 +294,7 @@ fun createWorldTreeItems(hierarchy: WorldHierarchy): List<HierarchyItem> {
             .map { FileHierarchyItem(it, it.name, depth) },
         name = "playerdata",
         depth = rootDepth
-    ))
+    ).apply { toggle() })
     result.add(DirectoryHierarchyItem(
         children = hierarchy.stats.map { FileHierarchyItem(it, it.name, depth) },
         name = "stats",
