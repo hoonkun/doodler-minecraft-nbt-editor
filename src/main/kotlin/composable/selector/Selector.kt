@@ -11,7 +11,6 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,6 +38,7 @@ import doodler.file.toStateFile
 import doodler.file.toStateFileList
 import doodler.theme.DoodlerTheme
 import doodler.unit.ddp
+import doodler.unit.dsp
 import java.io.File
 
 
@@ -299,7 +299,7 @@ fun RowScope.Candidate(
     Text(
         text = candidate.name,
         color = type.color,
-        fontSize = MaterialTheme.typography.h6.fontSize,
+        fontSize = 10.dsp,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = Modifier.drawBehind { if (focused) drawRect(DoodlerTheme.Colors.Selector.FocusedCandidate) }
@@ -313,7 +313,7 @@ fun ColumnScope.Remaining(
 ) = Text(
     "...$count ${type.displayName} more",
     color = type.color,
-    fontSize = MaterialTheme.typography.h6.fontSize,
+    fontSize = 10.dsp,
     maxLines = 1
 )
 
@@ -349,7 +349,7 @@ fun ColumnScope.BasePathDocumentation(text: String) {
         text = text,
         color = DoodlerTheme.Colors.Text.IdeDocumentation,
         fontFamily = DoodlerTheme.Fonts.JetbrainsMono,
-        fontSize = MaterialTheme.typography.h6.fontSize,
+        fontSize = 10.dsp,
         modifier = Modifier.padding(bottom = 8.ddp)
     )
 }
@@ -368,7 +368,7 @@ fun ColumnScope.BasePathProperty(key: String, value: String) {
             )
         ),
         color = DoodlerTheme.Colors.Text.IdeGeneral,
-        fontSize = MaterialTheme.typography.h5.fontSize,
+        fontSize = 12.dsp,
         modifier = Modifier.padding(bottom = 1.ddp)
     )
 }
@@ -402,7 +402,7 @@ fun RowScope.PathInput(
         onValueChange = onValueChange,
         textStyle = TextStyle(
             color = DoodlerTheme.Colors.Text.IdeGeneral,
-            fontSize = MaterialTheme.typography.h5.fontSize,
+            fontSize = 12.dsp,
             fontFamily = DoodlerTheme.Fonts.JetbrainsMono
         ),
         cursorBrush =
@@ -443,7 +443,7 @@ fun RowScope.Select(
                 .fillMaxSize()
                 .hoverable(interactionSource)
         ) {
-            Text("Go!", color = Color(0xffcccccc), fontSize = MaterialTheme.typography.h5.fontSize)
+            Text("Go!", color = Color(0xffcccccc), fontSize = 12.dsp)
         }
     }
 }

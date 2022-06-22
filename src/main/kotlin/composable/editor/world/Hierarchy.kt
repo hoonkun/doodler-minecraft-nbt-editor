@@ -3,7 +3,6 @@ package composable.editor.world
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -15,7 +14,6 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -32,8 +30,6 @@ import doodler.unit.dsp
 import java.io.File
 import javax.imageio.ImageIO
 
-
-private val TextStyle.fsp get() = this.fontSize * 0.9f
 
 val Width = 202.5.ddp
 val ItemHeight = 22.ddp
@@ -246,7 +242,7 @@ fun FileTypeIcon(extension: String) {
 fun HierarchyText(
     text: String,
     bold: Boolean = false,
-    fontSize: TextUnit = MaterialTheme.typography.h5.fsp
+    fontSize: TextUnit = 10.8.dsp
 ) {
     Text(
         text = text,

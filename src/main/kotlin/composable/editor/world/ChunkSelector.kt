@@ -7,7 +7,6 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -41,10 +40,9 @@ import doodler.minecraft.structures.*
 import doodler.theme.DoodlerTheme
 import doodler.unit.adp
 import doodler.unit.ddp
+import doodler.unit.dsp
 import java.io.File
 
-
-private val TextStyle.fsp get() = this.fontSize * 0.6f
 
 @Composable
 fun ChunkSelector(
@@ -359,7 +357,7 @@ fun SelectorItem(
         if (ident != "UNSPECIFIED") {
             Text(
                 text = "$ident:",
-                fontSize = MaterialTheme.typography.h5.fsp,
+                fontSize = 7.2.dsp,
                 color = DoodlerTheme.Colors.Text.Normal
             )
             Spacer(modifier = Modifier.width(0.6.ddp))
@@ -414,7 +412,7 @@ fun CoordinateText(
     text: String, valid: Boolean = true
 ) = Text(
     text = text,
-    fontSize = MaterialTheme.typography.h4.fsp,
+    fontSize = 9.dsp,
     color = if (valid) DoodlerTheme.Colors.Text.IdeGeneral else DoodlerTheme.Colors.Text.Invalid,
     modifier = Modifier.focusable(false)
 )
@@ -424,7 +422,7 @@ fun CoordinateText(
     text: AnnotatedString
 ) = Text(
     text = text,
-    fontSize = MaterialTheme.typography.h4.fsp,
+    fontSize = 9.dsp,
     color = DoodlerTheme.Colors.Text.IdeGeneral,
     modifier = Modifier.focusable(false)
 )
@@ -439,7 +437,7 @@ fun CoordinateInput(
     value = value,
     onValueChange = onValueChange,
     textStyle = TextStyle(
-        fontSize = MaterialTheme.typography.h4.fsp,
+        fontSize = 7.2.dsp,
         color = DoodlerTheme.Colors.Text.IdeGeneral,
         fontFamily = DoodlerTheme.Fonts.JetbrainsMono
     ),
@@ -486,7 +484,7 @@ fun <K>Dropdown(
     Row {
         Text(
             text = "$ident:",
-            fontSize = MaterialTheme.typography.h5.fsp,
+            fontSize = 7.2.dsp,
             modifier = Modifier.alpha(0f)
         )
         Spacer(modifier = Modifier.width(0.6.ddp))
@@ -539,7 +537,7 @@ fun OpenButton(
     ) {
         Text(
             "->",
-            fontSize = MaterialTheme.typography.h4.fsp,
+            fontSize = 9.dsp,
             fontWeight = FontWeight.Bold,
             color = Color.White.copy(alpha = 0.6862f)
         )

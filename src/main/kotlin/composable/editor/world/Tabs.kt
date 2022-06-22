@@ -8,7 +8,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,7 +16,6 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.zIndex
@@ -31,8 +29,6 @@ import doodler.unit.ddp
 import doodler.unit.dsp
 import kotlinx.coroutines.CoroutineScope
 
-
-private val TextStyle.fsp get() = this.fontSize * 0.9f
 
 @Composable
 fun EditorTabGroup(
@@ -162,7 +158,7 @@ fun EditorTab(
                 color =
                 if (editor is NbtEditor && editor.state.actionFlags.canBeSaved) DoodlerTheme.Colors.Editor.TabHasChanges
                 else DoodlerTheme.Colors.Text.IdeGeneral,
-                fontSize = MaterialTheme.typography.h6.fsp
+                fontSize = 9.dsp
             )
 
         }
@@ -191,7 +187,7 @@ fun EditorCloseButton(
         Text(
             text = "\u2715",
             fontWeight = FontWeight.Bold,
-            fontSize = MaterialTheme.typography.h6.fsp,
+            fontSize = 9.dsp,
             color = DoodlerTheme.Colors.Editor.TabCloseButton(hovered),
             modifier = Modifier
                 .padding(start = 2.2.ddp, bottom = 2.2.ddp, top = 1.5.ddp, end = 1.5.ddp)

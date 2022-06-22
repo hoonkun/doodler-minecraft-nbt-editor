@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,11 +37,10 @@ import doodler.nbt.TagType
 import doodler.theme.DoodlerTheme
 import doodler.types.*
 import doodler.unit.ddp
+import doodler.unit.dsp
 
 private val Int.sdp get() = this.ddp * 0.85f
 private val Double.sdp get() = this.ddp * 0.85f
-
-private val TextStyle.fsp get() = this.fontSize * 0.75f * 0.85f
 
 @Composable
 fun DoodleItemRoot(
@@ -58,7 +56,7 @@ fun DoodleItemRoot(
 fun DoodleText(
     text: String,
     color: Color,
-    fontSize: TextUnit = MaterialTheme.typography.h4.fsp,
+    fontSize: TextUnit = 9.5625.dsp,
     rotate: Pair<Float, Int>? = null
 ) = Text(
     text = text,
@@ -70,7 +68,7 @@ fun DoodleText(
 @Composable
 fun DoodleText(
     text: AnnotatedString,
-    fontSize: TextUnit = MaterialTheme.typography.h4.fsp,
+    fontSize: TextUnit = 9.5625.dsp,
     rotate: Pair<Float, Int>? = null
 ) = Text(
     text = text,
@@ -91,7 +89,7 @@ val disabledTypeTextSpan = listOf(
 @Composable
 fun TagDoodleTypeText(
     type: TagType,
-    fontSize: TextUnit = MaterialTheme.typography.h5.fsp,
+    fontSize: TextUnit = 7.65.dsp,
     enabled: BooleanProvider
 ) = DoodleText(
     text =
@@ -111,13 +109,13 @@ fun TagDoodleTypeText(
 fun TagDoodleContentText(
     text: String,
     color: Color,
-    fontSize: TextUnit = MaterialTheme.typography.h4.fsp
+    fontSize: TextUnit = 9.5625.dsp
 ) = DoodleText(text = text, color = color, fontSize = fontSize)
 
 @Composable
 fun TagDoodleType(
     type: TagType,
-    fontSize: TextUnit = MaterialTheme.typography.h5.fsp,
+    fontSize: TextUnit = 7.65.dsp,
     selected: BooleanProvider = FalseProvider,
     backgroundColor: Color = DoodlerTheme.Colors.DoodleItem.TagTypeBackground(selected())
 ) = Box (
@@ -157,7 +155,7 @@ fun ExpandableTagDoodleValue(
         TagDoodleContentText(
             text = value,
             color = DoodlerTheme.Colors.DoodleItem.ExpandableValueTextColor(selected()),
-            fontSize = MaterialTheme.typography.h5.fsp
+            fontSize = 7.65.dsp
         )
     }
 )
@@ -181,7 +179,7 @@ fun ExpandableTagItemDoodleIndex(
         TagDoodleContentText(
             text = "$prefix$index$suffix",
             color = DoodlerTheme.Colors.DoodleItem.IndexTextColor(selected()),
-            fontSize = MaterialTheme.typography.h5.fsp
+            fontSize = 7.65.dsp
         )
     }
 )
@@ -319,7 +317,7 @@ fun ActionDoodleField(
             singleLine = true,
             textStyle = TextStyle(
                 fontFamily = DoodlerTheme.Fonts.JetbrainsMono,
-                fontSize = MaterialTheme.typography.h4.fsp,
+                fontSize = 9.5625.dsp,
                 color = color
             ),
             cursorBrush = SolidColor(color),
@@ -334,7 +332,7 @@ fun ActionDoodleField(
             Text(
                 text = hint,
                 color = Color.White.copy(alpha = 0.3f),
-                fontSize = MaterialTheme.typography.h4.fsp,
+                fontSize = 9.5625.dsp,
                 modifier = Modifier.align(Alignment.CenterStart)
             )
         }

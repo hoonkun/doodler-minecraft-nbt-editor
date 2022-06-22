@@ -10,10 +10,7 @@ val Float.ddp get() = this.times(GlobalMultiplier).dp
 val Double.ddp get() = this.times(GlobalMultiplier).dp
 
 val Int.dsp get() = this.times(GlobalMultiplier).sp
-// val Float.dsp get() = this.times(GlobalMultiplier).sp
 val Double.dsp get() = this.times(GlobalMultiplier).sp
 
 val Int.adp get() = this.dp
 val Float.adp get() = this.dp
-
-// val TextStyle.fsp get() = this.fontSize

@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.mouseClickable
-import androidx.compose.material.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -20,16 +19,14 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.isPrimaryPressed
 import androidx.compose.ui.input.pointer.isSecondaryPressed
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.TextUnit
 import doodler.nbt.TagType
 import doodler.types.BooleanProvider
 import doodler.types.EmptyLambda
 import doodler.types.TrueProvider
 import doodler.unit.ddp
+import doodler.unit.dsp
 
-
-private val TextStyle.fsp get() = this.fontSize * 0.75f
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -76,7 +73,7 @@ fun TagCreatorButton(
     onDisabledClick: () -> Unit = EmptyLambda
 ) {
     ActionButton(enabled, onClick = onClick, onDisabledClick = onDisabledClick) {
-        TagDoodleTypeText(type, enabled = enabled, fontSize = MaterialTheme.typography.h5.fsp)
+        TagDoodleTypeText(type, enabled = enabled, fontSize = 9.dsp)
     }
 }
 
@@ -84,7 +81,7 @@ fun TagCreatorButton(
 fun EditorActionButton(
     text: String,
     color: Color,
-    fontSize: TextUnit = MaterialTheme.typography.h5.fsp,
+    fontSize: TextUnit = 9.dsp,
     rotate: Pair<Float, Int>? = null,
     enabled: BooleanProvider = TrueProvider,
     onRightClick: () -> Unit = EmptyLambda,

@@ -3,7 +3,6 @@ package composable.editor.world
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,7 +18,6 @@ import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.zIndex
 import doodler.editor.CachedTerrainInfo
 import doodler.editor.TerrainCache
@@ -32,6 +30,7 @@ import doodler.minecraft.structures.ChunkLocation
 import doodler.minecraft.structures.WorldDimension
 import doodler.theme.DoodlerTheme
 import doodler.unit.ddp
+import doodler.unit.dsp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.skia.Bitmap
@@ -41,8 +40,6 @@ import org.jetbrains.skia.ImageInfo
 import org.jetbrains.skiko.toBufferedImage
 import java.io.File
 
-
-private val TextStyle.fsp get() = this.fontSize * 0.8f
 
 @Composable
 fun AnvilPreview(
@@ -348,7 +345,7 @@ fun PropertyKeyText(text: String) =
     Text(
         text = text,
         color = DoodlerTheme.Colors.Text.IdeFunctionProperty,
-        fontSize = MaterialTheme.typography.h5.fsp
+        fontSize = 9.6.dsp
     )
 
 @Composable
@@ -364,7 +361,7 @@ fun PropertyButton(
         Text(
             text = text,
             color = DoodlerTheme.Colors.Text.IdeGeneral,
-            fontSize = MaterialTheme.typography.h6.fsp,
+            fontSize = 8.dsp,
             modifier = Modifier.padding(horizontal = 4.ddp)
         )
     }
@@ -375,7 +372,7 @@ fun NullText() =
     Text(
         text = "null",
         color = DoodlerTheme.Colors.Text.IdeKeyword,
-        fontSize = MaterialTheme.typography.h5.fsp
+        fontSize = 9.6.dsp
     )
 
 @Composable
@@ -404,7 +401,7 @@ fun YLimitText(
             )
         ),
         color = DoodlerTheme.Colors.Text.IdeGeneral,
-        fontSize = MaterialTheme.typography.h6.fsp,
+        fontSize = 8.dsp,
         modifier = Modifier.padding(vertical = 2.4.ddp)
             .onPointerEvent(PointerEventType.Scroll) { changeYLimit(currentEvent.changes[0].scrollDelta.y.toInt()) }
     )

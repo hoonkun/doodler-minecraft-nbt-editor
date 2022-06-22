@@ -19,7 +19,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.window.*
@@ -142,17 +141,7 @@ fun DoodlerWindow(
 
         var existsWarning by mutableStateOf(false)
 
-        MaterialTheme(
-            typography = Typography(
-                defaultFontFamily = DoodlerTheme.Fonts.JetbrainsMono,
-                h1 = TextStyle(fontSize = 25.dsp),
-                h2 = TextStyle(fontSize = 21.dsp),
-                h3 = TextStyle(fontSize = 18.dsp),
-                h4 = TextStyle(fontSize = 15.dsp),
-                h5 = TextStyle(fontSize = 12.dsp),
-                h6 = TextStyle(fontSize = 10.dsp)
-            )
-        ) {
+        MaterialTheme(typography = Typography(defaultFontFamily = DoodlerTheme.Fonts.JetbrainsMono)) {
             CompositionLocalProvider(
                 LocalRippleTheme provides DoodlerTheme.ClearRippleTheme
             ) {
@@ -262,14 +251,14 @@ fun UnsavedChangesWarning(message: String, ok: () -> Unit, cancel: () -> Unit) {
                 Text(
                     text = ":O",
                     color = DoodlerTheme.Colors.Text.IdeFunctionName,
-                    fontSize = MaterialTheme.typography.h4.fontSize,
+                    fontSize = 15.dsp,
                     modifier = Modifier.padding(bottom = 3.ddp)
                 )
                 Spacer(modifier = Modifier.height(10.ddp))
                 Text(
                     text = firstLine,
                     color = DoodlerTheme.Colors.Text.IdeGeneral,
-                    fontSize = MaterialTheme.typography.h5.fontSize * 0.9f,
+                    fontSize = 10.8.dsp,
                     fontWeight = FontWeight.Bold,
                     lineHeight = 17.dsp
                 )
@@ -282,7 +271,7 @@ fun UnsavedChangesWarning(message: String, ok: () -> Unit, cancel: () -> Unit) {
                             Text(
                                 text = text,
                                 color = DoodlerTheme.Colors.Text.IdeGeneral,
-                                fontSize = MaterialTheme.typography.h6.fontSize * 0.9f,
+                                fontSize = 9.dsp,
                                 lineHeight = 17.dsp,
                                 modifier = Modifier.requiredWidthIn(max = 275.ddp)
                             )
@@ -317,13 +306,13 @@ private fun EditorAlreadyExistsWarning(onCloseRequest: () -> Unit) {
                 Text(
                     text = ":(",
                     color = DoodlerTheme.Colors.Text.IdeFunctionName,
-                    fontSize = MaterialTheme.typography.h4.fontSize,
+                    fontSize = 15.dsp,
                     modifier = Modifier.padding(bottom = 3.ddp)
                 )
                 Text(
                     text = "Cannot re-open already existing editor!!",
                     color = DoodlerTheme.Colors.Text.IdeGeneral,
-                    fontSize = MaterialTheme.typography.h6.fontSize * 0.9f,
+                    fontSize = 9.dsp,
                     modifier = Modifier.padding(bottom = 15.ddp)
                 )
                 DialogButton("back", onCloseRequest)
@@ -356,7 +345,7 @@ private fun DialogButton(
         Text(
             text = text,
             color = DoodlerTheme.Colors.Text.IdeGeneral,
-            fontSize = MaterialTheme.typography.h6.fontSize,
+            fontSize = 10.dsp,
             modifier = Modifier.padding(horizontal = 7.ddp, vertical = 3.ddp)
         )
     }

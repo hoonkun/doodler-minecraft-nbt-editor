@@ -5,7 +5,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -23,7 +22,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import composable.global.ClickableText
 import doodler.application.structure.DoodlerEditorType
@@ -33,10 +31,9 @@ import doodler.local.LocalDataState
 import doodler.local.RecentOpen
 import doodler.theme.DoodlerTheme
 import doodler.unit.ddp
+import doodler.unit.dsp
 import java.io.File
 import javax.imageio.ImageIO
-
-private val TextStyle.fsp get() = this.fontSize
 
 private val Int.sdp get() = this.ddp * 1.25f
 private val Double.sdp get() = this.ddp * 1.25f
@@ -90,7 +87,7 @@ fun Intro(
                                 spanStyles = listOf(
                                     AnnotatedString.Range(
                                         SpanStyle(
-                                            fontSize = MaterialTheme.typography.h6.fsp,
+                                            fontSize = 10.dsp,
                                             color = Color.White.copy(alpha = 0.6f)
                                         ),
                                         start = 8,
@@ -98,7 +95,7 @@ fun Intro(
                                     )
                                 )
                             ),
-                            fontSize = MaterialTheme.typography.h1.fsp,
+                            fontSize = 25.dsp,
                             color = Color.White
                         )
                         Spacer(modifier = Modifier.height(3.sdp))
@@ -106,7 +103,7 @@ fun Intro(
                             ClickableText(
                                 text = "Getting Started?",
                                 color = DoodlerTheme.Colors.ExternalLink,
-                                fontSize = MaterialTheme.typography.h6.fsp,
+                                fontSize = 10.dsp,
                                 onClick = { },
                                 modifier = Modifier.padding(bottom = 2.5.sdp)
                             )
@@ -114,7 +111,7 @@ fun Intro(
                             ClickableText(
                                 text = "README.md",
                                 color = DoodlerTheme.Colors.ExternalLink,
-                                fontSize = MaterialTheme.typography.h6.fsp,
+                                fontSize = 10.dsp,
                                 onClick = { },
                                 modifier = Modifier.padding(bottom = 2.5.sdp)
                             )
@@ -122,14 +119,14 @@ fun Intro(
                             Text(
                                 text = "by ",
                                 color = Color.White.copy(alpha = 0.2f),
-                                fontSize = MaterialTheme.typography.h6.fsp
+                                fontSize = 10.dsp
                             )
                             ClickableText(
                                 text = AnnotatedString("@hoon_kiwicraft"),
                                 color = DoodlerTheme.Colors.Text.IdeDocumentation,
                                 hoverAlpha = 1.0f,
                                 normalAlpha = 0.5f,
-                                fontSize = MaterialTheme.typography.h6.fsp,
+                                fontSize = 10.dsp,
                                 onClick = { }
                             )
                         }
@@ -138,7 +135,7 @@ fun Intro(
                 Spacer(modifier = Modifier.height(9.sdp))
                 Text(
                     text = "New here?",
-                    fontSize = MaterialTheme.typography.h5.fsp,
+                    fontSize = 12.dsp,
                     color = DoodlerTheme.Colors.Text.LightGray
                 )
                 Spacer(modifier = Modifier.height(4.sdp))
@@ -161,7 +158,7 @@ fun Intro(
                 Spacer(modifier = Modifier.height(16.sdp))
                 Text(
                     text = "Recent...",
-                    fontSize = MaterialTheme.typography.h5.fsp,
+                    fontSize = 12.dsp,
                     color = DoodlerTheme.Colors.Text.LightGray
                 )
                 Spacer(modifier = Modifier.height(4.sdp))
@@ -247,7 +244,7 @@ fun RowScope.OpenNewButton(
                 SmallText(text = suffix)
                 Text(
                     text = text,
-                    fontSize = MaterialTheme.typography.h4.fsp,
+                    fontSize = 15.dsp,
                     color = DoodlerTheme.Colors.Text.IdeFunctionName
                 )
             }
@@ -281,7 +278,7 @@ fun ColumnScope.Recent(
                     text = "No recently opened worlds or files... :(\nTry to open something!",
                     textAlign = TextAlign.Center,
                     color = DoodlerTheme.Colors.Text.IdeComment,
-                    fontSize = MaterialTheme.typography.h5.fsp,
+                    fontSize = 12.dsp,
                     modifier = Modifier.align(Alignment.Center)
                 )
             } else {
@@ -408,13 +405,13 @@ fun RecentItemTexts(
     Text(
         text = data.name.ellipsisLast(10),
         color = Color.White.copy(alpha = 0.85f),
-        fontSize = MaterialTheme.typography.h5.fsp * 0.65f
+        fontSize = 7.8.dsp
     )
     Spacer(modifier = Modifier.height(3.sdp))
     Text(
         text = data.path.ellipsisStart(15),
         color = Color.White.copy(alpha = 0.65f),
-        fontSize = MaterialTheme.typography.h6.fsp * 0.65f
+        fontSize = 6.5.dsp
     )
 }
 
@@ -422,6 +419,6 @@ fun RecentItemTexts(
 fun SmallText(text: String) =
     Text(
         text = text,
-        fontSize = MaterialTheme.typography.h6.fsp,
+        fontSize = 10.dsp,
         color = DoodlerTheme.Colors.Text.IdeComment
     )

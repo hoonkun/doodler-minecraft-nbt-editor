@@ -3,7 +3,6 @@ package composable.editor.world
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -164,7 +163,7 @@ fun EmptyTabText(
     color: Color
 ) = Text(
     text = text,
-    fontSize = MaterialTheme.typography.h6.fontSize,
+    fontSize = 10.dsp,
     color = color,
     lineHeight = 20.dsp
 )
