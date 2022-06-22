@@ -53,7 +53,7 @@ fun Intro(
     val openWorld = { openSelector(DoodlerEditorType.World) }
     val openStandalone = { openSelector(DoodlerEditorType.Standalone) }
 
-    val title = "doodler :1.0 with 1.18.2"
+    val title = "doodler :1.0 with 1.19"
 
     IntroRoot {
         Image(
