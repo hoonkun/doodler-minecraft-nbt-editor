@@ -43,7 +43,7 @@ fun Intro(
     localApplicationData: LocalDataState,
     openRecent: (DoodlerEditorType, File) -> Unit,
     openSelector: (DoodlerEditorType) -> Unit,
-    changeGlobalScale: () -> Unit
+    changeGlobalScale: (Float) -> Unit
 ) {
 
     var settingsVisible by remember { mutableStateOf(false) }

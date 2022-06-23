@@ -172,7 +172,7 @@ fun DoodlerWindow(
                             },
                             changeGlobalScale = {
                                 appState.restart {
-                                    saveAppSettings(UserAppSettings.copy(globalScale = GlobalMultiplier + 0.5f))
+                                    saveAppSettings(UserAppSettings.copy(globalScale = GlobalMultiplier + it))
                                     GlobalMultiplier = UserAppSettings.globalScale
                                 }
                             }

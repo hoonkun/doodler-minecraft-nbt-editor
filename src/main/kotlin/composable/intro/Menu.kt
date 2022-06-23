@@ -52,7 +52,7 @@ fun BoxScope.MenuButton(blur: Boolean, onClick: () -> Unit) {
 fun SettingsMenu(
     visible: Boolean,
     onClose: () -> Unit,
-    onGlobalScaleChanged: () -> Unit
+    onGlobalScaleChanged: (Float) -> Unit
 ) {
 
     if (!visible) return
