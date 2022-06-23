@@ -18,12 +18,16 @@ sealed class DoodlerWindow(
     val title: String
 ) {
     abstract val initialSize: DpSize
+
+    abstract fun copy(): DoodlerWindow
 }
 
 class IntroDoodlerWindow(
     title: String
 ): DoodlerWindow(title) {
     override val initialSize: DpSize = DpSize(425.ddp, 375.ddp)
+
+    override fun copy() = IntroDoodlerWindow(title)
 }
 
 class SelectorDoodlerWindow(
@@ -31,6 +35,8 @@ class SelectorDoodlerWindow(
     val targetType: DoodlerEditorType
 ): DoodlerWindow(title) {
     override val initialSize: DpSize = DpSize(525.ddp, 300.ddp)
+
+    override fun copy() = SelectorDoodlerWindow(title, targetType)
 }
 
 sealed class EditorDoodlerWindow(
@@ -54,11 +60,15 @@ class WorldEditorDoodlerWindow(
     title: String,
     path: String,
     override val state: WorldEditorState = WorldEditorState(manager = EditorManager(), worldSpec = WorldSpecification(path))
-): EditorDoodlerWindow(title, DoodlerEditorType.World, path)
+): EditorDoodlerWindow(title, DoodlerEditorType.World, path) {
+
+    override fun copy() = WorldEditorDoodlerWindow(title, path, state)
+
+}
 
 class StandaloneEditorDoodlerWindow(
     title: String,
-    file: File,
+    val file: File,
     override val state: NbtEditorState = NbtEditorState(
         root = TagDoodle(DatWorker.read(file.readBytes()), -1, null),
         file = file.toStateFile(),
@@ -66,6 +76,9 @@ class StandaloneEditorDoodlerWindow(
     )
 ): EditorDoodlerWindow(title, DoodlerEditorType.Standalone, file.absolutePath) {
     val editor = StandaloneNbtEditor(file = file, state = state)
+
+    override fun copy() = StandaloneEditorDoodlerWindow(title, file, state)
+
 }
 
 enum class DoodlerEditorType(val displayName: String) {

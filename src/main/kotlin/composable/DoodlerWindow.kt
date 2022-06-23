@@ -29,11 +29,12 @@ import composable.selector.Selector
 import doodler.application.state.DoodlerAppState
 import doodler.application.structure.*
 import doodler.editor.NbtEditor
-import doodler.local.RecentOpen
+import doodler.local.*
 import doodler.minecraft.DatWorker
 import doodler.nbt.tag.CompoundTag
 import doodler.nbt.tag.StringTag
 import doodler.theme.DoodlerTheme
+import doodler.unit.GlobalMultiplier
 import doodler.unit.ddp
 import doodler.unit.dsp
 import java.awt.Dimension
@@ -167,6 +168,12 @@ fun DoodlerWindow(
                             },
                             openSelector = {
                                 appState.sketch(SelectorDoodlerWindow("doodler: open '${it.displayName}'", it))
+                            },
+                            changeGlobalScale = {
+                                appState.restart {
+                                    saveAppSettings(UserAppSettings.copy(globalScale = GlobalMultiplier + 0.5f))
+                                    GlobalMultiplier = UserAppSettings.globalScale
+                                }
                             }
                         )
                         is SelectorDoodlerWindow -> Selector(window.targetType) { file, type ->

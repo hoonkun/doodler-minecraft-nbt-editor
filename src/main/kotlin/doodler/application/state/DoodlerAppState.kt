@@ -35,6 +35,13 @@ class DoodlerAppState(
         return true
     }
 
+    fun restart(callback: () -> Unit) {
+        val oldWindows = windows.toList()
+        windows.clear()
+        callback()
+        windows.addAll(oldWindows.map { it.copy() })
+    }
+
     fun sketchEditor(title: String, type: DoodlerEditorType, file: File): Boolean {
         val that = when (type) {
             DoodlerEditorType.World -> WorldEditorDoodlerWindow(

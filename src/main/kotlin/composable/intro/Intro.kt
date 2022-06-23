@@ -42,7 +42,8 @@ private val Padding = 15.625.ddp
 fun Intro(
     localApplicationData: LocalDataState,
     openRecent: (DoodlerEditorType, File) -> Unit,
-    openSelector: (DoodlerEditorType) -> Unit
+    openSelector: (DoodlerEditorType) -> Unit,
+    changeGlobalScale: () -> Unit
 ) {
 
     val openWorld = { openSelector(DoodlerEditorType.World) }
