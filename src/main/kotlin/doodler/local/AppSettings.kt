@@ -6,9 +6,9 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 
-var UserAppSettings: AppSettings = readAppSettings()
-
 private val AppSettingsPath = System.getProperty("user.home").plus("/.local/share/doodler/preferences.json")
+
+var UserAppSettings: AppSettings = readAppSettings()
 
 private val DefaultAppSettings = AppSettings(
     globalScale = 1.0f
