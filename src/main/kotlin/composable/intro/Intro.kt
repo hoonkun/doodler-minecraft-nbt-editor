@@ -23,6 +23,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextAlign
 import composable.global.ClickableText
 import doodler.application.structure.DoodlerEditorType
+import doodler.application.structure.IntroDoodlerWindow
 import doodler.extension.ellipsisLast
 import doodler.extension.ellipsisStart
 import doodler.local.LocalDataState
@@ -40,13 +41,14 @@ fun Modifier.settingsBlur(blur: Boolean) = this.let { if (blur) it.blur(15.ddp) 
 
 @Composable
 fun Intro(
+    window: IntroDoodlerWindow,
     localApplicationData: LocalDataState,
     openRecent: (DoodlerEditorType, File) -> Unit,
     openSelector: (DoodlerEditorType) -> Unit,
     changeGlobalScale: (Float) -> Unit
 ) {
 
-    var settingsVisible by remember { mutableStateOf(false) }
+    var settingsVisible by window.introState.settingsVisible
 
     val openWorld = { openSelector(DoodlerEditorType.World) }
     val openStandalone = { openSelector(DoodlerEditorType.Standalone) }

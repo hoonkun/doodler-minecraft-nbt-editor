@@ -156,6 +156,7 @@ fun DoodlerWindow(
                 ) {
                     when (window) {
                         is IntroDoodlerWindow -> Intro(
+                            window = window,
                             localApplicationData = appState.data,
                             openRecent = openRecent@ { type, file ->
                                 val item = appState.data.recent.find { it.type == type && it.path == file.absolutePath }

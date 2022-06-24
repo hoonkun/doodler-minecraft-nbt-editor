@@ -1,5 +1,6 @@
 package doodler.application.structure
 
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.window.WindowPosition
@@ -27,11 +28,16 @@ sealed class DoodlerWindow(
 
 class IntroDoodlerWindow(
     title: String,
-    position: WindowPosition = WindowPosition(Alignment.Center)
+    position: WindowPosition = WindowPosition(Alignment.Center),
+    val introState: IntroState = IntroState()
 ): DoodlerWindow(title) {
     override val state: WindowState = WindowState(size = DpSize(425.ddp, 375.ddp), position = position)
 
-    override fun copy() = IntroDoodlerWindow(title, state.position)
+    override fun copy() = IntroDoodlerWindow(title, state.position, introState)
+
+    class IntroState {
+        val settingsVisible = mutableStateOf(false)
+    }
 }
 
 class SelectorDoodlerWindow(
