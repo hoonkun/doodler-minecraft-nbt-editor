@@ -36,7 +36,7 @@ import java.io.File
 import javax.imageio.ImageIO
 
 
-private val Padding = 15.625.ddp
+private val Padding get() = 15.625.ddp
 
 @Composable
 fun Intro(

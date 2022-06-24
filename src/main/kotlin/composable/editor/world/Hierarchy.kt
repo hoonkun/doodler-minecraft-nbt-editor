@@ -31,8 +31,8 @@ import java.io.File
 import javax.imageio.ImageIO
 
 
-val Width = 202.5.ddp
-val ItemHeight = 22.ddp
+val Width get() = 202.5.ddp
+val ItemHeight get() = 22.ddp
 
 val ExtensionAlias = mapOf("mca" to "AVL", "dat" to "NBT", "png" to "IMG", "jpg" to "IMG", "json" to "JSN")
 
