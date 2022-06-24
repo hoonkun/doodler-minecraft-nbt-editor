@@ -29,11 +29,13 @@ import composable.selector.Selector
 import doodler.application.state.DoodlerAppState
 import doodler.application.structure.*
 import doodler.editor.NbtEditor
-import doodler.local.RecentOpen
+import doodler.local.*
 import doodler.minecraft.DatWorker
 import doodler.nbt.tag.CompoundTag
 import doodler.nbt.tag.StringTag
 import doodler.theme.DoodlerTheme
+import doodler.unit.GlobalMultiplier
+import doodler.unit.adp
 import doodler.unit.ddp
 import doodler.unit.dsp
 import java.awt.Dimension
@@ -59,12 +61,12 @@ fun DoodlerWindow(
 
         val unsavedWorlds = worldEditorStates
             .filter { window ->
-                window.state.manager.editors.any { it is NbtEditor && it.state.actionFlags.canBeSaved }
+                window.editorState.manager.editors.any { it is NbtEditor && it.state.actionFlags.canBeSaved }
             }
-            .map { it.state.worldSpec.name }
+            .map { it.editorState.worldSpec.name }
 
         val unsavedStandalone = standaloneEditorStates
-            .filter { window -> window.state.actionFlags.canBeSaved }
+            .filter { window -> window.editorState.actionFlags.canBeSaved }
             .map { it.editor.name }
 
         unsavedWorlds to unsavedStandalone
@@ -73,12 +75,12 @@ fun DoodlerWindow(
     val requestCloseEditor: (EditorDoodlerWindow) -> List<String> = { editorWindow ->
         when (editorWindow) {
             is WorldEditorDoodlerWindow -> {
-                editorWindow.state.manager.editors
+                editorWindow.editorState.manager.editors
                     .filter { it is NbtEditor && it.state.actionFlags.canBeSaved }
                     .map { it.name }
             }
             is StandaloneEditorDoodlerWindow -> {
-                if (editorWindow.state.actionFlags.canBeSaved) listOf(editorWindow.editor.name)
+                if (editorWindow.editorState.actionFlags.canBeSaved) listOf(editorWindow.editor.name)
                 else emptyList()
             }
         }
@@ -127,7 +129,7 @@ fun DoodlerWindow(
 
     Window(
         onCloseRequest = onCloseRequest,
-        state = WindowState(size = window.initialSize, position = WindowPosition(Alignment.Center)),
+        state = window.state,
         icon = painterResource("/icons/intro/doodler_icon_large.png"),
         resizable = false,
         onPreviewKeyEvent = {
@@ -148,12 +150,13 @@ fun DoodlerWindow(
                 Box(
                     modifier = Modifier
                         .requiredSizeIn(
-                            minWidth = window.initialSize.width,
-                            minHeight = window.initialSize.height - 30.ddp
+                            minWidth = this.window.let { it.width - (it.insets.left + it.insets.right) }.adp,
+                            minHeight = this.window.let { it.height - (it.insets.top + it.insets.bottom) }.adp
                         )
                 ) {
                     when (window) {
                         is IntroDoodlerWindow -> Intro(
+                            window = window,
                             localApplicationData = appState.data,
                             openRecent = openRecent@ { type, file ->
                                 val item = appState.data.recent.find { it.type == type && it.path == file.absolutePath }
@@ -166,7 +169,13 @@ fun DoodlerWindow(
                                 existsWarning = !appState.sketchEditor(item.name, item.type, file)
                             },
                             openSelector = {
-                                appState.sketch(SelectorDoodlerWindow("doodler: open '${it.displayName}'", it))
+                                appState.sketch(SelectorDoodlerWindow("doodler: open '${it.displayName}'", targetType = it))
+                            },
+                            changeGlobalScale = {
+                                appState.restart {
+                                    saveAppSettings(UserAppSettings.copy(globalScale = GlobalMultiplier + it))
+                                    GlobalMultiplier = UserAppSettings.globalScale
+                                }
                             }
                         )
                         is SelectorDoodlerWindow -> Selector(window.targetType) { file, type ->

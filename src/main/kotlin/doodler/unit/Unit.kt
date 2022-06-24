@@ -2,8 +2,9 @@ package doodler.unit
 
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import doodler.local.UserAppSettings
 
-const val GlobalMultiplier = 1.0f
+var GlobalMultiplier = UserAppSettings.globalScale
 
 val Int.ddp get() = this.times(GlobalMultiplier).dp
 val Float.ddp get() = this.times(GlobalMultiplier).dp

@@ -6,12 +6,10 @@ import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
@@ -25,6 +23,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.style.TextAlign
 import composable.global.ClickableText
 import doodler.application.structure.DoodlerEditorType
+import doodler.application.structure.IntroDoodlerWindow
 import doodler.extension.ellipsisLast
 import doodler.extension.ellipsisStart
 import doodler.local.LocalDataState
@@ -38,12 +37,18 @@ import javax.imageio.ImageIO
 
 private val Padding get() = 15.625.ddp
 
+fun Modifier.settingsBlur(blur: Boolean) = this.let { if (blur) it.blur(15.ddp) else it }
+
 @Composable
 fun Intro(
+    window: IntroDoodlerWindow,
     localApplicationData: LocalDataState,
     openRecent: (DoodlerEditorType, File) -> Unit,
-    openSelector: (DoodlerEditorType) -> Unit
+    openSelector: (DoodlerEditorType) -> Unit,
+    changeGlobalScale: (Float) -> Unit
 ) {
+
+    var settingsVisible by window.introState.settingsVisible
 
     val openWorld = { openSelector(DoodlerEditorType.World) }
     val openStandalone = { openSelector(DoodlerEditorType.Standalone) }
@@ -68,8 +73,10 @@ fun Intro(
                         )
                     )
                 }
+                .settingsBlur(settingsVisible)
         )
-        IntroContent {
+        MenuButton(settingsVisible) { settingsVisible = true }
+        IntroContent(settingsVisible) {
             MainTopColumn {
                 Row(modifier = Modifier.padding(18.75.ddp)) {
                     Image(
@@ -163,6 +170,11 @@ fun Intro(
                 Recent(localApplicationData, openRecent)
             }
         }
+        SettingsMenu(
+            visible = settingsVisible,
+            onClose = { settingsVisible = false },
+            onGlobalScaleChanged = changeGlobalScale
+        )
     }
 }
 
@@ -174,9 +186,9 @@ fun IntroRoot(content: @Composable BoxScope.() -> Unit) =
     )
 
 @Composable
-fun IntroContent(content: @Composable ColumnScope.() -> Unit) =
+fun IntroContent(blur: Boolean, content: @Composable ColumnScope.() -> Unit) =
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().settingsBlur(blur),
         content = content
     )
 

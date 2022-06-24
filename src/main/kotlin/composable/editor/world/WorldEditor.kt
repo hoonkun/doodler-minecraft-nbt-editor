@@ -25,7 +25,7 @@ fun WorldEditor(
     window: WorldEditorDoodlerWindow
 ) {
 
-    val state = window.state
+    val state = window.editorState
 
     val onOpenRequest: (OpenRequest) -> Unit = handleRequest@ { request ->
         when (request) {
