@@ -39,7 +39,7 @@ class DoodlerAppState(
         val oldWindows = windows.toList()
         windows.clear()
         callback()
-        windows.addAll(oldWindows.map { it.copy() })
+        windows.addAll(oldWindows.map { it.copy() }.sortedBy { if (it is IntroDoodlerWindow) 1 else 0 })
     }
 
     fun sketchEditor(title: String, type: DoodlerEditorType, file: File): Boolean {
