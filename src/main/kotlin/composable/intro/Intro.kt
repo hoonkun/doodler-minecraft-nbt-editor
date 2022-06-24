@@ -20,6 +20,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import composable.global.ClickableText
 import doodler.application.structure.DoodlerEditorType
@@ -269,6 +270,10 @@ fun ColumnScope.Recent(
 ) {
     val hs = rememberScrollState()
 
+    val deleteRecent: (RecentOpen) -> Unit = {
+        localApplicationData.recent.remove(it)
+        localApplicationData.save()
+    }
     val openWorld: (File) -> Unit = { file -> openRecent(DoodlerEditorType.World, file) }
     val openStandalone: (File) -> Unit = { file -> openRecent(DoodlerEditorType.Standalone, file) }
 
@@ -295,9 +300,9 @@ fun ColumnScope.Recent(
                 Row {
                     for (item in localApplicationData.recent) {
                         if (item.type == DoodlerEditorType.World) {
-                            key(item.path) { WorldRecentItem(item, openWorld) }
+                            key(item.path) { WorldRecentItem(item, deleteRecent, openWorld) }
                         } else {
-                            key(item.path) { StandaloneRecentItem(item, openStandalone) }
+                            key(item.path) { StandaloneRecentItem(item, deleteRecent, openStandalone) }
                         }
                     }
                 }
@@ -314,6 +319,7 @@ fun ColumnScope.Recent(
 @Composable
 fun WorldRecentItem(
     data: RecentOpen,
+    delete: (RecentOpen) -> Unit,
     reopen: (File) -> Unit
 ) {
     val hoverInteractionSource = remember { MutableInteractionSource() }
@@ -363,12 +369,14 @@ fun WorldRecentItem(
             Spacer(modifier = Modifier.height(7.5.ddp))
             RecentItemTexts(data)
         }
+        if (hovered) DeleteRecentButton { delete(data) }
     }
 }
 
 @Composable
 fun StandaloneRecentItem(
     data: RecentOpen,
+    delete: (RecentOpen) -> Unit,
     reopen: (File) -> Unit
 ) {
     val hoverInteractionSource = remember { MutableInteractionSource() }
@@ -405,6 +413,7 @@ fun StandaloneRecentItem(
             Spacer(modifier = Modifier.height(7.5.ddp))
             RecentItemTexts(data)
         }
+        if (hovered) DeleteRecentButton { delete(data) }
     }
 }
 
@@ -432,3 +441,29 @@ fun SmallText(text: String) =
         fontSize = 10.dsp,
         color = DoodlerTheme.Colors.Text.IdeComment
     )
+
+@Composable
+fun BoxScope.DeleteRecentButton(onClick: () -> Unit) {
+    val source = remember { MutableInteractionSource() }
+    val hovered by source.collectIsHoveredAsState()
+
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .padding(3.ddp)
+            .size(15.ddp)
+            .drawBehind {
+                if (hovered) drawRoundRect(Color.White.copy(alpha = 0.075f), cornerRadius = CornerRadius(7.5.ddp.value))
+            }
+            .align(Alignment.TopEnd)
+            .hoverable(source)
+            .clickable { onClick() }
+    ) {
+        Text(
+            text = "\u2715",
+            fontWeight = FontWeight.Bold,
+            fontSize = 9.dsp,
+            color = Color.White.copy(alpha = 0.4f)
+        )
+    }
+}
