@@ -4,6 +4,9 @@ import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.Text
@@ -32,7 +35,12 @@ fun BoxScope.Log(
 
     val log = state.value ?: return
 
-    var visible by remember { mutableStateOf(false) }
+    var timedOut by remember { mutableStateOf(true) }
+
+    val source = remember { MutableInteractionSource() }
+    val hovered by source.collectIsHoveredAsState()
+
+    val visible by remember { derivedStateOf { !timedOut || hovered } }
     val alpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
         animationSpec = tween(
@@ -43,9 +51,14 @@ fun BoxScope.Log(
     )
 
     LaunchedEffect(log) {
-        visible = true
+        timedOut = false
         delay(5000)
-        visible = false
+        timedOut = true
+    }
+
+    LaunchedEffect(visible) {
+        if (visible) return@LaunchedEffect
+
         delay(250)
         state.value = null
     }
@@ -60,13 +73,14 @@ fun BoxScope.Log(
         Column(
             modifier = Modifier
                 .padding(15.ddp)
+                .hoverable(source)
         ) {
             Column(modifier = Modifier
                 .requiredSizeIn(maxWidth = 300.ddp)
                 .background(log.level.background, RoundedCornerShape(4.5.ddp))
                 .padding(top = 9.ddp, end = 22.5.ddp, bottom = 9.ddp, start = 9.ddp)
             ) {
-                Row {
+                Row(verticalAlignment = Alignment.Bottom) {
                     LogText(text = log.title, alpha = 0.85f)
                     if (log.summary != null) {
                         Spacer(modifier = Modifier.width(7.5.ddp))
