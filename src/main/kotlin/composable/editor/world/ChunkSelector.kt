@@ -437,7 +437,7 @@ fun CoordinateInput(
     value = value,
     onValueChange = onValueChange,
     textStyle = TextStyle(
-        fontSize = 7.2.dsp,
+        fontSize = 9.dsp,
         color = DoodlerTheme.Colors.Text.IdeGeneral,
         fontFamily = DoodlerTheme.Fonts.JetbrainsMono
     ),
