@@ -32,7 +32,6 @@ import doodler.theme.DoodlerTheme
 import doodler.unit.ddp
 import doodler.unit.dsp
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.ColorAlphaType
@@ -56,16 +55,8 @@ fun AnvilPreview(
 ) {
 
     var yLimit by remember(properties.dimension) { mutableStateOf(properties.dimension.defaultYLimit) }
-    var limited by remember { mutableStateOf(false) }
 
     var propertiesVisible by remember { mutableStateOf(false) }
-
-    LaunchedEffect(limited) {
-        if (!limited) return@LaunchedEffect
-
-        delay(150)
-        limited = false
-    }
 
     Box(
         contentAlignment = PropertiesAlignment,
@@ -95,12 +86,7 @@ fun AnvilPreview(
             properties = properties,
             yLimit = yLimit,
             moveToSurroundings = moveToSurroundings,
-            changeYLimit = lambda@ {
-                if (limited) return@lambda
-
-                limited = true
-                yLimit = (yLimit - it).coerceIn(properties.dimension.yRange)
-            },
+            changeYLimit = { yLimit = (yLimit - it).coerceIn(properties.dimension.yRange) },
             invalidateCache = invalidateCache,
             visible = propertiesVisible
         )
