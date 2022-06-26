@@ -1,11 +1,13 @@
 package doodler.minecraft
 
+import doodler.extension.throwIfInactive
 import doodler.minecraft.structures.AnvilLocation
 import doodler.minecraft.structures.ChunkLocation
 import doodler.nbt.Tag
 import doodler.nbt.TagType
 import doodler.nbt.extensions.byte
 import doodler.nbt.tag.CompoundTag
+import kotlinx.coroutines.coroutineScope
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.nio.ByteBuffer
@@ -58,28 +60,32 @@ class McaWorker {
             return Tag.read(TagType.TAG_COMPOUND, chunkBuffer, null, null).getAs()
         }
 
-        fun <R>loadChunksWith(bytes: ByteArray, callback: (ChunkLocation, CompoundTag) -> R): List<R> {
-            if (bytes.isEmpty()) return listOf()
+        suspend fun <R>loadChunksWith(bytes: ByteArray, callback: suspend (ChunkLocation, CompoundTag) -> R): List<R> {
+            return coroutineScope lambda@ {
+                if (bytes.isEmpty()) return@lambda listOf()
 
-            val result = mutableListOf<R>()
+                val result = mutableListOf<R>()
 
-            for (m in 0 until 32 * 32) {
-                val x = m / 32
-                val z = m % 32
+                for (m in 0 until 32 * 32) {
+                    throwIfInactive()
 
-                val (offset, sectors) = parseHeader(parseIndex(x, z), bytes)
+                    val x = m / 32
+                    val z = m % 32
 
-                if (offset == 0 || sectors == 0) continue
+                    val (offset, sectors) = parseHeader(parseIndex(x, z), bytes)
 
-                val chunkBuffer = getChunkBuffer(bytes, offset, sectors)
+                    if (offset == 0 || sectors == 0) continue
 
-                result.add(callback(
-                    ChunkLocation(x, z),
-                    Tag.read(TagType.TAG_COMPOUND, chunkBuffer, null, null).getAs()
-                ))
+                    val chunkBuffer = getChunkBuffer(bytes, offset, sectors)
+
+                    result.add(callback(
+                        ChunkLocation(x, z),
+                        Tag.read(TagType.TAG_COMPOUND, chunkBuffer, null, null).getAs()
+                    ))
+                }
+
+                result
             }
-
-            return result
         }
 
         fun writeChunk(file: File, root: CompoundTag, location: ChunkLocation) {

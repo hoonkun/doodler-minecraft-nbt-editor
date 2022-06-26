@@ -29,10 +29,10 @@ import doodler.minecraft.structures.AnvilLocationSurroundings
 import doodler.minecraft.structures.ChunkLocation
 import doodler.minecraft.structures.WorldDimension
 import doodler.theme.DoodlerTheme
+import doodler.types.EmptyLambda
 import doodler.unit.ddp
 import doodler.unit.dsp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import org.jetbrains.skia.Bitmap
 import org.jetbrains.skia.ColorAlphaType
 import org.jetbrains.skia.ColorType
@@ -105,93 +105,104 @@ fun AnvilImageLoader(
     overlay: @Composable BoxScope.(AnvilLocation) -> Unit
 ) {
 
+    val scope = rememberCoroutineScope { Dispatchers.IO }
+    val loaderStack = remember { mutableListOf<Job>() }
+
     val location = remember(chunk) { chunk?.toAnvilLocation() } ?: anvil
     val terrainInfo = CachedTerrainInfo(yLimit, location)
 
     val terrain = cache.terrains[terrainInfo]
 
-    val load = load@ {
-        if (terrainFile == null) return@load
+    val load: suspend () -> Unit = {
+        coroutineScope load@ {
+            if (terrainFile == null) return@load
 
-        val bytes = terrainFile.readBytes()
-        val subChunks = McaWorker.loadChunksWith(bytes) { chunkLocation, compoundTag ->
-            chunkLocation to SurfaceWorker.createSubChunk(compoundTag)
-        }
-        val pixels = ByteArray(512 * 512 * 4)
-        val heights = ShortArray(512 * 512)
+            val bytes = terrainFile.readBytes()
+            val subChunks = McaWorker.loadChunksWith(bytes) { chunkLocation, compoundTag ->
+                chunkLocation to SurfaceWorker.createSubChunk(compoundTag)
+            }
+            val pixels = ByteArray(512 * 512 * 4)
+            val heights = ShortArray(512 * 512)
 
-        val createY = cache.yRanges[terrainInfo.location] == null
-        val yRange = mutableSetOf<Short>()
+            val createY = cache.yRanges[terrainInfo.location] == null
+            val yRange = mutableSetOf<Short>()
 
-        subChunks.forEach { (location, chunks) ->
-            val baseX = location.x * 16
-            val baseZ = location.z * 16
-            val surface = SurfaceWorker.createSurface(location, chunks, yLimit.toShort(), createY)
-            val blocks = surface.blocks
+            subChunks.forEach { (location, chunks) ->
+                val baseX = location.x * 16
+                val baseZ = location.z * 16
+                val surface = SurfaceWorker.createSurface(location, chunks, yLimit.toShort(), createY)
+                val blocks = surface.blocks
 
-            if (createY) yRange.addAll(surface.validY)
+                if (createY) yRange.addAll(surface.validY)
 
-            blocks.forEachIndexed { index, block ->
-                val x = 511 - (baseX + (index / 16))
-                val z = baseZ + (index % 16)
+                blocks.forEachIndexed { index, block ->
+                    val x = 511 - (baseX + (index / 16))
+                    val z = baseZ + (index % 16)
 
-                val multiplier = if (block.isWater) block.depth / 7f * 30 - 30 else 1f
-                val cutout = if (block.y == yLimit.toShort()) 0.5f else 1f
+                    val multiplier = if (block.isWater) block.depth / 7f * 30 - 30 else 1f
+                    val cutout = if (block.y == yLimit.toShort()) 0.5f else 1f
 
-                pixels[(x * 512 + z) * 4 + 0] = ((block.color[2].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
-                pixels[(x * 512 + z) * 4 + 1] = ((block.color[1].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
-                pixels[(x * 512 + z) * 4 + 2] = ((block.color[0].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
-                pixels[(x * 512 + z) * 4 + 3] = block.color[3]
+                    pixels[(x * 512 + z) * 4 + 0] = ((block.color[2].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
+                    pixels[(x * 512 + z) * 4 + 1] = ((block.color[1].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
+                    pixels[(x * 512 + z) * 4 + 2] = ((block.color[0].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
+                    pixels[(x * 512 + z) * 4 + 3] = block.color[3]
 
-                heights[x * 512 + z] = block.y
+                    heights[x * 512 + z] = block.y
 
-                val hIndex = (x + 1).coerceAtMost(511) * 512 + z
-                val pIndex = hIndex * 4
-                val aboveY = heights[hIndex]
-                if (block.y < aboveY) {
-                    (0..2).forEach {
-                        pixels[pIndex + it] = (pixels[pIndex + it].toUByte().toInt() + 15)
-                            .coerceAtMost(255).toByte()
-                    }
-                } else if (block.y > aboveY) {
-                    (0..2).forEach {
-                        pixels[pIndex + it] = (pixels[pIndex + it].toUByte().toInt() - 15)
-                            .coerceAtLeast(0).toByte()
+                    val hIndex = (x + 1).coerceAtMost(511) * 512 + z
+                    val pIndex = hIndex * 4
+                    val aboveY = heights[hIndex]
+                    if (block.y < aboveY) {
+                        (0..2).forEach {
+                            pixels[pIndex + it] = (pixels[pIndex + it].toUByte().toInt() + 15)
+                                .coerceAtMost(255).toByte()
+                        }
+                    } else if (block.y > aboveY) {
+                        (0..2).forEach {
+                            pixels[pIndex + it] = (pixels[pIndex + it].toUByte().toInt() - 15)
+                                .coerceAtLeast(0).toByte()
+                        }
                     }
                 }
             }
-        }
 
-        if (createY)
-            cache.yRanges[terrainInfo.location] = yRange
-                .map { it.toInt() }
-                .toReversedRange(dimension.yRange.first, dimension.yRange.last)
+            if (createY)
+                cache.yRanges[terrainInfo.location] = yRange
+                    .map { it.toInt() }
+                    .toReversedRange(dimension.yRange.first, dimension.yRange.last)
 
-        val bitmap = Bitmap()
-            .apply {
-                allocPixels(ImageInfo(512, 512, ColorType.N32, ColorAlphaType.OPAQUE))
-                installPixels(pixels)
+            val bitmap = Bitmap()
+                .apply {
+                    allocPixels(ImageInfo(512, 512, ColorType.N32, ColorAlphaType.OPAQUE))
+                    installPixels(pixels)
+                }
+                .toBufferedImage()
+                .toComposeImageBitmap()
+
+            val y = cache.yRanges[terrainInfo.location]?.find { it.contains(yLimit) }
+            if (y != null) {
+                y.asIterable().forEach { limit ->
+                    val criteriaInfo = terrainInfo.copy(yLimit = limit)
+                    val criteria = cache.terrains[criteriaInfo]
+                    if (criteria == null) cache.terrains[criteriaInfo] = bitmap
+                }
+            } else {
+                cache.terrains[terrainInfo] = bitmap
             }
-            .toBufferedImage()
-            .toComposeImageBitmap()
-
-        val y = cache.yRanges[terrainInfo.location]?.find { it.contains(yLimit) }
-        if (y != null) {
-            y.asIterable().forEach { limit ->
-                val criteriaInfo = terrainInfo.copy(yLimit = limit)
-                val criteria = cache.terrains[criteriaInfo]
-                if (criteria == null) cache.terrains[criteriaInfo] = bitmap
-            }
-        } else {
-            cache.terrains[terrainInfo] = bitmap
         }
-
     }
 
     LaunchedEffect(terrainInfo, terrain) {
         if (terrain != null) return@LaunchedEffect
 
-        withContext(Dispatchers.IO) { load() }
+        scope.launch {
+            if (loaderStack.size > 5) loaderStack.removeFirst().cancel()
+            this.launch { try { load() } catch(e: Exception) { EmptyLambda() } }
+                .apply {
+                    invokeOnCompletion { loaderStack.remove(this) }
+                    loaderStack.add(this)
+                }
+        }
     }
 
     if (terrain == null) return
