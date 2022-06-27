@@ -21,6 +21,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.zIndex
 import doodler.editor.CachedTerrainInfo
 import doodler.editor.TerrainCache
+import doodler.minecraft.SurfaceWorker
 import doodler.minecraft.structures.AnvilLocation
 import doodler.minecraft.structures.AnvilLocationSurroundings
 import doodler.minecraft.structures.ChunkLocation
@@ -56,7 +57,7 @@ fun AnvilPreview(
             .fillMaxHeight()
             .aspectRatio(1f)
     ) {
-        AnvilImageLoader(cache.terrains[terrainKey]) {
+        AnvilImage(cache.terrains[terrainKey]) {
             ChunkButtons(
                 chunk = chunk,
                 anvil = location,
@@ -73,12 +74,75 @@ fun AnvilPreview(
             invalidateCache = invalidateCache,
             visible = propertiesVisible
         )
+        AnvilLoaderStack()
     }
 
 }
 
 @Composable
-fun AnvilImageLoader(
+fun BoxScope.AnvilLoaderStack() {
+
+    if (SurfaceWorker.stackPoint == 0) return
+
+    val workingProperty = "working = ${SurfaceWorker.stackPoint}"
+    val maxSizeProperty = "maxSize = ${SurfaceWorker.maxStack}"
+    val stackStatus = "$workingProperty, $maxSizeProperty"
+
+    Box(
+        contentAlignment = Alignment.BottomEnd,
+        modifier = Modifier.align(Alignment.BottomEnd).requiredSize(MinimumViewSize.ddp)
+    ) {
+        AnvilLoaderStackBackground()
+        Column(
+            horizontalAlignment = Alignment.End,
+            modifier = Modifier.padding(10.ddp)
+        ) {
+            Text(
+                text = "LOADING",
+                color = DoodlerTheme.Colors.Text.IdeFunctionName,
+                fontSize = 9.dsp
+            )
+            Text(
+                text = AnnotatedString(
+                    text = stackStatus,
+                    spanStyles = listOf(
+                        AnnotatedString.Range(
+                            item = SpanStyle(color = DoodlerTheme.Colors.Text.IdeFunctionProperty),
+                            start = 0,
+                            end = 10
+                        ),
+                        AnnotatedString.Range(
+                            item = SpanStyle(color = DoodlerTheme.Colors.Text.IdeNumberLiteral),
+                            start = 10,
+                            end = workingProperty.length
+                        ),
+                        AnnotatedString.Range(
+                            item = SpanStyle(color = DoodlerTheme.Colors.Text.IdeKeyword),
+                            start = workingProperty.length,
+                            end = workingProperty.length + 1
+                        ),
+                        AnnotatedString.Range(
+                            item = SpanStyle(color = DoodlerTheme.Colors.Text.IdeFunctionProperty),
+                            start = workingProperty.length + 2,
+                            end = workingProperty.length + 2 + 10
+                        ),
+                        AnnotatedString.Range(
+                            item = SpanStyle(color = DoodlerTheme.Colors.Text.IdeNumberLiteral),
+                            start = workingProperty.length + 2 + 10,
+                            end = stackStatus.length
+                        )
+                    )
+                ),
+                color = Color.White,
+                fontSize = 8.dsp
+            )
+        }
+    }
+
+}
+
+@Composable
+fun AnvilImage(
     bitmap: ImageBitmap?,
     overlay: @Composable BoxScope.() -> Unit
 ) {
@@ -215,6 +279,22 @@ fun AnvilPreviewPropertyBackground() =
     )
 
 @Composable
+fun AnvilLoaderStackBackground() =
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .scale(scaleX = 1f, scaleY = StackGradientYScale)
+            .absoluteOffset(y = StackGradientOffset.ddp)
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(Color.Black, Color.Transparent),
+                    center = Offset.Infinite,
+                    radius = MinimumViewSize.ddp.value
+                )
+            )
+    )
+
+@Composable
 fun RowScope.AnvilNavigateButton(
     direction: String,
     destination: AnvilLocation? = null,
@@ -297,8 +377,12 @@ fun YLimitText(
 val PropertiesAlignment = Alignment.TopStart
 
 const val MinimumViewSize = 360f
+
 const val GradientYScale = 0.75f
 const val GradientOffset = -1 * MinimumViewSize * (1f - GradientYScale)
+
+const val StackGradientYScale = 0.334f
+const val StackGradientOffset = MinimumViewSize
 
 val WorldDimension.yRange get() =
     when (this) {

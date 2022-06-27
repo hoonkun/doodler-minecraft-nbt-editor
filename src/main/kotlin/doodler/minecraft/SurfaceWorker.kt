@@ -1,5 +1,6 @@
 package doodler.minecraft
 
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import composable.editor.world.yRange
 import doodler.editor.CachedTerrainInfo
@@ -28,8 +29,12 @@ class SurfaceWorker {
                 .split(",\n")
                 .associate { it.split(":").let { pair -> "${pair[0].trim()}:${pair[1]}" to pair[2].trim() } }
 
-        private val scope = CoroutineScope(Dispatchers.IO)
-        private val loaderStack = mutableListOf<Job>()
+        private val rootJob = Job()
+        private val scope = CoroutineScope(Dispatchers.IO + rootJob)
+        private val loaderStack = mutableStateListOf<Job>()
+
+        val maxStack get() = 5
+        val stackPoint get() = loaderStack.size
 
         private suspend fun subChunk(
             tag: CompoundTag
@@ -122,14 +127,12 @@ class SurfaceWorker {
         }
 
         private suspend fun bitmap(
-            from: File?,
+            from: File,
             cache: TerrainCache,
             yLimit: Int,
             location: AnvilLocation,
             dimension: WorldDimension
         ) = coroutineScope {
-
-            if (from == null) return@coroutineScope
 
             val terrainInfo = CachedTerrainInfo(yLimit, location)
 
@@ -219,15 +222,17 @@ class SurfaceWorker {
             location: AnvilLocation,
             dimension: WorldDimension
         ) {
-            scope
-                .launch {
-                    try { bitmap(from, cache, yLimit, location, dimension) }
-                    catch(e: Exception) { EmptyLambda() }
-                }
-                .apply {
-                    invokeOnCompletion { loaderStack.remove(this) }
-                    loaderStack.add(this)
-                }
+            if (from == null) return
+            if (cache.terrains[CachedTerrainInfo(yLimit, location)] != null) return
+
+            val newJob = scope.launch {
+                try { bitmap(from, cache, yLimit, location, dimension) }
+                catch(e: Exception) { EmptyLambda() }
+            }
+
+            loaderStack.add(newJob)
+            newJob.invokeOnCompletion { loaderStack.remove(newJob) }
+
             if (loaderStack.size > 5) loaderStack.removeFirst().cancel()
         }
 
