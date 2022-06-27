@@ -139,15 +139,18 @@ fun AnvilImageLoader(
                     val x = 511 - (baseX + (index / 16))
                     val z = baseZ + (index % 16)
 
-                    val multiplier = if (block.isWater) block.depth / 7f * 30 - 30 else 1f
-                    val cutout = if (block.y == yLimit.toShort()) 0.5f else 1f
+                    val bIndex = x * 512 + z
+                    val pbIndex = bIndex * 4
 
-                    pixels[(x * 512 + z) * 4 + 0] = ((block.color[2].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
-                    pixels[(x * 512 + z) * 4 + 1] = ((block.color[1].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
-                    pixels[(x * 512 + z) * 4 + 2] = ((block.color[0].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
-                    pixels[(x * 512 + z) * 4 + 3] = block.color[3]
+                    val multiplier = if (block.isWater) block.depth / 7 * 30 - 30 else 1
+                    val cutout = if (block.y == yLimit.toShort()) 2 else 1
 
-                    heights[x * 512 + z] = block.y
+                    pixels[pbIndex + 0] = ((block.color[2] + multiplier) / cutout).coerceIn(-128, 127).toByte()
+                    pixels[pbIndex + 1] = ((block.color[1] + multiplier) / cutout).coerceIn(-128, 127).toByte()
+                    pixels[pbIndex + 2] = ((block.color[0] + multiplier) / cutout).coerceIn(-128, 127).toByte()
+                    pixels[pbIndex + 3] = block.color[3]
+
+                    heights[bIndex] = block.y
 
                     val hIndex = (x + 1).coerceAtMost(511) * 512 + z
                     val pIndex = hIndex * 4
@@ -195,14 +198,13 @@ fun AnvilImageLoader(
     LaunchedEffect(terrainInfo, terrain) {
         if (terrain != null) return@LaunchedEffect
 
-        scope.launch {
-            if (loaderStack.size > 5) loaderStack.removeFirst().cancel()
-            this.launch { try { load() } catch(e: Exception) { EmptyLambda() } }
-                .apply {
-                    invokeOnCompletion { loaderStack.remove(this) }
-                    loaderStack.add(this)
-                }
-        }
+        scope
+            .launch { try { load() } catch(e: Exception) { EmptyLambda() } }
+            .apply {
+                invokeOnCompletion { loaderStack.remove(this) }
+                loaderStack.add(this)
+            }
+        if (loaderStack.size > 5) loaderStack.removeFirst().cancel()
     }
 
     if (terrain == null) return
