@@ -288,15 +288,17 @@ fun AnvilPreviewProperties(
     ) {
         AnvilPreviewPropertyBackground()
         Column(modifier = Modifier.width(220.ddp).padding(top = 8.ddp, start = 12.ddp)) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                AnvilNavigateButton("above", properties.surroundings.above, moveToSurroundings)
-                AnvilNavigateButton("left", properties.surroundings.left, moveToSurroundings)
+            if (!properties.surroundings.isEmpty) {
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    AnvilNavigateButton("above", properties.surroundings.above, moveToSurroundings)
+                    AnvilNavigateButton("left", properties.surroundings.left, moveToSurroundings)
+                }
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    AnvilNavigateButton("below", properties.surroundings.below, moveToSurroundings)
+                    AnvilNavigateButton("right", properties.surroundings.right, moveToSurroundings)
+                }
+                PropertyGroupSpacer()
             }
-            Row(modifier = Modifier.fillMaxWidth()) {
-                AnvilNavigateButton("below", properties.surroundings.below, moveToSurroundings)
-                AnvilNavigateButton("right", properties.surroundings.right, moveToSurroundings)
-            }
-            PropertyGroupSpacer()
             Row(verticalAlignment = Alignment.CenterVertically) {
                 PropertyKeyText("loader = ")
                 PropertyButton("reload", invalidateCache)

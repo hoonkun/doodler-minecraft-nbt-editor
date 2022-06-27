@@ -36,6 +36,9 @@ data class AnvilLocationSurroundings(
     val above: AnvilLocation?,
     val below: AnvilLocation?
 ) {
+
+    val isEmpty = left == null && right == null && above == null && below == null
+
     companion object {
 
         fun fromBase(base: AnvilLocation, available: List<AnvilLocation>) =
