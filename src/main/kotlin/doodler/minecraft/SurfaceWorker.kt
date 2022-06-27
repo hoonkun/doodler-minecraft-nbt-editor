@@ -1,13 +1,22 @@
 package doodler.minecraft
 
+import androidx.compose.ui.graphics.toComposeImageBitmap
+import composable.editor.world.yRange
+import doodler.editor.CachedTerrainInfo
+import doodler.editor.TerrainCache
 import doodler.extension.throwIfInactive
+import doodler.extension.toReversedRange
 import doodler.minecraft.ArrayPacker.Companion.unpack
-import doodler.minecraft.structures.ChunkLocation
-import doodler.minecraft.structures.SurfaceSubChunk
-import doodler.minecraft.structures.Surface
-import doodler.minecraft.structures.SurfaceBlock
+import doodler.minecraft.structures.*
 import doodler.nbt.tag.*
-import kotlinx.coroutines.coroutineScope
+import doodler.types.EmptyLambda
+import kotlinx.coroutines.*
+import org.jetbrains.skia.Bitmap
+import org.jetbrains.skia.ColorAlphaType
+import org.jetbrains.skia.ColorType
+import org.jetbrains.skia.ImageInfo
+import org.jetbrains.skiko.toBufferedImage
+import java.io.File
 
 class SurfaceWorker {
 
@@ -19,7 +28,10 @@ class SurfaceWorker {
                 .split(",\n")
                 .associate { it.split(":").let { pair -> "${pair[0].trim()}:${pair[1]}" to pair[2].trim() } }
 
-        suspend fun createSubChunk(
+        private val scope = CoroutineScope(Dispatchers.IO)
+        private val loaderStack = mutableListOf<Job>()
+
+        private suspend fun subChunk(
             tag: CompoundTag
         ): List<SurfaceSubChunk> {
             return coroutineScope lambda@ {
@@ -36,15 +48,15 @@ class SurfaceWorker {
             }
         }
 
-        suspend fun createSurface(
+        private suspend fun surface(
             location: ChunkLocation,
             input: List<SurfaceSubChunk>,
-            yLimit: Short,
+            yLimit: Int,
             createValidY: Boolean = false
         ): Surface {
             return coroutineScope {
                 val resultBlocks = arrayOfNulls<SurfaceBlock>(256)
-                val validYList = mutableSetOf<Short>()
+                val validYList = mutableSetOf<Int>()
 
                 run {
                     input.forEach { subChunk ->
@@ -109,10 +121,120 @@ class SurfaceWorker {
             }
         }
 
-        private fun coordinate(blockIndex: Int, y: Byte): Triple<Byte, Short, Byte> {
+        private suspend fun bitmap(
+            from: File?,
+            cache: TerrainCache,
+            yLimit: Int,
+            location: AnvilLocation,
+            dimension: WorldDimension
+        ) = coroutineScope {
+
+            if (from == null) return@coroutineScope
+
+            val terrainInfo = CachedTerrainInfo(yLimit, location)
+
+            if (cache.terrains[terrainInfo] != null) return@coroutineScope
+
+            val bytes = from.readBytes()
+            val subChunks = McaWorker.loadChunksWith(bytes) { chunkLocation, compoundTag ->
+                chunkLocation to subChunk(compoundTag)
+            }
+            val pixels = ByteArray(512 * 512 * 4)
+            val heights = IntArray(512 * 512)
+
+            val createY = cache.yRanges[terrainInfo.location] == null
+            val yRange = mutableSetOf<Int>()
+
+            subChunks.forEach { (location, chunks) ->
+                val baseX = location.x * 16
+                val baseZ = location.z * 16
+                val surface = surface(location, chunks, yLimit, createY)
+                val blocks = surface.blocks
+
+                if (createY) yRange.addAll(surface.validY)
+
+                blocks.forEachIndexed { index, block ->
+                    val x = 511 - (baseX + (index / 16))
+                    val z = baseZ + (index % 16)
+
+                    val bIndex = x * 512 + z
+                    val pbIndex = bIndex * 4
+
+                    val multiplier = if (block.isWater) block.depth / 7f * 30 - 30 else 1f
+                    val cutout = if (block.y == yLimit) 0.5f else 1f
+
+                    pixels[pbIndex + 0] = ((block.color[2].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
+                    pixels[pbIndex + 1] = ((block.color[1].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
+                    pixels[pbIndex + 2] = ((block.color[0].toUByte().toInt() + multiplier) * cutout).toInt().coerceIn(0, 255).toByte()
+                    pixels[pbIndex + 3] = block.color[3]
+
+                    heights[bIndex] = block.y
+
+                    val hIndex = (x + 1).coerceAtMost(511) * 512 + z
+                    val pIndex = hIndex * 4
+                    val aboveY = heights[hIndex]
+                    if (block.y < aboveY) {
+                        (0..2).forEach {
+                            pixels[pIndex + it] = (pixels[pIndex + it].toUByte().toInt() + 15)
+                                .coerceAtMost(255).toByte()
+                        }
+                    } else if (block.y > aboveY) {
+                        (0..2).forEach {
+                            pixels[pIndex + it] = (pixels[pIndex + it].toUByte().toInt() - 15)
+                                .coerceAtLeast(0).toByte()
+                        }
+                    }
+                }
+            }
+
+            if (createY)
+                cache.yRanges[terrainInfo.location] = yRange
+                    .toReversedRange(dimension.yRange.first, dimension.yRange.last)
+
+            val bitmap = Bitmap()
+                .apply {
+                    allocPixels(ImageInfo(512, 512, ColorType.N32, ColorAlphaType.OPAQUE))
+                    installPixels(pixels)
+                }
+                .toBufferedImage()
+                .toComposeImageBitmap()
+
+            val y = cache.yRanges[terrainInfo.location]?.find { it.contains(yLimit) }
+            if (y != null) {
+                y.asIterable().forEach { limit ->
+                    val criteriaInfo = terrainInfo.copy(yLimit = limit)
+                    val criteria = cache.terrains[criteriaInfo]
+                    if (criteria == null) cache.terrains[criteriaInfo] = bitmap
+                }
+            } else {
+                cache.terrains[terrainInfo] = bitmap
+            }
+
+        }
+
+        fun load(
+            from: File?,
+            cache: TerrainCache,
+            yLimit: Int,
+            location: AnvilLocation,
+            dimension: WorldDimension
+        ) {
+            scope
+                .launch {
+                    try { bitmap(from, cache, yLimit, location, dimension) }
+                    catch(e: Exception) { EmptyLambda() }
+                }
+                .apply {
+                    invokeOnCompletion { loaderStack.remove(this) }
+                    loaderStack.add(this)
+                }
+            if (loaderStack.size > 5) loaderStack.removeFirst().cancel()
+        }
+
+        private fun coordinate(blockIndex: Int, y: Byte): Triple<Byte, Int, Byte> {
             return Triple(
                 ((blockIndex / 16) % 16).toByte(),
-                (y * 16 + (((4095 - blockIndex) / (16 * 16)) % 16)).toShort(),
+                (y * 16 + (((4095 - blockIndex) / (16 * 16)) % 16)),
                 (blockIndex % 16).toByte()
             )
         }

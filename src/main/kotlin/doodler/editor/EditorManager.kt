@@ -5,6 +5,7 @@ import doodler.minecraft.DatWorker
 import doodler.minecraft.structures.*
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.graphics.ImageBitmap
+import composable.editor.world.defaultYLimit
 import doodler.doodle.structures.CreatorDoodle
 import doodler.doodle.structures.Doodle
 import doodler.doodle.structures.EditorDoodle
@@ -284,7 +285,8 @@ data class McaPayload(
     val dimension: WorldDimension,
     val type: McaType,
     val location: AnvilLocation,
-    val file: File
+    val file: File,
+    val yLimit: Int = dimension.defaultYLimit
 )
 
 data class TerrainCache(

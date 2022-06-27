@@ -31,7 +31,7 @@ fun List<Int>.toRanges(): List<IntRange> {
     return result
 }
 
-fun List<Int>.toReversedRange(min: Int, max: Int): List<IntRange> {
+fun Collection<Int>.toReversedRange(min: Int, max: Int): List<IntRange> {
     val sorted = sorted()
     val result = mutableListOf<IntRange>()
 

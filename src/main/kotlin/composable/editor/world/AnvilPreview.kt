@@ -21,40 +21,31 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.zIndex
 import doodler.editor.CachedTerrainInfo
 import doodler.editor.TerrainCache
-import doodler.extension.toReversedRange
-import doodler.minecraft.McaWorker
-import doodler.minecraft.SurfaceWorker
 import doodler.minecraft.structures.AnvilLocation
 import doodler.minecraft.structures.AnvilLocationSurroundings
 import doodler.minecraft.structures.ChunkLocation
 import doodler.minecraft.structures.WorldDimension
 import doodler.theme.DoodlerTheme
-import doodler.types.EmptyLambda
 import doodler.unit.ddp
 import doodler.unit.dsp
-import kotlinx.coroutines.*
-import org.jetbrains.skia.Bitmap
-import org.jetbrains.skia.ColorAlphaType
-import org.jetbrains.skia.ColorType
-import org.jetbrains.skia.ImageInfo
-import org.jetbrains.skiko.toBufferedImage
-import java.io.File
-
 
 @Composable
 fun AnvilPreview(
-    terrain: File?,
+    yLimit: Int,
     properties: ChunkPreviewProperties,
     cache: TerrainCache,
     chunk: ChunkLocation?,
     anvil: AnvilLocation,
     hasNbt: (ChunkLocation) -> Boolean,
+    updateYLimit: (Int) -> Unit,
     moveToSurroundings: (AnvilLocation) -> Unit,
     invalidateCache: () -> Unit,
     onItemClick: (ChunkLocation) -> Unit
 ) {
 
-    var yLimit by remember(properties.dimension) { mutableStateOf(properties.dimension.defaultYLimit) }
+    val location = remember(chunk) { chunk?.toAnvilLocation() } ?: anvil
+
+    val terrainKey by remember(yLimit, location) { derivedStateOf { CachedTerrainInfo(yLimit, location) } }
 
     var propertiesVisible by remember { mutableStateOf(false) }
 
@@ -65,28 +56,20 @@ fun AnvilPreview(
             .fillMaxHeight()
             .aspectRatio(1f)
     ) {
-        AnvilImageLoader(
-            cache = cache,
-            terrainFile = terrain,
-            chunk = chunk,
-            anvil = anvil,
-            dimension = properties.dimension,
-            yLimit = yLimit,
-            overlay = { anvil ->
-                ChunkButtons(
-                    chunk = chunk,
-                    anvil = anvil,
-                    hasNbt = hasNbt,
-                    onItemClick = onItemClick,
-                    onRightClick = { propertiesVisible = !propertiesVisible }
-                )
-            }
-        )
+        AnvilImageLoader(cache.terrains[terrainKey]) {
+            ChunkButtons(
+                chunk = chunk,
+                anvil = location,
+                hasNbt = hasNbt,
+                onItemClick = onItemClick,
+                onRightClick = { propertiesVisible = !propertiesVisible }
+            )
+        }
         AnvilPreviewProperties(
             properties = properties,
             yLimit = yLimit,
             moveToSurroundings = moveToSurroundings,
-            changeYLimit = { yLimit = (yLimit - it).coerceIn(properties.dimension.yRange) },
+            changeYLimit = updateYLimit,
             invalidateCache = invalidateCache,
             visible = propertiesVisible
         )
@@ -96,129 +79,21 @@ fun AnvilPreview(
 
 @Composable
 fun AnvilImageLoader(
-    cache: TerrainCache,
-    terrainFile: File?,
-    chunk: ChunkLocation?,
-    anvil: AnvilLocation,
-    dimension: WorldDimension,
-    yLimit: Int,
-    overlay: @Composable BoxScope.(AnvilLocation) -> Unit
+    bitmap: ImageBitmap?,
+    overlay: @Composable BoxScope.() -> Unit
 ) {
-
-    val scope = rememberCoroutineScope { Dispatchers.IO }
-    val loaderStack = remember { mutableListOf<Job>() }
-
-    val location = remember(chunk) { chunk?.toAnvilLocation() } ?: anvil
-    val terrainInfo = CachedTerrainInfo(yLimit, location)
-
-    val terrain = cache.terrains[terrainInfo]
-
-    val load: suspend () -> Unit = {
-        coroutineScope load@ {
-            if (terrainFile == null) return@load
-
-            val bytes = terrainFile.readBytes()
-            val subChunks = McaWorker.loadChunksWith(bytes) { chunkLocation, compoundTag ->
-                chunkLocation to SurfaceWorker.createSubChunk(compoundTag)
-            }
-            val pixels = ByteArray(512 * 512 * 4)
-            val heights = ShortArray(512 * 512)
-
-            val createY = cache.yRanges[terrainInfo.location] == null
-            val yRange = mutableSetOf<Short>()
-
-            subChunks.forEach { (location, chunks) ->
-                val baseX = location.x * 16
-                val baseZ = location.z * 16
-                val surface = SurfaceWorker.createSurface(location, chunks, yLimit.toShort(), createY)
-                val blocks = surface.blocks
-
-                if (createY) yRange.addAll(surface.validY)
-
-                blocks.forEachIndexed { index, block ->
-                    val x = 511 - (baseX + (index / 16))
-                    val z = baseZ + (index % 16)
-
-                    val bIndex = x * 512 + z
-                    val pbIndex = bIndex * 4
-
-                    val multiplier = if (block.isWater) block.depth / 7 * 30 - 30 else 1
-                    val cutout = if (block.y == yLimit.toShort()) 2 else 1
-
-                    pixels[pbIndex + 0] = ((block.color[2] + multiplier) / cutout).coerceIn(-128, 127).toByte()
-                    pixels[pbIndex + 1] = ((block.color[1] + multiplier) / cutout).coerceIn(-128, 127).toByte()
-                    pixels[pbIndex + 2] = ((block.color[0] + multiplier) / cutout).coerceIn(-128, 127).toByte()
-                    pixels[pbIndex + 3] = block.color[3]
-
-                    heights[bIndex] = block.y
-
-                    val hIndex = (x + 1).coerceAtMost(511) * 512 + z
-                    val pIndex = hIndex * 4
-                    val aboveY = heights[hIndex]
-                    if (block.y < aboveY) {
-                        (0..2).forEach {
-                            pixels[pIndex + it] = (pixels[pIndex + it].toUByte().toInt() + 15)
-                                .coerceAtMost(255).toByte()
-                        }
-                    } else if (block.y > aboveY) {
-                        (0..2).forEach {
-                            pixels[pIndex + it] = (pixels[pIndex + it].toUByte().toInt() - 15)
-                                .coerceAtLeast(0).toByte()
-                        }
-                    }
-                }
-            }
-
-            if (createY)
-                cache.yRanges[terrainInfo.location] = yRange
-                    .map { it.toInt() }
-                    .toReversedRange(dimension.yRange.first, dimension.yRange.last)
-
-            val bitmap = Bitmap()
-                .apply {
-                    allocPixels(ImageInfo(512, 512, ColorType.N32, ColorAlphaType.OPAQUE))
-                    installPixels(pixels)
-                }
-                .toBufferedImage()
-                .toComposeImageBitmap()
-
-            val y = cache.yRanges[terrainInfo.location]?.find { it.contains(yLimit) }
-            if (y != null) {
-                y.asIterable().forEach { limit ->
-                    val criteriaInfo = terrainInfo.copy(yLimit = limit)
-                    val criteria = cache.terrains[criteriaInfo]
-                    if (criteria == null) cache.terrains[criteriaInfo] = bitmap
-                }
-            } else {
-                cache.terrains[terrainInfo] = bitmap
-            }
-        }
-    }
-
-    LaunchedEffect(terrainInfo, terrain) {
-        if (terrain != null) return@LaunchedEffect
-
-        scope
-            .launch { try { load() } catch(e: Exception) { EmptyLambda() } }
-            .apply {
-                invokeOnCompletion { loaderStack.remove(this) }
-                loaderStack.add(this)
-            }
-        if (loaderStack.size > 5) loaderStack.removeFirst().cancel()
-    }
-
-    if (terrain == null) return
+    if (bitmap == null) return
 
     Box(
         modifier = Modifier.fillMaxSize().zIndex(0f)
     ) {
         Image(
-            bitmap = terrain,
+            bitmap = bitmap,
             contentDescription = null,
             filterQuality = FilterQuality.None,
             modifier = Modifier.fillMaxSize()
         )
-        overlay(location)
+        overlay()
     }
 
 }

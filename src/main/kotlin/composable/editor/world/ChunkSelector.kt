@@ -36,6 +36,7 @@ import doodler.editor.McaEditor
 import doodler.editor.McaPayload
 import doodler.editor.TerrainCache
 import doodler.editor.states.McaEditorState
+import doodler.minecraft.SurfaceWorker
 import doodler.minecraft.structures.*
 import doodler.theme.DoodlerTheme
 import doodler.unit.adp
@@ -134,6 +135,19 @@ fun ChunkSelector(
         state.chunkXValue = TextFieldValue("${chunk.x}")
         state.chunkZValue = TextFieldValue("${chunk.z}")
         setSelectedChunk(chunk)
+    }
+
+    val updateYLimit: (Int) -> Unit = lambda@ {
+        val prevYLimit = state.yLimit
+        val newYLimit = (state.yLimit - it).coerceIn(payload.dimension.yRange)
+
+        state.yLimit = newYLimit
+
+        if (prevYLimit == newYLimit) return@lambda
+
+        val terrain = terrains.find { terrain -> terrain.name == "r.${currentAnvil.x}.${currentAnvil.z}.mca" }
+        val location = state.selectedChunk?.toAnvilLocation() ?: currentAnvil
+        SurfaceWorker.load(terrain, terrainCache, state.yLimit, location, payload.dimension)
     }
 
     var expandedDropdown by remember { mutableStateOf<String?>(null) }
@@ -241,7 +255,7 @@ fun ChunkSelector(
 
     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
         AnvilPreview(
-            terrain = terrains.find { it.name == "r.${currentAnvil.x}.${currentAnvil.z}.mca" },
+            yLimit = state.yLimit,
             properties = ChunkPreviewProperties(payload.dimension, surroundingAnvils),
             cache = terrainCache,
             chunk = state.selectedChunk,
@@ -251,6 +265,7 @@ fun ChunkSelector(
                 resetChunk()
                 update(payload.copy(location = it, file = siblingAnvil(payload.file, it)))
             },
+            updateYLimit = updateYLimit,
             invalidateCache = {
                 terrainCache.terrains
                     .filter { it.key.location == currentAnvil }.keys
