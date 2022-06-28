@@ -1,6 +1,9 @@
 package composable.editor.world
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -13,6 +16,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -39,6 +43,7 @@ import doodler.minecraft.structures.AnvilLocationSurroundings
 import doodler.minecraft.structures.ChunkLocation
 import doodler.minecraft.structures.WorldDimension
 import doodler.theme.DoodlerTheme
+import doodler.types.EmptyLambda
 import doodler.unit.ddp
 import doodler.unit.dsp
 
@@ -431,6 +436,13 @@ fun YLimitInput(
 ) {
     var value by remember(initialValue) { mutableStateOf(TextFieldValue("$initialValue")) }
 
+    val submitEnabled by remember {
+        derivedStateOf lambda@ {
+            val int = value.text.toIntOrNull() ?: return@lambda false
+            validRange.contains(int)
+        }
+    }
+
     val requester = remember { FocusRequester() }
 
     val coloredText: (String, Color) -> TransformedText = { text, color ->
@@ -463,39 +475,103 @@ fun YLimitInput(
         requester.requestFocus()
     }
 
-    BasicTextField(
-        value = value,
-        onValueChange = { if (it.text.length <= 3) value = it },
-        textStyle = TextStyle(
-            color = DoodlerTheme.Colors.Text.IdeGeneral,
-            fontSize = 9.6.dsp,
-            textAlign = TextAlign.End,
-            fontFamily = DoodlerTheme.Fonts.JetbrainsMono
-        ),
-        maxLines = 1,
-        visualTransformation = visualTransformation,
-        cursorBrush = SolidColor(DoodlerTheme.Colors.Text.IdeGeneral),
-        modifier = Modifier
-            .onPreviewKeyEvent {
-                when (it.key) {
-                    Key.Enter -> submitWithValidation()
-                    Key.Escape -> cancel()
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.clickable { EmptyLambda() }
+    ) {
+
+        BasicTextField(
+            value = value,
+            onValueChange = { if (it.text.length <= 3) value = it },
+            textStyle = TextStyle(
+                color = DoodlerTheme.Colors.Text.IdeGeneral,
+                fontSize = 9.6.dsp,
+                textAlign = TextAlign.End,
+                fontFamily = DoodlerTheme.Fonts.JetbrainsMono
+            ),
+            maxLines = 1,
+            visualTransformation = visualTransformation,
+            cursorBrush = SolidColor(DoodlerTheme.Colors.Text.IdeGeneral),
+            modifier = Modifier
+                .onPreviewKeyEvent {
+                    when (it.key) {
+                        Key.Enter -> submitWithValidation()
+                        Key.Escape -> cancel()
+                    }
+                    false
                 }
-                false
-            }
+                .drawBehind {
+                    drawLine(
+                        color = Color.White.copy(alpha = 0.7f),
+                        start = Offset(0f, size.height),
+                        end = Offset(size.width, size.height),
+                        strokeWidth = 1f
+                    )
+                }
+                .focusable()
+                .focusRequester(requester)
+                .width(18.ddp)
+                .padding(vertical = 2.4.ddp)
+        )
+
+        Spacer(modifier = Modifier.width(12.ddp))
+
+        YLimitButton(
+            text = "OK",
+            color = DoodlerTheme.Colors.DoodleAction.OkAction,
+            enabled = submitEnabled,
+            onClick = { submitWithValidation() }
+        )
+
+        Spacer(modifier = Modifier.width(5.ddp))
+
+        YLimitButton(
+            text = "CANCEL",
+            color = DoodlerTheme.Colors.DoodleAction.CancelAction,
+            onClick = { cancel() }
+        )
+
+    }
+}
+
+@Composable
+fun YLimitButton(
+    text: String,
+    color: Color,
+    enabled: Boolean = true,
+    onClick: () -> Unit
+) {
+
+    val source = remember { MutableInteractionSource() }
+
+    val hovered by source.collectIsHoveredAsState()
+    val pressed by source.collectIsPressedAsState()
+
+    Box(
+        modifier = Modifier
             .drawBehind {
-                drawLine(
-                    color = Color.White.copy(alpha = 0.7f),
-                    start = Offset(0f, size.height),
-                    end = Offset(size.width, size.height),
-                    strokeWidth = 1f
-                )
+                if (pressed)
+                    drawRoundRect(
+                        color = Color.White.copy(alpha = 0.15f),
+                        cornerRadius = CornerRadius(2.ddp.value)
+                    )
+                else if (hovered)
+                    drawRoundRect(
+                        color = Color.White.copy(alpha = 0.1f),
+                        cornerRadius = CornerRadius(2.ddp.value)
+                    )
             }
-            .focusable()
-            .focusRequester(requester)
-            .width(18.ddp)
-            .padding(vertical = 2.4.ddp)
-    )
+            .hoverable(source, enabled)
+            .clickable(source, null, enabled) { onClick() }
+    ) {
+        Text(
+            text = text,
+            color = if (enabled) color else Color.Gray,
+            fontSize = 9.dsp,
+            modifier = Modifier.padding(vertical = 2.4.ddp, horizontal = 8.ddp)
+        )
+    }
+
 }
 
 val PropertiesAlignment = Alignment.TopStart
