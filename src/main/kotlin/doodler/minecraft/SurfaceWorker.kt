@@ -7,6 +7,7 @@ import doodler.editor.CachedTerrainInfo
 import doodler.editor.TerrainCache
 import doodler.extension.throwIfInactive
 import doodler.extension.toReversedRange
+import doodler.local.LoaderStackSize
 import doodler.minecraft.ArrayPacker.Companion.unpack
 import doodler.minecraft.structures.*
 import doodler.nbt.tag.*
@@ -33,7 +34,7 @@ class SurfaceWorker {
         private val scope = CoroutineScope(Dispatchers.IO + rootJob)
         private val loaderStack = mutableStateListOf<Job>()
 
-        val maxStack get() = 5
+        val maxStack get() = LoaderStackSize.value
         val stackPoint get() = loaderStack.size
 
         private suspend fun subChunk(
@@ -233,7 +234,7 @@ class SurfaceWorker {
             loaderStack.add(newJob)
             newJob.invokeOnCompletion { loaderStack.remove(newJob) }
 
-            if (loaderStack.size > 5) loaderStack.removeFirst().cancel()
+            if (loaderStack.size > maxStack) loaderStack.removeFirst().cancel()
         }
 
         private fun coordinate(blockIndex: Int, y: Byte): Triple<Byte, Int, Byte> {
