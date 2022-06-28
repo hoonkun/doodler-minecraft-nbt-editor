@@ -4,7 +4,7 @@ package doodler.minecraft.structures
 data class Surface(
     val position: ChunkLocation,
     val blocks: List<SurfaceBlock>,
-    val validY: Set<Short>
+    val validY: Set<Int>
 )
 
 data class SurfaceSubChunk(
@@ -33,7 +33,7 @@ data class SurfaceSubChunk(
 
 data class SurfaceBlock(
     val color: ByteArray,
-    val y: Short,
+    val y: Int,
     val isWater: Boolean = false,
     var depth: Short = -99
 ) {

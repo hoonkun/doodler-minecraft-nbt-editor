@@ -22,7 +22,9 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import doodler.local.LoaderStackSize
 import doodler.local.UserAppSettings
+import doodler.local.saveLoaderStackSize
 import doodler.theme.DoodlerTheme
 import doodler.unit.ddp
 import doodler.unit.dsp
@@ -85,6 +87,17 @@ fun SettingsMenu(
                 NumberValue(UserAppSettings.globalScale.toString())
                 CircularTextButton(text = "+", enabled = UserAppSettings.globalScale < 3.0f) {
                     onGlobalScaleChanged(0.25f)
+                }
+            }
+            SettingsItem("Max LoaderStack Size") {
+                CircularTextButton(text = "-", enabled = LoaderStackSize.value > 3) {
+                    LoaderStackSize = LoaderStackSize.copy(value = LoaderStackSize.value - 1)
+                    saveLoaderStackSize()
+                }
+                NumberValue(LoaderStackSize.value.toString())
+                CircularTextButton(text = "+", enabled = LoaderStackSize.value < 15) {
+                    LoaderStackSize = LoaderStackSize.copy(value = LoaderStackSize.value + 1)
+                    saveLoaderStackSize()
                 }
             }
             Spacer(modifier = Modifier.height(30.ddp))
