@@ -3,21 +3,33 @@ package composable.editor.world
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.isPrimaryPressed
 import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.zIndex
 import doodler.editor.CachedTerrainInfo
 import doodler.editor.TerrainCache
@@ -39,6 +51,7 @@ fun AnvilPreview(
     anvil: AnvilLocation,
     hasNbt: (ChunkLocation) -> Boolean,
     updateYLimit: (Int) -> Unit,
+    setYLimit: (Int) -> Unit,
     moveToSurroundings: (AnvilLocation) -> Unit,
     invalidateCache: () -> Unit,
     onItemClick: (ChunkLocation) -> Unit
@@ -71,6 +84,7 @@ fun AnvilPreview(
             yLimit = yLimit,
             moveToSurroundings = moveToSurroundings,
             changeYLimit = updateYLimit,
+            setYLimit = setYLimit,
             invalidateCache = invalidateCache,
             visible = propertiesVisible
         )
@@ -229,6 +243,7 @@ fun AnvilPreviewProperties(
     yLimit: Int,
     moveToSurroundings: (AnvilLocation) -> Unit,
     changeYLimit: (Int) -> Unit,
+    setYLimit: (Int) -> Unit,
     invalidateCache: () -> Unit,
     visible: Boolean
 ) {
@@ -256,7 +271,12 @@ fun AnvilPreviewProperties(
             PropertyGroupSpacer()
             Row(verticalAlignment = Alignment.CenterVertically) {
                 PropertyKeyText("yLimit = ")
-                YLimitText(yLimit = yLimit, changeYLimit = changeYLimit)
+                YLimitController(
+                    yLimit = yLimit,
+                    validRange = properties.dimension.yRange,
+                    changeYLimit = changeYLimit,
+                    setYLimit = setYLimit
+                )
             }
         }
     }
@@ -293,6 +313,31 @@ fun AnvilLoaderStackBackground() =
                 )
             )
     )
+
+@Composable
+fun YLimitController(
+    yLimit: Int,
+    validRange: IntRange,
+    changeYLimit: (Int) -> Unit,
+    setYLimit: (Int) -> Unit
+) {
+    var inputMode by remember { mutableStateOf(false) }
+
+    val onInputSubmit: (Int) -> Unit = {
+        setYLimit(it)
+        inputMode = false
+    }
+
+    Box {
+        if (!inputMode) YLimitText(yLimit = yLimit, changeYLimit = changeYLimit, onClick = { inputMode = true })
+        else YLimitInput(
+            initialValue = yLimit,
+            validRange = validRange,
+            submit = onInputSubmit,
+            cancel = { inputMode = false }
+        )
+    }
+}
 
 @Composable
 fun RowScope.AnvilNavigateButton(
@@ -350,7 +395,8 @@ fun PropertyGroupSpacer() = Spacer(modifier = Modifier.height(8.ddp))
 @Composable
 fun YLimitText(
     yLimit: Int,
-    changeYLimit: (Int) -> Unit
+    changeYLimit: (Int) -> Unit,
+    onClick: () -> Unit
 ) =
     Text(
         text = AnnotatedString(
@@ -369,10 +415,88 @@ fun YLimitText(
             )
         ),
         color = DoodlerTheme.Colors.Text.IdeGeneral,
-        fontSize = 8.dsp,
+        fontSize = 9.6.dsp,
         modifier = Modifier.padding(vertical = 2.4.ddp)
             .onPointerEvent(PointerEventType.Scroll) { changeYLimit(currentEvent.changes[0].scrollDelta.y.toInt()) }
+            .clickable { onClick() }
     )
+
+@OptIn(ExperimentalComposeUiApi::class)
+@Composable
+fun YLimitInput(
+    initialValue: Int,
+    validRange: IntRange,
+    submit: (Int) -> Unit,
+    cancel: () -> Unit
+) {
+    var value by remember(initialValue) { mutableStateOf(TextFieldValue("$initialValue")) }
+
+    val requester = remember { FocusRequester() }
+
+    val coloredText: (String, Color) -> TransformedText = { text, color ->
+        TransformedText(
+            text = AnnotatedString(
+                text = text,
+                spanStyles = listOf(
+                    AnnotatedString.Range(item = SpanStyle(color = color), start = 0, end = text.length)
+                )
+            ),
+            offsetMapping = OffsetMapping.Identity
+        )
+    }
+
+    val visualTransformation: (AnnotatedString) -> TransformedText = lambda@ {
+        val int = it.text.toIntOrNull() ?:
+            return@lambda coloredText(it.text, DoodlerTheme.Colors.Text.Malformed)
+
+        if (validRange.contains(int)) return@lambda TransformedText(text = it, offsetMapping = OffsetMapping.Identity)
+        else return@lambda coloredText(it.text, DoodlerTheme.Colors.Text.Invalid)
+    }
+
+    val submitWithValidation = lambda@ {
+        val newYLimit = value.text.toIntOrNull() ?: return@lambda
+        if (!validRange.contains(newYLimit)) return@lambda
+        submit(newYLimit)
+    }
+
+    SideEffect {
+        requester.requestFocus()
+    }
+
+    BasicTextField(
+        value = value,
+        onValueChange = { if (it.text.length <= 3) value = it },
+        textStyle = TextStyle(
+            color = DoodlerTheme.Colors.Text.IdeGeneral,
+            fontSize = 9.6.dsp,
+            textAlign = TextAlign.End,
+            fontFamily = DoodlerTheme.Fonts.JetbrainsMono
+        ),
+        maxLines = 1,
+        visualTransformation = visualTransformation,
+        cursorBrush = SolidColor(DoodlerTheme.Colors.Text.IdeGeneral),
+        modifier = Modifier
+            .onPreviewKeyEvent {
+                when (it.key) {
+                    Key.Enter -> submitWithValidation()
+                    Key.Escape -> cancel()
+                }
+                false
+            }
+            .drawBehind {
+                drawLine(
+                    color = Color.White.copy(alpha = 0.7f),
+                    start = Offset(0f, size.height),
+                    end = Offset(size.width, size.height),
+                    strokeWidth = 1f
+                )
+            }
+            .focusable()
+            .focusRequester(requester)
+            .width(18.ddp)
+            .padding(vertical = 2.4.ddp)
+    )
+}
 
 val PropertiesAlignment = Alignment.TopStart
 

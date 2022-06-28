@@ -137,10 +137,7 @@ fun ChunkSelector(
         setSelectedChunk(chunk)
     }
 
-    val updateYLimit: (Int) -> Unit = lambda@ {
-        val prevYLimit = state.yLimit
-        val newYLimit = (state.yLimit - it).coerceIn(payload.dimension.yRange)
-
+    val loadByYLimitUpdate: (Int, Int) -> Unit = lambda@ { prevYLimit, newYLimit ->
         state.yLimit = newYLimit
 
         if (prevYLimit == newYLimit) return@lambda
@@ -148,6 +145,20 @@ fun ChunkSelector(
         val terrain = terrains.find { terrain -> terrain.name == "r.${currentAnvil.x}.${currentAnvil.z}.mca" }
         val location = state.selectedChunk?.toAnvilLocation() ?: currentAnvil
         SurfaceWorker.load(terrain, terrainCache, state.yLimit, location, payload.dimension)
+    }
+
+    val updateYLimit: (Int) -> Unit = lambda@ {
+        val prevYLimit = state.yLimit
+        val newYLimit = (state.yLimit - it).coerceIn(payload.dimension.yRange)
+
+        loadByYLimitUpdate(prevYLimit, newYLimit)
+    }
+
+    val setYLimit: (Int) -> Unit = lambda@ {
+        val prevYLimit = state.yLimit
+        val newYLimit = it.coerceIn(payload.dimension.yRange)
+
+        loadByYLimitUpdate(prevYLimit, newYLimit)
     }
 
     var expandedDropdown by remember { mutableStateOf<String?>(null) }
@@ -266,6 +277,7 @@ fun ChunkSelector(
                 update(payload.copy(location = it, file = siblingAnvil(payload.file, it)))
             },
             updateYLimit = updateYLimit,
+            setYLimit = setYLimit,
             invalidateCache = {
                 terrainCache.terrains
                     .filter { it.key.location == currentAnvil }.keys
