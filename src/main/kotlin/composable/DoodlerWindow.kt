@@ -34,7 +34,6 @@ import doodler.minecraft.DatWorker
 import doodler.nbt.tag.CompoundTag
 import doodler.nbt.tag.StringTag
 import doodler.theme.DoodlerTheme
-import doodler.unit.GlobalMultiplier
 import doodler.unit.adp
 import doodler.unit.ddp
 import doodler.unit.dsp
@@ -157,14 +156,13 @@ fun DoodlerWindow(
                     when (window) {
                         is IntroDoodlerWindow -> Intro(
                             window = window,
-                            localApplicationData = appState.data,
                             openRecent = openRecent@ { type, file ->
-                                val item = appState.data.recent.find { it.type == type && it.path == file.absolutePath }
+                                val item = UserSavedLocalState.recent.find { it.type == type && it.path == file.absolutePath }
                                     ?: return@openRecent
 
-                                appState.data.recent.remove(item)
-                                appState.data.recent.add(0, item)
-                                appState.data.save()
+                                UserSavedLocalState.recent.remove(item)
+                                UserSavedLocalState.recent.add(0, item)
+                                UserSavedLocalState.save()
 
                                 existsWarning = !appState.sketchEditor(item.name, item.type, file)
                             },
@@ -173,8 +171,8 @@ fun DoodlerWindow(
                             },
                             changeGlobalScale = {
                                 appState.restart {
-                                    saveAppSettings(UserAppSettings.copy(globalScale = GlobalMultiplier + it))
-                                    GlobalMultiplier = UserAppSettings.globalScale
+                                    editSavedLocal(globalScale = GlobalScale + it)
+                                    GlobalScale += it
                                 }
                             }
                         )
@@ -188,13 +186,13 @@ fun DoodlerWindow(
                                     file.name
                                 }
 
-                            appState.data.recent.removeIf { it.path == file.path }
+                            UserSavedLocalState.recent.removeIf { it.path == file.path }
 
-                            appState.data.recent.add(
+                            UserSavedLocalState.recent.add(
                                 index = 0,
-                                element = RecentOpen(type = type, name = name, path = file.absolutePath)
+                                element = Recent(type = type, name = name, path = file.absolutePath)
                             )
-                            appState.data.save()
+                            UserSavedLocalState.save()
 
                             appState.erase(window)
                             existsWarning = !appState.sketchEditor(name, type, file)
