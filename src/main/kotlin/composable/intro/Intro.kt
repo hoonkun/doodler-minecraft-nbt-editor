@@ -9,10 +9,7 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.*
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
@@ -323,6 +320,8 @@ fun WorldRecentItem(
     val hoverInteractionSource = remember { MutableInteractionSource() }
     val hovered by hoverInteractionSource.collectIsHoveredAsState()
 
+    val exists by remember(data.path) { mutableStateOf(File(data.path).exists()) }
+
     val file = remember(data.path) { File("${data.path}/icon.png") }
 
     val worldIconPainter = remember(file) { if (file.exists()) ImageIO.read(file).toComposeImageBitmap() else null }
@@ -335,8 +334,8 @@ fun WorldRecentItem(
 
     Box(
         modifier = Modifier
-            .hoverable(hoverInteractionSource)
-            .clickable { reopen(File(data.path)) }
+            .hoverable(hoverInteractionSource, exists)
+            .clickable(exists) { reopen(File(data.path)) }
             .drawBehind {
                 drawRoundRect(
                     if (hovered) Color.Black.copy(alpha = 0.15f)
@@ -348,7 +347,10 @@ fun WorldRecentItem(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxHeight().padding(horizontal = 8.75.ddp, vertical = 6.25.ddp)
+            modifier = Modifier
+                .fillMaxHeight()
+                .padding(horizontal = 8.75.ddp, vertical = 6.25.ddp)
+                .alpha(if (exists) 1f else 0.2f)
         ) {
             if (worldIconPainter != null) {
                 Image(
@@ -367,7 +369,14 @@ fun WorldRecentItem(
             Spacer(modifier = Modifier.height(7.5.ddp))
             RecentItemTexts(data)
         }
-        if (hovered) DeleteRecentButton { delete(data) }
+        if (!exists)
+            Text(
+                text = "Cannot Find",
+                color = Color.White,
+                fontSize = 8.dsp,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        if (hovered || !exists) DeleteRecentButton { delete(data) }
     }
 }
 
