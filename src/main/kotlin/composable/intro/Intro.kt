@@ -285,6 +285,7 @@ fun ColumnScope.Recent(
             modifier = Modifier
                 .padding(5.ddp)
                 .horizontalScroll(hs)
+                .let { if (UserSavedLocalState.recent.isEmpty()) it.align(Alignment.Center) else it }
         ) {
             if (UserSavedLocalState.recent.isEmpty()) {
                 Text(
