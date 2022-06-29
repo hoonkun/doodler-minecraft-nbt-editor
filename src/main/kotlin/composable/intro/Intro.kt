@@ -27,8 +27,8 @@ import doodler.application.structure.DoodlerEditorType
 import doodler.application.structure.IntroDoodlerWindow
 import doodler.extension.ellipsisLast
 import doodler.extension.ellipsisStart
-import doodler.local.LocalDataState
-import doodler.local.RecentOpen
+import doodler.local.Recent
+import doodler.local.UserSavedLocalState
 import doodler.theme.DoodlerTheme
 import doodler.unit.ddp
 import doodler.unit.dsp
@@ -43,7 +43,6 @@ fun Modifier.settingsBlur(blur: Boolean) = this.let { if (blur) it.blur(15.ddp) 
 @Composable
 fun Intro(
     window: IntroDoodlerWindow,
-    localApplicationData: LocalDataState,
     openRecent: (DoodlerEditorType, File) -> Unit,
     openSelector: (DoodlerEditorType) -> Unit,
     changeGlobalScale: (Float) -> Unit
@@ -168,7 +167,7 @@ fun Intro(
                     color = DoodlerTheme.Colors.Text.LightGray
                 )
                 Spacer(modifier = Modifier.height(5.ddp))
-                Recent(localApplicationData, openRecent)
+                Recent(openRecent)
             }
         }
         SettingsMenu(
@@ -265,14 +264,13 @@ fun RowScope.OpenNewButton(
 
 @Composable
 fun ColumnScope.Recent(
-    localApplicationData: LocalDataState,
     openRecent: (DoodlerEditorType, File) -> Unit
 ) {
     val hs = rememberScrollState()
 
-    val deleteRecent: (RecentOpen) -> Unit = {
-        localApplicationData.recent.remove(it)
-        localApplicationData.save()
+    val deleteRecent: (Recent) -> Unit = {
+        UserSavedLocalState.recent.remove(it)
+        UserSavedLocalState.save()
     }
     val openWorld: (File) -> Unit = { file -> openRecent(DoodlerEditorType.World, file) }
     val openStandalone: (File) -> Unit = { file -> openRecent(DoodlerEditorType.Standalone, file) }
@@ -288,17 +286,16 @@ fun ColumnScope.Recent(
                 .padding(5.ddp)
                 .horizontalScroll(hs)
         ) {
-            if (localApplicationData.recent.isEmpty()) {
+            if (UserSavedLocalState.recent.isEmpty()) {
                 Text(
                     text = "No recently opened worlds or files... :(\nTry to open something!",
                     textAlign = TextAlign.Center,
                     color = DoodlerTheme.Colors.Text.IdeComment,
                     fontSize = 12.dsp,
-                    modifier = Modifier.align(Alignment.Center)
                 )
             } else {
                 Row {
-                    for (item in localApplicationData.recent) {
+                    for (item in UserSavedLocalState.recent) {
                         if (item.type == DoodlerEditorType.World) {
                             key(item.path) { WorldRecentItem(item, deleteRecent, openWorld) }
                         } else {
@@ -318,8 +315,8 @@ fun ColumnScope.Recent(
 
 @Composable
 fun WorldRecentItem(
-    data: RecentOpen,
-    delete: (RecentOpen) -> Unit,
+    data: Recent,
+    delete: (Recent) -> Unit,
     reopen: (File) -> Unit
 ) {
     val hoverInteractionSource = remember { MutableInteractionSource() }
@@ -375,8 +372,8 @@ fun WorldRecentItem(
 
 @Composable
 fun StandaloneRecentItem(
-    data: RecentOpen,
-    delete: (RecentOpen) -> Unit,
+    data: Recent,
+    delete: (Recent) -> Unit,
     reopen: (File) -> Unit
 ) {
     val hoverInteractionSource = remember { MutableInteractionSource() }
@@ -419,7 +416,7 @@ fun StandaloneRecentItem(
 
 @Composable
 fun RecentItemTexts(
-    data: RecentOpen
+    data: Recent
 ) {
     Text(
         text = data.name.ellipsisLast(10),

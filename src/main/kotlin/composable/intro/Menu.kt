@@ -22,9 +22,7 @@ import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import doodler.local.LoaderStackSize
-import doodler.local.UserAppSettings
-import doodler.local.saveLoaderStackSize
+import doodler.local.*
 import doodler.theme.DoodlerTheme
 import doodler.unit.ddp
 import doodler.unit.dsp
@@ -81,23 +79,23 @@ fun SettingsMenu(
             Text(text = "Settings", fontSize = 20.dsp, fontWeight = FontWeight.Bold, color = Color.White)
             Spacer(modifier = Modifier.height(10.ddp))
             SettingsItem("Global Scale") {
-                CircularTextButton(text = "-", enabled = UserAppSettings.globalScale > 1.0f) {
+                CircularTextButton(text = "-", enabled = GlobalScale > 1.0f) {
                     onGlobalScaleChanged(-0.25f)
                 }
-                NumberValue(UserAppSettings.globalScale.toString())
-                CircularTextButton(text = "+", enabled = UserAppSettings.globalScale < 3.0f) {
+                NumberValue(GlobalScale.toString())
+                CircularTextButton(text = "+", enabled = GlobalScale < 3.0f) {
                     onGlobalScaleChanged(0.25f)
                 }
             }
             SettingsItem("Max LoaderStack Size") {
-                CircularTextButton(text = "-", enabled = LoaderStackSize.value > 3) {
-                    LoaderStackSize = LoaderStackSize.copy(value = LoaderStackSize.value - 1)
-                    saveLoaderStackSize()
+                CircularTextButton(text = "-", enabled = UserSavedLocalState.loaderStackSize > 3) {
+                    UserSavedLocalState.loaderStackSize -= 1
+                    editSavedLocal(loaderStackSize = UserSavedLocalState.loaderStackSize)
                 }
-                NumberValue(LoaderStackSize.value.toString())
-                CircularTextButton(text = "+", enabled = LoaderStackSize.value < 15) {
-                    LoaderStackSize = LoaderStackSize.copy(value = LoaderStackSize.value + 1)
-                    saveLoaderStackSize()
+                NumberValue(UserSavedLocalState.loaderStackSize.toString())
+                CircularTextButton(text = "+", enabled = UserSavedLocalState.loaderStackSize < 15) {
+                    UserSavedLocalState.loaderStackSize += 1
+                    editSavedLocal(loaderStackSize = UserSavedLocalState.loaderStackSize)
                 }
             }
             Spacer(modifier = Modifier.height(30.ddp))

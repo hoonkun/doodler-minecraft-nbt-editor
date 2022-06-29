@@ -36,6 +36,25 @@ private fun save(newSavedLocal: SavedLocal) {
     file.writeText(Json.encodeToString(newSavedLocal))
 }
 
+fun editSavedLocal(
+    globalScale: Float? = null,
+    recent: List<Recent>? = null,
+    loaderStackSize: Int? = null
+) {
+    val prev = read()
+    val prevGlobalScale = prev.globalScale
+    val prevRecent = prev.recent
+    val prevLoaderStackSize = prev.loaderStackSize
+
+    save(
+        SavedLocal(
+            globalScale = globalScale ?: prevGlobalScale,
+            recent = recent ?: prevRecent,
+            loaderStackSize = loaderStackSize ?: prevLoaderStackSize
+        )
+    )
+}
+
 @Serializable
 data class SavedLocal(
     val globalScale: Float = 1.0f,

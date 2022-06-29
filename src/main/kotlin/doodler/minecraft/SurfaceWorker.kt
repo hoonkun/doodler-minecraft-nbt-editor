@@ -7,7 +7,7 @@ import doodler.editor.CachedTerrainInfo
 import doodler.editor.TerrainCache
 import doodler.extension.throwIfInactive
 import doodler.extension.toReversedRange
-import doodler.local.LoaderStackSize
+import doodler.local.UserSavedLocalState
 import doodler.minecraft.ArrayPacker.Companion.unpack
 import doodler.minecraft.structures.*
 import doodler.nbt.tag.*
@@ -34,7 +34,7 @@ class SurfaceWorker {
         private val scope = CoroutineScope(Dispatchers.IO + rootJob)
         private val loaderStack = mutableStateListOf<Job>()
 
-        val maxStack get() = LoaderStackSize.value
+        val maxStack get() = UserSavedLocalState.loaderStackSize
         val stackPoint get() = loaderStack.size
 
         private suspend fun subChunk(
