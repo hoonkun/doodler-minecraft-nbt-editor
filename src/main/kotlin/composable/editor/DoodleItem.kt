@@ -20,6 +20,9 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.isPrimaryPressed
 import androidx.compose.ui.input.pointer.isSecondaryPressed
@@ -285,7 +288,8 @@ fun ActionDoodleField(
     color: Color,
     wide: Boolean = true,
     focus: Boolean = false,
-    transformation: (AnnotatedString) -> Pair<Boolean, TransformedText>
+    transformation: (AnnotatedString) -> Pair<Boolean, TransformedText>,
+    modifier: Modifier = Modifier
 ) {
     val requester = remember { FocusRequester() }
 
@@ -321,7 +325,7 @@ fun ActionDoodleField(
                 isValid.value = valid
                 transformedText
             },
-            modifier = Modifier.focusable().focusRequester(requester)
+            modifier = Modifier.then(modifier).focusable().focusRequester(requester)
         )
         if (text.value.isEmpty()) {
             Text(
@@ -334,10 +338,13 @@ fun ActionDoodleField(
     }
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ActionDoodleNameField(
     name: MutableState<String>,
-    isValid: MutableState<Boolean>
+    isValid: MutableState<Boolean>,
+    onEnter: () -> Unit,
+    onEscape: () -> Unit
 ) {
     ActionDoodleField(
         text = name,
@@ -346,17 +353,27 @@ fun ActionDoodleNameField(
         color = DoodlerTheme.Colors.Text.IdeGeneral,
         wide = false,
         focus = true,
-        transformation = NameTransformer()
+        transformation = NameTransformer(),
+        modifier = Modifier.onPreviewKeyEvent {
+            when (it.key) {
+                Key.Enter -> onEnter()
+                Key.Escape -> onEscape()
+            }
+            false
+        }
     )
     Spacer(modifier = Modifier.width(7.65.ddp))
 }
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun ActionDoodleValueField(
     value: MutableState<String>,
     isValid: MutableState<Boolean>,
     type: TagType,
-    focus: Boolean
+    focus: Boolean,
+    onEnter: () -> Unit,
+    onEscape: () -> Unit
 ) {
     ActionDoodleField(
         text = value,
@@ -365,7 +382,14 @@ fun ActionDoodleValueField(
         color = type.color(),
         wide = true,
         focus = focus,
-        transformation = type.transformer()
+        transformation = type.transformer(),
+        modifier = Modifier.onPreviewKeyEvent {
+            when (it.key) {
+                Key.Enter -> onEnter()
+                Key.Escape -> onEscape()
+            }
+            false
+        }
     )
 }
 
@@ -402,6 +426,10 @@ fun RowScope.ActionDoodleContent(
         }
     }
 
+    val enterCommit = {
+        if (isValidName.value && isValidValue.value) commit()
+    }
+
 
     if (doodle is TagCreatorDoodle || doodle is TagEditorDoodle) {
         val tagType = when (doodle) {
@@ -414,17 +442,31 @@ fun RowScope.ActionDoodleContent(
         Spacer(modifier = Modifier.width(7.65.ddp))
 
         if (!doodle.parent.tag.type.isList())
-            ActionDoodleNameField(name, isValidName)
+            ActionDoodleNameField(name, isValidName, enterCommit, cancel)
 
         if (tagType.isNumber() || tagType.isString())
-            ActionDoodleValueField(value, isValidValue, tagType, focus = doodle.parent.tag.type.isList())
+            ActionDoodleValueField(
+                value = value,
+                isValid = isValidValue,
+                type = tagType,
+                focus = doodle.parent.tag.type.isList(),
+                onEnter = enterCommit,
+                onEscape = cancel
+            )
         else
             ExpandableTagDoodleValue(if (doodle is TagEditorDoodle) doodle.source.value else tagType.creationHint())
 
     } else if (doodle is ArrayValueCreatorDoodle) {
         ExpandableTagItemDoodleIndex(doodle.parent.children.size)
         Spacer(modifier = Modifier.width(3.825.ddp))
-        ActionDoodleValueField(value, isValidValue, doodle.parent.tag.type.arrayElementType(), focus = true)
+        ActionDoodleValueField(
+            value = value,
+            isValid = isValidValue,
+            type = doodle.parent.tag.type.arrayElementType(),
+            focus = true,
+            onEnter = enterCommit,
+            onEscape = cancel
+        )
     }
 
     Spacer(modifier = Modifier.weight(1f))
