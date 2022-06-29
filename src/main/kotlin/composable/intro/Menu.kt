@@ -102,9 +102,9 @@ fun SettingsMenu(
             TextButton("close", onClose)
             Spacer(modifier = Modifier.height(5.ddp))
             Text(
-                text = "/* there is only option to set currently,\n" +
+                text = "/* there is only few options to set currently,\n" +
                         "   but more options will be provided\n" +
-                        "   based on your feedback!               */",
+                        "   based on your feedback!                    */",
                 color = DoodlerTheme.Colors.Text.IdeComment,
                 fontSize = 7.dsp,
                 modifier = Modifier.align(Alignment.End)
