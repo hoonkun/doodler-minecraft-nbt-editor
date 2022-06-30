@@ -28,6 +28,8 @@ dependencies {
     testImplementation("org.spigotmc:spigot:1.19-R0.1-SNAPSHOT")
     implementation(compose.desktop.currentOs)
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3")
+    implementation("io.ktor:ktor-client-core:2.0.3")
+    implementation("io.ktor:ktor-client-cio:2.0.3")
     testImplementation(compose.uiTestJUnit4)
 }
 
