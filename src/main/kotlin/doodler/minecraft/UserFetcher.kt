@@ -4,10 +4,12 @@ import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.engine.cio.*
 import io.ktor.client.request.*
+import io.ktor.http.*
 import kotlinx.coroutines.coroutineScope
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
+import java.nio.channels.UnresolvedAddressException
 
 @Serializable
 data class MinecraftUserProfile(
@@ -22,12 +24,30 @@ data class MinecraftUserProfile(
 
             val result = mutableMapOf<String, String>()
 
-            for (uuidEach in uuid) {
-                val endpoint = "https://api.mojang.com/user/profiles/$uuidEach/names"
-                val rawResponse = client.get(endpoint).body<String>()
-                val response = Json.decodeFromString<List<MinecraftUserProfile>>(rawResponse)
+            try {
 
-                result[uuidEach] = response.last().name
+                for (uuidEach in uuid) {
+                    val endpoint = "https://api.mojang.com/user/profiles/$uuidEach/names"
+                    val response = client.get(endpoint)
+
+                    when (response.status) {
+                        HttpStatusCode.OK -> {
+                            val responseContent = Json.decodeFromString<List<MinecraftUserProfile>>(response.body())
+                            result[uuidEach] = responseContent.last().name
+                        }
+                        HttpStatusCode.NotFound -> {
+                            result[uuidEach] = "<unknown>"
+                        }
+                        else -> {
+                            result[uuidEach] = "<error>"
+                        }
+                    }
+                }
+
+            } catch(e: UnresolvedAddressException) {
+                println("It seems there is no internet connection. Check it right away!")
+            } catch(e: Exception) {
+                e.printStackTrace()
             }
 
             result
