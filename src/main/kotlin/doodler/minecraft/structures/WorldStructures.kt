@@ -1,6 +1,6 @@
 package doodler.minecraft.structures
 
-import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import composable.editor.world.DirectoryHierarchyItem
 import composable.editor.world.FileHierarchyItem
@@ -103,29 +103,26 @@ class WorldSpecification (
 
     val tree: WorldHierarchy = WorldUtils.load(worldPath)
 
-    private var levelInfo = DatWorker.read(tree.level.readBytes())
+    private var levelInfo by mutableStateOf(DatWorker.read(tree.level.readBytes()))
 
-    private val _name: String?
-        get() {
-            return levelInfo["Data"]
-                ?.getAs<CompoundTag>()?.get("LevelName")
-                ?.getAs<StringTag>()?.value
-        }
+    val name: String by derivedStateOf {
+        levelInfo["Data"]
+            ?.getAs<CompoundTag>()?.get("LevelName")
+            ?.getAs<StringTag>()?.value
+            ?: "[LOADING WORLD NAME]"
+    }
 
-    val name = _name!!
+    val playerPos: Pair<WorldDimension, BlockLocation>? by derivedStateOf {
+        val player = levelInfo["Data"]?.getAs<CompoundTag>()?.get("Player")?.getAs<CompoundTag>()
+        val dimensionId = player?.get("Dimension")?.getAs<StringTag>()?.value
 
-    val playerPos: Pair<WorldDimension, BlockLocation>?
-        get() {
-            val player = levelInfo["Data"]?.getAs<CompoundTag>()?.get("Player")?.getAs<CompoundTag>()
-            val dimensionId = player?.get("Dimension")?.getAs<StringTag>()?.value
+        val pos = player?.get("Pos")?.getAs<ListTag>()
+        val x = pos?.get(0)?.getAs<DoubleTag>()?.value?.toInt()
+        val z = pos?.get(2)?.getAs<DoubleTag>()?.value?.toInt()
 
-            val pos = player?.get("Pos")?.getAs<ListTag>()
-            val x = pos?.get(0)?.getAs<DoubleTag>()?.value?.toInt()
-            val z = pos?.get(2)?.getAs<DoubleTag>()?.value?.toInt()
-
-            return if (x == null || z == null || dimensionId == null) null
-                else WorldDimension.namespace(dimensionId) to BlockLocation(x, z)
-        }
+        if (x == null || z == null || dimensionId == null) null
+        else WorldDimension.namespace(dimensionId) to BlockLocation(x, z)
+    }
 
     val playerNames: SnapshotStateMap<String, String> = mutableStateMapOf()
 

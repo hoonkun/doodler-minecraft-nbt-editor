@@ -21,6 +21,7 @@ import doodler.doodle.structures.ReadonlyDoodle
 import doodler.doodle.structures.TagDoodle
 import doodler.editor.NbtEditor
 import doodler.editor.states.NbtEditorState
+import doodler.minecraft.structures.WorldSpecification
 import doodler.theme.DoodlerTheme
 import doodler.types.Provider
 import doodler.unit.ddp
@@ -31,7 +32,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun BoxScope.NbtEditor(
-    editor: NbtEditor
+    editor: NbtEditor,
+    worldSpecProvider: Provider<WorldSpecification>? = null
 ) {
 
     val coroutine = rememberCoroutineScope()
@@ -116,7 +118,7 @@ fun BoxScope.NbtEditor(
 
     LazyScrollEffect(coroutine) { editor.state }
 
-    Actions(stateProvider = { editor.state })
+    Actions(stateProvider = { editor.state }, worldSpecProvider = worldSpecProvider)
 
     Log { editor.state.currentLog }
 

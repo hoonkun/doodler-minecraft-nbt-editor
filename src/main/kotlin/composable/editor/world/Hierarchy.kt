@@ -40,13 +40,14 @@ fun BoxScope.WorldHierarchy(
     open: (OpenRequest) -> Unit
 ) {
 
-    val name = worldSpec.name
     val hierarchy = worldSpec.tree
 
     val verticalScrollState = rememberScrollState()
     val horizontalScrollState = rememberScrollState()
 
-    val root = remember { DirectoryHierarchyItem(createWorldTreeItems(hierarchy), name, -1).apply { toggle() } }
+    val root = remember {
+        DirectoryHierarchyItem(createWorldTreeItems(hierarchy), "<WORLD_ROOT>", -1).apply { toggle() }
+    }
     val items by root.items
 
     var selected by remember { mutableStateOf<HierarchyItem?>(null) }
@@ -114,7 +115,10 @@ fun BoxScope.WorldHierarchy(
                     HierarchyText(text = it.name, bold = items.indexOf(it) == 0, fontSize = 8.5.dsp)
                     PlayerNameText(text = worldSpec.playerNames.getValue(it.name.split(".")[0]))
                 }
-            else HierarchyText(text = it.name, bold = items.indexOf(it) == 0)
+            else HierarchyText(
+                text = if (it.name == "<WORLD_ROOT>") worldSpec.name else it.name,
+                bold = items.indexOf(it) == 0
+            )
         }
 
         HierarchyItemsColumn(

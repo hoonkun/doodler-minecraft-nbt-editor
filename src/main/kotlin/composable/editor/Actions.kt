@@ -14,6 +14,7 @@ import doodler.doodle.structures.TagDoodle
 import doodler.editor.states.NbtEditorState
 import doodler.editor.structures.*
 import doodler.extension.toRanges
+import doodler.minecraft.structures.WorldSpecification
 import doodler.nbt.TagType
 import doodler.theme.DoodlerTheme
 import doodler.types.Provider
@@ -21,7 +22,8 @@ import doodler.unit.ddp
 
 @Composable
 fun BoxScope.Actions(
-    stateProvider: Provider<NbtEditorState>
+    stateProvider: Provider<NbtEditorState>,
+    worldSpecProvider: Provider<WorldSpecification>?
 ) {
     val state = stateProvider()
     if (state.action != null) return
@@ -32,7 +34,7 @@ fun BoxScope.Actions(
             ElevatorAction(state)
         }
         Column(modifier = Modifier.wrapContentSize()) {
-            SaveAction(state)
+            SaveAction(state, worldSpecProvider)
             AlterAction(state)
             CreateAction(state)
         }
@@ -105,9 +107,13 @@ fun ColumnScope.ElevatorAction(
 
 @Composable
 fun ColumnScope.SaveAction(
-    state: NbtEditorState
+    state: NbtEditorState,
+    worldSpecProvider: Provider<WorldSpecification>?
 ) {
-    val save = { state.save() }
+    val save = {
+        state.save()
+        if (state.file.name == "level.dat") worldSpecProvider?.invoke()?.reload()
+    }
 
     ActionRoot {
         EditorActionButton(

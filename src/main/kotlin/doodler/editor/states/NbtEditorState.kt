@@ -22,7 +22,7 @@ import java.io.File
 @Stable
 class NbtEditorState(
     val root: TagDoodle,
-    private val file: StateFile,
+    val file: StateFile,
     private val type: WorldFileType
 ): EditorState() {
 
