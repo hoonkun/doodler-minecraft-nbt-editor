@@ -548,8 +548,10 @@ class NbtEditorState(
             fun edit(old: ReadonlyDoodleSnapshot, new: ReadonlyDoodleSnapshot) {
                 val into = old.doodle.parent ?: throw ParentNotFoundException()
 
-                val conflict = (new.doodle as? TagDoodle)?.hasConflict()
-                if (conflict != null) throw NameConflictException("edit", conflict.name ?: "root", conflict.where)
+                if (old.doodle is TagDoodle && new.doodle is TagDoodle && old.doodle.tag.name != new.doodle.tag.name) {
+                    val conflict = (new.doodle as? TagDoodle)?.hasConflict()
+                    if (conflict != null) throw NameConflictException("edit", conflict.name ?: "root", conflict.where)
+                }
 
                 actions.deleter.internal.delete(old)
                 actions.creator.internal.create(new)
