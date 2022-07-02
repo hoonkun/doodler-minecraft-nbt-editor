@@ -1,15 +1,21 @@
 package doodler.minecraft.structures
 
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.snapshots.SnapshotStateMap
 import composable.editor.world.DirectoryHierarchyItem
 import composable.editor.world.FileHierarchyItem
 import composable.editor.world.HierarchyItem
 import doodler.exceptions.DoodleException
 import doodler.minecraft.DatWorker
+import doodler.minecraft.MinecraftUserProfile
 import doodler.minecraft.WorldUtils
 import doodler.nbt.tag.CompoundTag
 import doodler.nbt.tag.DoubleTag
 import doodler.nbt.tag.ListTag
 import doodler.nbt.tag.StringTag
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 
 class WorldHierarchy (
@@ -90,6 +96,11 @@ enum class WorldDimension(
 class WorldSpecification (
     worldPath: String
 ) {
+
+    companion object {
+        val NetworkScope = CoroutineScope(Dispatchers.IO)
+    }
+
     val tree: WorldHierarchy = WorldUtils.load(worldPath)
 
     private var levelInfo = DatWorker.read(tree.level.readBytes())
@@ -115,6 +126,15 @@ class WorldSpecification (
             return if (x == null || z == null || dimensionId == null) null
                 else WorldDimension.namespace(dimensionId) to BlockLocation(x, z)
         }
+
+    val playerNames: SnapshotStateMap<String, String> = mutableStateMapOf()
+
+    init {
+        NetworkScope.launch {
+            val result = MinecraftUserProfile.fetch(tree.players.map { it.nameWithoutExtension })
+            result.forEach { (uuid, name) -> playerNames[uuid] = name }
+        }
+    }
 
     fun reload() {
         levelInfo = DatWorker.read(tree.level.readBytes())
