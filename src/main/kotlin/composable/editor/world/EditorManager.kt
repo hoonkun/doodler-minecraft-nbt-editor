@@ -18,7 +18,7 @@ fun BoxScope.EditorManager(
 
     EditorManagerRoot {
         EditorTabGroup(
-            manager = manager,
+            state = state,
             onSelectTab = { manager.select(it) },
             onCloseTab = { manager.close(it) }
         )
