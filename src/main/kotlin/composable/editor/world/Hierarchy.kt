@@ -19,10 +19,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.TextUnit
 import doodler.editor.*
-import doodler.minecraft.structures.AnvilLocation
-import doodler.minecraft.structures.McaType
-import doodler.minecraft.structures.WorldDimension
-import doodler.minecraft.structures.WorldHierarchy
+import doodler.extension.toUUID
+import doodler.minecraft.structures.*
 import doodler.theme.DoodlerTheme
 import doodler.types.BooleanProvider
 import doodler.unit.ddp
@@ -38,10 +36,12 @@ val ExtensionAlias = mapOf("mca" to "AVL", "dat" to "NBT", "png" to "IMG", "jpg"
 
 @Composable
 fun BoxScope.WorldHierarchy(
-    name: String,
-    hierarchy: WorldHierarchy,
+    worldSpec: WorldSpecification,
     open: (OpenRequest) -> Unit
 ) {
+
+    val name = worldSpec.name
+    val hierarchy = worldSpec.tree
 
     val verticalScrollState = rememberScrollState()
     val horizontalScrollState = rememberScrollState()
@@ -75,6 +75,15 @@ fun BoxScope.WorldHierarchy(
         }
     }
 
+    val isPlayerUUID: (HierarchyItem) -> Boolean = lambda@ {
+        val uuidString = it.name.split(".")[0]
+
+        if (uuidString.toUUID() == null) return@lambda false
+        if (worldSpec.playerNames[uuidString] == null) return@lambda false
+
+        return@lambda true
+    }
+
     Box(modifier = Modifier.requiredWidth(Width).verticalScroll(verticalScrollState)) {
 
         SelectedIndicator(1, DoodlerTheme.Colors.HierarchyView.DimensionsDirectoryBackground)
@@ -97,10 +106,15 @@ fun BoxScope.WorldHierarchy(
                 FileTypeIcon(it.file.extension)
             }
             Spacer(modifier = Modifier.width(6.3.ddp))
-            HierarchyText(
-                text = it.name,
-                bold = items.indexOf(it) == 0
-            )
+            if (isPlayerUUID(it))
+                Column(
+                    verticalArrangement = Arrangement.Center,
+                    modifier = Modifier.height(ItemHeight)
+                ) {
+                    HierarchyText(text = it.name, bold = items.indexOf(it) == 0, fontSize = 8.5.dsp)
+                    PlayerNameText(text = worldSpec.playerNames.getValue(it.name.split(".")[0]))
+                }
+            else HierarchyText(text = it.name, bold = items.indexOf(it) == 0)
         }
 
         HierarchyItemsColumn(
@@ -145,7 +159,7 @@ fun HierarchyItemsColumn(
                 horizontalArrangement = Arrangement.Start,
                 modifier = Modifier
                     .padding(start = item.padding, end = 13.5.ddp)
-                    .height(ItemHeight)
+                    .requiredHeight(ItemHeight)
                     .alpha(if (disabled?.invoke(item) == true) 0.6f else 1f)
                     .let {
                         if (onClick != null) it.fillMaxWidth().clickable { onClick(item) }
@@ -167,7 +181,7 @@ fun SelectedIndicator(
     index: Int,
     color: Color
 ) = Box(
-    modifier = Modifier.offset { IntOffset(0, (ItemHeight * index).value.toInt()) },
+    modifier = Modifier.offset { IntOffset(0, ItemHeight.roundToPx() * index) },
     content = { Box(modifier = Modifier.height(ItemHeight).fillMaxWidth().background(color)) }
 )
 
@@ -251,6 +265,15 @@ fun HierarchyText(
         fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal
     )
 }
+
+@Composable
+fun PlayerNameText(
+    text: String
+) = Text(
+    text = text,
+    fontSize = 7.dsp,
+    color = Color.White.copy(alpha = 0.5f)
+)
 
 fun loadImageFile(file: File): ImageBitmap {
     return ImageIO.read(file).toComposeImageBitmap()
