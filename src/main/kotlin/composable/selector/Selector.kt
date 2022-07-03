@@ -118,20 +118,15 @@ fun Selector(targetType: DoodlerEditorType, onSelect: (File, DoodlerEditorType) 
 
     var haveToShiftField by remember { mutableStateOf(false) }
 
-    val candidateTarget by remember {
-        derivedStateOf {
-            File(entirePath.removeSuffixes(".").substring(0, entirePath.lastIndexOf('/')))
-        }
+    val candidateTarget = remember(entirePath) {
+        File(entirePath.removeSuffixes(".").substring(0, entirePath.lastIndexOf('/')))
     }
-    val candidates by remember {
-        derivedStateOf {
-            (candidateTarget.listFiles() ?: arrayOf())
-                .toList()
-                .filter { file -> file.absolutePath.contains(entirePath) }
-                .sortedWith(compareBy({ it.typeId }, { it.name }))
-                .map { it.toStateFile() }
-                .toStateFileList()
-        }
+    val candidates = remember(candidateTarget, entirePath) {
+        (candidateTarget.listFiles() ?: arrayOf())
+            .filter { file -> file.absolutePath.contains(entirePath) }
+            .sortedWith(compareBy({ it.typeId }, { it.name }))
+            .map { it.toStateFile() }
+            .toStateFileList()
     }
 
     var hintTarget by remember(candidates) {
@@ -140,38 +135,34 @@ fun Selector(targetType: DoodlerEditorType, onSelect: (File, DoodlerEditorType) 
 
         mutableStateOf(newState)
     }
-    val hint by remember(path.text) {
-        derivedStateOf {
-            val target = hintTarget ?: return@derivedStateOf ""
+    val hint = remember(path.text, hintTarget) {
+        val target = hintTarget ?: return@remember ""
 
-            val entered = path.text.let { it.substring(it.lastIndexOf('/') + 1, it.length) }
-            val entire = target.name
+        val entered = path.text.let { it.substring(it.lastIndexOf('/') + 1, it.length) }
+        val entire = target.name
 
-            entire.substring(entered.length until entire.length)
-        }
+        entire.substring(entered.length until entire.length)
     }
 
-    val value by remember(path.text, haveToShiftField) {
-        derivedStateOf {
-            val newText = "${path.text}${hint}"
-            val annotatedText = AnnotatedString(
-                text = newText,
-                listOf(AnnotatedString.Range(
-                    item = SpanStyle(color = DoodlerTheme.Colors.OnBackground.copy(alpha = 0.313f)),
-                    start = path.text.length,
-                    end = newText.length
-                ))
-            )
-            val selection =
-                if (haveToShiftField) TextRange(path.selection.start + hint.length)
-                else path.selection
+    val value = remember(path.text, haveToShiftField, hint) {
+        val newText = "${path.text}${hint}"
+        val annotatedText = AnnotatedString(
+            text = newText,
+            listOf(AnnotatedString.Range(
+                item = SpanStyle(color = DoodlerTheme.Colors.OnBackground.copy(alpha = 0.313f)),
+                start = path.text.length,
+                end = newText.length
+            ))
+        )
+        val selection =
+            if (haveToShiftField) TextRange(path.selection.start + hint.length)
+            else path.selection
 
-            TextFieldValue(annotatedText, selection)
-        }
+        TextFieldValue(annotatedText, selection)
     }
 
-    val selected by remember {
-        derivedStateOf { File("$BasePath${path.text}").validateAs(targetType) }
+    val selected = remember(path.text, targetType) {
+        File("$BasePath${path.text}").validateAs(targetType)
     }
 
     val requester = remember { FocusRequester() }
@@ -216,7 +207,7 @@ fun Selector(targetType: DoodlerEditorType, onSelect: (File, DoodlerEditorType) 
             }
             requester.requestFocus()
         } else if (it.key == Key.Enter && it.type == KeyEventType.KeyUp) {
-            if (!complete() && selected != null && keys.ctrl) onSelect(selected!!, targetType)
+            if (!complete() && selected != null && keys.ctrl) onSelect(selected, targetType)
         } else if (it.key == Key.CtrlLeft || it.key == Key.CtrlRight) {
             keys.ctrl = it.type == KeyEventType.KeyDown
         } else if (it.key == Key.ShiftLeft || it.key == Key.ShiftRight) {
@@ -269,9 +260,9 @@ fun ColumnScope.Candidates(
     candidates: StateFileList,
     hintTarget: StateFile?
 ) {
-    val typed by remember(candidates) { derivedStateOf { candidates.items.filter(type.criteria).toStateFileList() } }
-    val printTargets by remember(typed, hintTarget) { derivedStateOf { typed.printTargets(hintTarget) } }
-    val remaining by remember(typed, printTargets) { derivedStateOf { remaining(typed, printTargets) } }
+    val typed = remember(candidates, type.criteria) { candidates.items.filter(type.criteria).toStateFileList() }
+    val printTargets = remember(typed, hintTarget) { typed.printTargets(hintTarget) }
+    val remaining = remember(typed, printTargets) { remaining(typed, printTargets) }
 
     if (printTargets.items.isEmpty()) return
 
@@ -339,12 +330,10 @@ fun SelectorRoot(
 fun ColumnScope.Padded(
     top: Dp = 0.ddp,
     content: @Composable ColumnScope.() -> Unit
-) {
-    Column(modifier = Modifier.padding(start = 15.ddp, end = 15.ddp, top = top), content = content)
-}
+) = Column(modifier = Modifier.padding(start = 15.ddp, end = 15.ddp, top = top), content = content)
 
 @Composable
-fun ColumnScope.BasePathDocumentation(text: String) {
+fun ColumnScope.BasePathDocumentation(text: String) =
     Text(
         text = text,
         color = DoodlerTheme.Colors.Text.IdeDocumentation,
@@ -352,10 +341,9 @@ fun ColumnScope.BasePathDocumentation(text: String) {
         fontSize = 10.dsp,
         modifier = Modifier.padding(bottom = 8.ddp)
     )
-}
 
 @Composable
-fun ColumnScope.BasePathProperty(key: String, value: String) {
+fun ColumnScope.BasePathProperty(key: String, value: String) =
     Text(
         AnnotatedString(
             text = "$key = $value",
@@ -371,10 +359,9 @@ fun ColumnScope.BasePathProperty(key: String, value: String) {
         fontSize = 12.dsp,
         modifier = Modifier.padding(bottom = 1.ddp)
     )
-}
 
 @Composable
-fun ColumnScope.PathInputBox(content: @Composable RowScope.() -> Unit) {
+fun ColumnScope.PathInputBox(content: @Composable RowScope.() -> Unit) =
     Box(
         modifier = Modifier.padding(vertical = 10.ddp)
     ) {
@@ -387,7 +374,6 @@ fun ColumnScope.PathInputBox(content: @Composable RowScope.() -> Unit) {
             content = content
         )
     }
-}
 
 @Composable
 fun RowScope.PathInput(
@@ -396,33 +382,31 @@ fun RowScope.PathInput(
     onKeyEvent: (KeyEvent) -> Unit,
     hideCursor: Boolean,
     focusRequester: FocusRequester
-) {
-    BasicTextField(
-        value = value,
-        onValueChange = onValueChange,
-        textStyle = TextStyle(
-            color = DoodlerTheme.Colors.Text.IdeGeneral,
-            fontSize = 12.dsp,
-            fontFamily = DoodlerTheme.Fonts.JetbrainsMono
-        ),
-        cursorBrush =
-            if (hideCursor) SolidColor(Color.Transparent)
-            else SolidColor(DoodlerTheme.Colors.Text.IdeGeneral),
-        singleLine = true,
-        modifier = Modifier.weight(1f)
-            .onKeyEvent { onKeyEvent(it); true }
-            .focusRequester(focusRequester)
-            .padding(start = 10.ddp, end = 10.ddp)
-    )
-}
+) = BasicTextField(
+    value = value,
+    onValueChange = onValueChange,
+    textStyle = TextStyle(
+        color = DoodlerTheme.Colors.Text.IdeGeneral,
+        fontSize = 12.dsp,
+        fontFamily = DoodlerTheme.Fonts.JetbrainsMono
+    ),
+    cursorBrush =
+        if (hideCursor) SolidColor(Color.Transparent)
+        else SolidColor(DoodlerTheme.Colors.Text.IdeGeneral),
+    singleLine = true,
+    modifier = Modifier.weight(1f)
+        .onKeyEvent { onKeyEvent(it); true }
+        .focusRequester(focusRequester)
+        .padding(start = 10.ddp, end = 10.ddp)
+)
 
 @Composable
 fun RowScope.Select(
     enabled: Boolean,
     onClick: () -> Unit
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val hovered by interactionSource.collectIsHoveredAsState()
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
 
     Box(
         modifier = Modifier.width(60.ddp).fillMaxHeight().padding(5.ddp)
@@ -441,7 +425,7 @@ fun RowScope.Select(
                     )
                 }
                 .fillMaxSize()
-                .hoverable(interactionSource)
+                .hoverable(interaction)
         ) {
             Text("Go!", color = Color(0xffcccccc), fontSize = 12.dsp)
         }
