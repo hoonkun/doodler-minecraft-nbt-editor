@@ -109,11 +109,10 @@ fun EditorTab(
     onTabDrag: (Editor, Float) -> Float,
     onCalculateTabWidth: (Editor, Int) -> Unit
 ) {
-    val hoverInteractionSource = remember { MutableInteractionSource() }
-    val pressInteractionSource = remember { MutableInteractionSource() }
+    val interaction = remember { MutableInteractionSource() }
 
-    val hovered by hoverInteractionSource.collectIsHoveredAsState()
-    val pressed by pressInteractionSource.collectIsPressedAsState()
+    val hovered by interaction.collectIsHoveredAsState()
+    val pressed by interaction.collectIsPressedAsState()
 
     val offset = remember { mutableStateOf(0f) }
     val draggableState = rememberDraggableState {
@@ -134,8 +133,8 @@ fun EditorTab(
     Row(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
-            .hoverable(hoverInteractionSource)
-            .clickable(pressInteractionSource, null) { onSelectTab(editor) }
+            .hoverable(interaction)
+            .clickable(interaction, null) { onSelectTab(editor) }
             .offset { IntOffset(x = offset.value.toInt(), y = 0) }
             .zIndex(if (offset.value != 0f) 10f else 0f)
             .onGloballyPositioned { onCalculateTabWidth(editor, it.size.width) }
@@ -207,8 +206,8 @@ fun EditorTab(
 fun EditorCloseButton(
     close: () -> Unit
 ) {
-    val hoverInteractionSource = remember { MutableInteractionSource() }
-    val hovered by hoverInteractionSource.collectIsHoveredAsState()
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
 
     Box(
         modifier = Modifier
@@ -223,7 +222,7 @@ fun EditorCloseButton(
             color = DoodlerTheme.Colors.Editor.TabCloseButton(hovered),
             modifier = Modifier
                 .padding(start = 2.2.ddp, bottom = 2.2.ddp, top = 1.5.ddp, end = 1.5.ddp)
-                .hoverable(hoverInteractionSource)
+                .hoverable(interaction)
                 .clickable { close() }
         )
     }
