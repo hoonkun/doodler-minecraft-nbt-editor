@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.style.TextOverflow
-import doodler.application.structure.WorldEditorDoodlerWindow
 import doodler.editor.*
 import doodler.editor.states.*
 import doodler.exceptions.DoodleException
@@ -22,10 +21,8 @@ import doodler.unit.dsp
 
 @Composable
 fun WorldEditor(
-    window: WorldEditorDoodlerWindow
+    state: WorldEditorState
 ) {
-
-    val state = window.editorState
 
     val onOpenRequest: (OpenRequest) -> Unit = handleRequest@ { request ->
         when (request) {

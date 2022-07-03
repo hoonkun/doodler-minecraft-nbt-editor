@@ -198,7 +198,7 @@ fun DoodlerWindow(
                             editorAlreadyExists = !appState.sketchEditor(name, type, file)
                         }
                         is StandaloneEditorDoodlerWindow -> StandaloneNbtEditor(window)
-                        is WorldEditorDoodlerWindow -> WorldEditor(window)
+                        is WorldEditorDoodlerWindow -> WorldEditor(window.editorState)
                     }
                 }
             }
