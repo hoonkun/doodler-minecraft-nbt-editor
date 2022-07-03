@@ -52,7 +52,7 @@ fun DoodlerWindow(
     window: DoodlerWindow,
 ) {
 
-    var saveDialogState by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
+    var unsavedChanges by remember { mutableStateOf<Pair<String, () -> Unit>?>(null) }
 
     val requestCloseAll = {
         val worldEditorStates = appState.windows.filterIsInstance<WorldEditorDoodlerWindow>()
@@ -97,7 +97,7 @@ fun DoodlerWindow(
                         if (standalone.isEmpty()) ""
                         else "\n\nstandalone:\n${standalone.joinToString("\n") { "- $it" }}"
                     val message = "There is unsaved editors!$worldNames$standaloneNames"
-                    saveDialogState = message to { appState.eraseAll() }
+                    unsavedChanges = message to { appState.eraseAll() }
                 } else {
                     appState.eraseAll()
                 }
@@ -105,7 +105,7 @@ fun DoodlerWindow(
             is WorldEditorDoodlerWindow -> {
                 val world = requestCloseEditor(window)
                 if (world.isNotEmpty()) {
-                    saveDialogState =
+                    unsavedChanges =
                         "There is unsaved tabs!\n${world.joinToString(", ")}" to { appState.erase(window) }
                 } else {
                     appState.erase(window)
@@ -114,7 +114,7 @@ fun DoodlerWindow(
             is StandaloneEditorDoodlerWindow -> {
                 val standalone = requestCloseEditor(window)
                 if (standalone.isNotEmpty()) {
-                    saveDialogState =
+                    unsavedChanges =
                         "There is unsaved changes!" to { appState.erase(window) }
                 } else {
                     appState.erase(window)
@@ -140,7 +140,7 @@ fun DoodlerWindow(
         title = window.title
     ) {
 
-        var existsWarning by mutableStateOf(false)
+        var editorAlreadyExists by mutableStateOf(false)
 
         MaterialTheme(typography = Typography(defaultFontFamily = DoodlerTheme.Fonts.JetbrainsMono)) {
             CompositionLocalProvider(
@@ -164,7 +164,7 @@ fun DoodlerWindow(
                                 UserSavedLocalState.recent.add(0, item)
                                 UserSavedLocalState.save()
 
-                                existsWarning = !appState.sketchEditor(item.name, item.type, file)
+                                editorAlreadyExists = !appState.sketchEditor(item.name, item.type, file)
                             },
                             openSelector = {
                                 appState.sketch(SelectorDoodlerWindow("doodler: open '${it.displayName}'", targetType = it))
@@ -195,7 +195,7 @@ fun DoodlerWindow(
                             UserSavedLocalState.save()
 
                             appState.erase(window)
-                            existsWarning = !appState.sketchEditor(name, type, file)
+                            editorAlreadyExists = !appState.sketchEditor(name, type, file)
                         }
                         is StandaloneEditorDoodlerWindow -> StandaloneNbtEditor(window)
                         is WorldEditorDoodlerWindow -> WorldEditor(window)
@@ -203,18 +203,18 @@ fun DoodlerWindow(
                 }
             }
 
-            if (existsWarning) {
-                EditorAlreadyExistsWarning { existsWarning = false }
+            if (editorAlreadyExists) {
+                EditorAlreadyExistsWarning { editorAlreadyExists = false }
             }
 
-            if (saveDialogState != null) {
+            if (unsavedChanges != null) {
                 UnsavedChangesWarning(
-                    message = saveDialogState?.first ?: "Uh-oh... A problem occurred while closing window...",
+                    message = unsavedChanges?.first ?: "Uh-oh... A problem occurred while closing window...",
                     ok = {
-                        saveDialogState?.second?.invoke()
-                        saveDialogState = null
+                        unsavedChanges?.second?.invoke()
+                        unsavedChanges = null
                     },
-                    cancel = { saveDialogState = null }
+                    cancel = { unsavedChanges = null }
                 )
             }
 
@@ -298,7 +298,7 @@ fun UnsavedChangesWarning(message: String, ok: () -> Unit, cancel: () -> Unit) {
 }
 
 @Composable
-private fun EditorAlreadyExistsWarning(onCloseRequest: () -> Unit) {
+private fun EditorAlreadyExistsWarning(onCloseRequest: () -> Unit) =
     Dialog(
         onCloseRequest = onCloseRequest,
         title = "",
@@ -326,18 +326,17 @@ private fun EditorAlreadyExistsWarning(onCloseRequest: () -> Unit) {
             }
         }
     }
-}
 
 @Composable
 private fun DialogButton(
     text: String,
     onClick: () -> Unit
 ) {
-    val hoverInteractionSource = remember { MutableInteractionSource() }
-    val hovered by hoverInteractionSource.collectIsHoveredAsState()
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
 
     Box(
-        modifier = Modifier.hoverable(hoverInteractionSource).clickable(onClick = onClick)
+        modifier = Modifier.hoverable(interaction).clickable(onClick = onClick)
             .drawBehind {
                 if (hovered) drawRoundRect(
                     color = Color.White.copy(alpha = 0.1f),
