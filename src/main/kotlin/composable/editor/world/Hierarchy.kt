@@ -32,7 +32,14 @@ import javax.imageio.ImageIO
 val Width get() = 202.5.ddp
 val ItemHeight get() = 22.ddp
 
-val ExtensionAlias = mapOf("mca" to "AVL", "dat" to "NBT", "png" to "IMG", "jpg" to "IMG", "json" to "JSN")
+val ExtensionAlias = mapOf(
+    "mca" to "AVL",
+    "dat" to "NBT",
+    "nbt" to "NBT",
+    "png" to "IMG",
+    "jpg" to "IMG",
+    "json" to "JSN"
+)
 
 @Composable
 fun BoxScope.WorldHierarchy(
@@ -66,7 +73,7 @@ fun BoxScope.WorldHierarchy(
 
         if (it !is FileHierarchyItem) return@itemClick
         when (it.file.extension) {
-            "dat" -> open(NbtOpenRequest(it.file))
+            "dat", "nbt" -> open(NbtOpenRequest(it.file))
             "mca" -> open(SingleOpenRequest(McaPayload(
                 WorldDimension.fromMcaPath(it.file.absolutePath),
                 McaType.fromMcaPath(it.file.absolutePath),
@@ -241,7 +248,7 @@ fun FileTypeIcon(extension: String) {
             .size(width = 14.5.ddp, height = 8.8.ddp)
             .background(
                 when (extension) {
-                    "dat" -> DoodlerTheme.Colors.HierarchyView.Dat
+                    "dat", "nbt" -> DoodlerTheme.Colors.HierarchyView.Dat
                     "mca" -> DoodlerTheme.Colors.HierarchyView.Mca
                     "png" -> DoodlerTheme.Colors.HierarchyView.Png
                     "json" -> DoodlerTheme.Colors.HierarchyView.Json
@@ -321,6 +328,13 @@ fun createWorldTreeItems(hierarchy: WorldHierarchy): List<HierarchyItem> {
             depth = rootDepth
         ).apply { toggle() }
     )
+    if (hierarchy.generated.isNotEmpty()) {
+        result.add(DirectoryHierarchyItem(
+            children = hierarchy.generated.map { FileHierarchyItem(it, name = it.name, depth = depth) },
+            name = "generated",
+            depth = rootDepth
+        ))
+    }
     result.add(DirectoryHierarchyItem(
         children = hierarchy.advancements.map { FileHierarchyItem(it, name = it.name, depth = depth) },
         name = "advancements",

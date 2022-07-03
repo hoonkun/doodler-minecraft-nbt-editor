@@ -21,6 +21,7 @@ class WorldUtils {
                 File("$path/level.dat"),
                 File("$path/icon.png"),
                 File("$path/advancements").safeListFiles(),
+                File("$path/generated/minecraft/structures").safeListFiles(),
                 File("$path/stats").safeListFiles(),
                 File("$path/playerdata").safeListFiles(),
                 WorldDimensionHierarchy(
@@ -70,6 +71,7 @@ class WorldUtils {
                 ),
                 File("$path/server-icon.png"),
                 File("$overworld/advancements").safeListFiles(),
+                File("$overworld/generated/minecraft/structures").safeListFiles(),
                 File("$overworld/stats").safeListFiles(),
                 File("$overworld/playerdata").safeListFiles(),
                 WorldDimensionHierarchy(

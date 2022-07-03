@@ -22,6 +22,7 @@ import java.io.File
 sealed class WorldHierarchy(
     val icon: File,
     val advancements: List<File>,
+    val generated: List<File>,
     val stats: List<File>,
     val players: List<File>,
     private val overworld: WorldDimensionHierarchy,
@@ -58,12 +59,13 @@ class VanillaWorldHierarchy(
     val level: File,
     icon: File,
     advancements: List<File>,
+    generated: List<File>,
     stats: List<File>,
     players: List<File>,
     overworld: WorldDimensionHierarchy,
     nether: WorldDimensionHierarchy,
     end: WorldDimensionHierarchy
-): WorldHierarchy(icon, advancements, stats, players, overworld, nether, end) {
+): WorldHierarchy(icon, advancements, generated, stats, players, overworld, nether, end) {
 
     override fun mainLevelData(): File = level
 
@@ -74,12 +76,13 @@ class SpigotServerWorldHierarchy(
     val level: Map<WorldDimension, File>,
     icon: File,
     advancements: List<File>,
+    generated: List<File>,
     stats: List<File>,
     players: List<File>,
     overworld: WorldDimensionHierarchy,
     nether: WorldDimensionHierarchy,
     end: WorldDimensionHierarchy
-): WorldHierarchy(icon, advancements, stats, players, overworld, nether, end) {
+): WorldHierarchy(icon, advancements, generated, stats, players, overworld, nether, end) {
 
     override fun mainLevelData(): File = level.getValue(WorldDimension.Overworld)
 
