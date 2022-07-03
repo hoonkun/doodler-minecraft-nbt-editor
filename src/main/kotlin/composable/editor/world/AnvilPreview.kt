@@ -61,7 +61,6 @@ fun AnvilPreview(
     invalidateCache: () -> Unit,
     onItemClick: (ChunkLocation) -> Unit
 ) {
-
     val location = remember(chunk) { chunk?.toAnvilLocation() } ?: anvil
 
     val terrainKey by remember(yLimit, location) { derivedStateOf { CachedTerrainInfo(yLimit, location) } }
@@ -75,38 +74,36 @@ fun AnvilPreview(
             .fillMaxHeight()
             .aspectRatio(1f)
     ) {
-        AnvilImage(cache.terrains[terrainKey]) {
-            ChunkButtons(
-                chunk = chunk,
-                anvil = location,
-                hasNbt = hasNbt,
-                onItemClick = onItemClick,
-                onRightClick = { propertiesVisible = !propertiesVisible }
+        val bitmap = cache.terrains[terrainKey]
+        if (bitmap != null) {
+            AnvilImage(bitmap) {
+                ChunkButtons(
+                    chunk = chunk,
+                    anvil = location,
+                    hasNbt = hasNbt,
+                    onItemClick = onItemClick,
+                    onRightClick = { propertiesVisible = !propertiesVisible }
+                )
+            }
+        }
+        if (propertiesVisible) {
+            AnvilPreviewProperties(
+                properties = properties,
+                yLimit = yLimit,
+                moveToSurroundings = moveToSurroundings,
+                changeYLimit = updateYLimit,
+                setYLimit = setYLimit,
+                invalidateCache = invalidateCache
             )
         }
-        AnvilPreviewProperties(
-            properties = properties,
-            yLimit = yLimit,
-            moveToSurroundings = moveToSurroundings,
-            changeYLimit = updateYLimit,
-            setYLimit = setYLimit,
-            invalidateCache = invalidateCache,
-            visible = propertiesVisible
-        )
-        AnvilLoaderStack()
+        if (SurfaceWorker.stackPoint != 0) {
+            AnvilLoaderStack()
+        }
     }
-
 }
 
 @Composable
-fun BoxScope.AnvilLoaderStack() {
-
-    if (SurfaceWorker.stackPoint == 0) return
-
-    val workingProperty = "working = ${SurfaceWorker.stackPoint}"
-    val maxSizeProperty = "maxSize = ${SurfaceWorker.maxStack}"
-    val stackStatus = "$workingProperty, $maxSizeProperty"
-
+fun BoxScope.AnvilLoaderStack() =
     Box(
         contentAlignment = Alignment.BottomEnd,
         modifier = Modifier.align(Alignment.BottomEnd).requiredSize(MinimumViewSize.ddp)
@@ -116,6 +113,11 @@ fun BoxScope.AnvilLoaderStack() {
             horizontalAlignment = Alignment.End,
             modifier = Modifier.padding(10.ddp)
         ) {
+
+            val workingProperty = "working = ${SurfaceWorker.stackPoint}"
+            val maxSizeProperty = "maxSize = ${SurfaceWorker.maxStack}"
+            val stackStatus = "$workingProperty, $maxSizeProperty"
+
             Text(
                 text = "LOADING",
                 color = DoodlerTheme.Colors.Text.IdeFunctionName,
@@ -158,27 +160,18 @@ fun BoxScope.AnvilLoaderStack() {
         }
     }
 
-}
-
 @Composable
 fun AnvilImage(
-    bitmap: ImageBitmap?,
+    bitmap: ImageBitmap,
     overlay: @Composable BoxScope.() -> Unit
-) {
-    if (bitmap == null) return
-
-    Box(
-        modifier = Modifier.fillMaxSize().zIndex(0f)
-    ) {
-        Image(
-            bitmap = bitmap,
-            contentDescription = null,
-            filterQuality = FilterQuality.None,
-            modifier = Modifier.fillMaxSize()
-        )
-        overlay()
-    }
-
+) = Box(modifier = Modifier.fillMaxSize().zIndex(0f)) {
+    Image(
+        bitmap = bitmap,
+        contentDescription = null,
+        filterQuality = FilterQuality.None,
+        modifier = Modifier.fillMaxSize()
+    )
+    overlay()
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -223,22 +216,20 @@ fun RowScope.ChunkButton(
     onHover: () -> Unit,
     onClick: () -> Unit,
     onRightClick: () -> Unit
+) = Canvas(
+    modifier = Modifier
+        .weight(1f).fillMaxHeight()
+        .onPointerEvent(PointerEventType.Enter) { onHover() }
+        .onPointerEvent(PointerEventType.Press) {
+            if (enabled && currentEvent.buttons.isPrimaryPressed) onClick()
+            else if (currentEvent.buttons.isSecondaryPressed) onRightClick()
+        }
 ) {
-    Canvas(
-        modifier = Modifier
-            .weight(1f).fillMaxHeight()
-            .onPointerEvent(PointerEventType.Enter) { onHover() }
-            .onPointerEvent(PointerEventType.Press) {
-                if (enabled && currentEvent.buttons.isPrimaryPressed) onClick()
-                else if (currentEvent.buttons.isSecondaryPressed) onRightClick()
-            }
-    ) {
-        if (hovered || !enabled) {
-            drawRect(if (!enabled) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.2f))
-        }
-        if (selected) {
-            drawRect(Color.White, style = Stroke(width = 2.ddp.value))
-        }
+    if (hovered || !enabled) {
+        drawRect(if (!enabled) Color.Black.copy(alpha = 0.5f) else Color.White.copy(alpha = 0.2f))
+    }
+    if (selected) {
+        drawRect(Color.White, style = Stroke(width = 2.ddp.value))
     }
 }
 
@@ -250,41 +241,36 @@ fun AnvilPreviewProperties(
     changeYLimit: (Int) -> Unit,
     setYLimit: (Int) -> Unit,
     invalidateCache: () -> Unit,
-    visible: Boolean
+) = Box(
+    contentAlignment = PropertiesAlignment,
+    modifier = Modifier.requiredSize(MinimumViewSize.ddp)
 ) {
-    if (!visible) return
-
-    Box(
-        contentAlignment = PropertiesAlignment,
-        modifier = Modifier.requiredSize(MinimumViewSize.ddp)
-    ) {
-        AnvilPreviewPropertyBackground()
-        Column(modifier = Modifier.width(220.ddp).padding(top = 8.ddp, start = 12.ddp)) {
-            if (!properties.surroundings.isEmpty) {
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    AnvilNavigateButton("above", properties.surroundings.above, moveToSurroundings)
-                    AnvilNavigateButton("left", properties.surroundings.left, moveToSurroundings)
-                }
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    AnvilNavigateButton("below", properties.surroundings.below, moveToSurroundings)
-                    AnvilNavigateButton("right", properties.surroundings.right, moveToSurroundings)
-                }
-                PropertyGroupSpacer()
+    AnvilPreviewPropertyBackground()
+    Column(modifier = Modifier.width(220.ddp).padding(top = 8.ddp, start = 12.ddp)) {
+        if (!properties.surroundings.isEmpty) {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                AnvilNavigateButton("above", properties.surroundings.above, moveToSurroundings)
+                AnvilNavigateButton("left", properties.surroundings.left, moveToSurroundings)
             }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                PropertyKeyText("loader = ")
-                PropertyButton("reload", invalidateCache)
+            Row(modifier = Modifier.fillMaxWidth()) {
+                AnvilNavigateButton("below", properties.surroundings.below, moveToSurroundings)
+                AnvilNavigateButton("right", properties.surroundings.right, moveToSurroundings)
             }
             PropertyGroupSpacer()
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                PropertyKeyText("yLimit = ")
-                YLimitController(
-                    yLimit = yLimit,
-                    validRange = properties.dimension.yRange,
-                    changeYLimit = changeYLimit,
-                    setYLimit = setYLimit
-                )
-            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            PropertyKeyText("loader = ")
+            PropertyButton("reload", invalidateCache)
+        }
+        PropertyGroupSpacer()
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            PropertyKeyText("yLimit = ")
+            YLimitController(
+                yLimit = yLimit,
+                validRange = properties.dimension.yRange,
+                changeYLimit = changeYLimit,
+                setYLimit = setYLimit
+            )
         }
     }
 }
