@@ -167,11 +167,13 @@ fun Intro(
                 Recent(openRecent)
             }
         }
-        SettingsMenu(
-            visible = settingsVisible,
-            onClose = { settingsVisible = false },
-            onGlobalScaleChanged = changeGlobalScale
-        )
+
+        if (settingsVisible) {
+            SettingsMenu(
+                onClose = { settingsVisible = false },
+                onGlobalScaleChanged = changeGlobalScale
+            )
+        }
     }
 }
 
@@ -217,12 +219,12 @@ fun RowScope.OpenNewButton(
     image: String,
     onClick: () -> Unit
 ) {
-    val hoverInteractionSource = remember { MutableInteractionSource() }
-    val hovered by hoverInteractionSource.collectIsHoveredAsState()
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
 
     Box(
         modifier = Modifier
-            .hoverable(hoverInteractionSource)
+            .hoverable(interaction)
             .clickable(onClick = onClick)
             .drawBehind {
                 drawRoundRect(
@@ -317,8 +319,8 @@ fun WorldRecentItem(
     delete: (Recent) -> Unit,
     reopen: (File) -> Unit
 ) {
-    val hoverInteractionSource = remember { MutableInteractionSource() }
-    val hovered by hoverInteractionSource.collectIsHoveredAsState()
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
 
     val exists by remember(data.path) { mutableStateOf(File(data.path).exists()) }
 
@@ -334,7 +336,7 @@ fun WorldRecentItem(
 
     Box(
         modifier = Modifier
-            .hoverable(hoverInteractionSource, exists)
+            .hoverable(interaction, exists)
             .clickable(exists) { reopen(File(data.path)) }
             .drawBehind {
                 drawRoundRect(
@@ -386,8 +388,8 @@ fun StandaloneRecentItem(
     delete: (Recent) -> Unit,
     reopen: (File) -> Unit
 ) {
-    val hoverInteractionSource = remember { MutableInteractionSource() }
-    val hovered by hoverInteractionSource.collectIsHoveredAsState()
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
 
     val icon = painterResource("/icons/intro/open_new_standalone.png")
 
@@ -397,7 +399,7 @@ fun StandaloneRecentItem(
 
     Box(
         modifier = Modifier
-            .hoverable(hoverInteractionSource)
+            .hoverable(interaction)
             .clickable { reopen(File(data.path)) }
             .drawBehind {
                 drawRoundRect(
@@ -451,8 +453,8 @@ fun SmallText(text: String) =
 
 @Composable
 fun BoxScope.DeleteRecentButton(onClick: () -> Unit) {
-    val source = remember { MutableInteractionSource() }
-    val hovered by source.collectIsHoveredAsState()
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
 
     Box(
         contentAlignment = Alignment.Center,
@@ -463,7 +465,7 @@ fun BoxScope.DeleteRecentButton(onClick: () -> Unit) {
                 if (hovered) drawRoundRect(Color.White.copy(alpha = 0.075f), cornerRadius = CornerRadius(7.5.ddp.value))
             }
             .align(Alignment.TopEnd)
-            .hoverable(source)
+            .hoverable(interaction)
             .clickable { onClick() }
     ) {
         Text(

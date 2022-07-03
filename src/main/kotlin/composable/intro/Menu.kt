@@ -30,8 +30,8 @@ import doodler.unit.dsp
 @Composable
 fun BoxScope.MenuButton(blur: Boolean, onClick: () -> Unit) {
 
-    val hoverInteractionSource = remember { MutableInteractionSource() }
-    val hovered by hoverInteractionSource.collectIsHoveredAsState()
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
 
     val icon = painterResource("/icons/menu_icon.png")
 
@@ -40,7 +40,7 @@ fun BoxScope.MenuButton(blur: Boolean, onClick: () -> Unit) {
         .align(Alignment.TopEnd)
         .padding(5.ddp)
         .clip(RoundedCornerShape(15.ddp))
-        .hoverable(hoverInteractionSource)
+        .hoverable(interaction)
         .clickable { onClick() }
         .drawBehind {
             if (hovered) drawRoundRect(Color.White.copy(alpha = 0.15f), cornerRadius = CornerRadius(15.ddp.value))
@@ -57,13 +57,9 @@ fun BoxScope.MenuButton(blur: Boolean, onClick: () -> Unit) {
 
 @Composable
 fun SettingsMenu(
-    visible: Boolean,
     onClose: () -> Unit,
     onGlobalScaleChanged: (Float) -> Unit
-) {
-
-    if (!visible) return
-
+) =
     Box(modifier = Modifier
         .fillMaxSize()
         .background(Color.Black.copy(alpha = 0.65f))
@@ -112,7 +108,6 @@ fun SettingsMenu(
         }
 
     }
-}
 
 @Composable
 fun SettingsItem(
@@ -143,16 +138,16 @@ fun CircularTextButton(
     enabled: Boolean,
     onClick: () -> Unit
 ) {
-    val source = remember { MutableInteractionSource() }
-    val pressed by source.collectIsPressedAsState()
-    val hovered by source.collectIsHoveredAsState()
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val hovered by interaction.collectIsHoveredAsState()
 
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .size(20.ddp)
-            .hoverable(source, enabled)
-            .clickable(source, null, enabled) { onClick() }
+            .hoverable(interaction, enabled)
+            .clickable(interaction, null, enabled) { onClick() }
             .alpha(if (enabled) 1f else 0.4f)
             .drawBehind {
                 if (pressed) drawRoundRect(Color.White.copy(alpha = 0.25f), cornerRadius = CornerRadius(10.ddp.value))
@@ -168,16 +163,16 @@ fun ColumnScope.TextButton(
     text: String,
     onClick: () -> Unit
 ) {
-    val source = remember { MutableInteractionSource() }
-    val pressed by source.collectIsPressedAsState()
-    val hovered by source.collectIsHoveredAsState()
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val hovered by interaction.collectIsHoveredAsState()
 
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .align(Alignment.End)
-            .hoverable(source)
-            .clickable(source, null) { onClick() }
+            .hoverable(interaction)
+            .clickable(interaction, null) { onClick() }
             .drawBehind {
                 if (pressed) drawRoundRect(Color.White.copy(alpha = 0.25f), cornerRadius = CornerRadius(3.ddp.value))
                 else if (hovered) drawRoundRect(Color.White.copy(alpha = 0.15f), cornerRadius = CornerRadius(3.ddp.value))
