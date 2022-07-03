@@ -18,10 +18,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 
-@Immutable
-class WorldHierarchy(
+
+sealed class WorldHierarchy(
     val icon: File,
-    val level: File,
     val advancements: List<File>,
     val stats: List<File>,
     val players: List<File>,
@@ -37,6 +36,8 @@ class WorldHierarchy(
         }
     }
 
+    abstract fun mainLevelData(): File
+
     fun listWorldFiles(dimension: WorldDimension): List<HierarchyItem> {
         val world = get(dimension)
         val list = listOf("data", "region", "poi", "entities").sorted()
@@ -45,11 +46,43 @@ class WorldHierarchy(
             if (world[it].isNotEmpty()) {
                 val files = world[it]
                     .sortedBy { file -> file.name }
-                    .map { file -> FileHierarchyItem(file, file.name, 3) }
+                    .map { file -> FileHierarchyItem(file, name = file.name, depth = 3) }
                 DirectoryHierarchyItem(files, it, 2)
             } else null
         }
     }
+}
+
+@Immutable
+class VanillaWorldHierarchy(
+    val level: File,
+    icon: File,
+    advancements: List<File>,
+    stats: List<File>,
+    players: List<File>,
+    overworld: WorldDimensionHierarchy,
+    nether: WorldDimensionHierarchy,
+    end: WorldDimensionHierarchy
+): WorldHierarchy(icon, advancements, stats, players, overworld, nether, end) {
+
+    override fun mainLevelData(): File = level
+
+}
+
+@Immutable
+class SpigotServerWorldHierarchy(
+    val level: Map<WorldDimension, File>,
+    icon: File,
+    advancements: List<File>,
+    stats: List<File>,
+    players: List<File>,
+    overworld: WorldDimensionHierarchy,
+    nether: WorldDimensionHierarchy,
+    end: WorldDimensionHierarchy
+): WorldHierarchy(icon, advancements, stats, players, overworld, nether, end) {
+
+    override fun mainLevelData(): File = level.getValue(WorldDimension.Overworld)
+
 }
 
 @Immutable
@@ -104,9 +137,15 @@ class WorldSpecification (
         val NetworkScope = CoroutineScope(Dispatchers.IO)
     }
 
-    val tree: WorldHierarchy = WorldUtils.load(worldPath)
+    val type: WorldType = type(worldPath)
 
-    private var levelInfo by mutableStateOf(DatWorker.read(tree.level.readBytes()))
+    val tree: WorldHierarchy =
+        when (type){
+          WorldType.Vanilla -> WorldUtils.loadVanilla(worldPath)
+          WorldType.SpigotServer -> WorldUtils.loadServer(worldPath)
+        }
+
+    private var levelInfo by mutableStateOf(DatWorker.read(tree.mainLevelData().readBytes()))
 
     val name: String by derivedStateOf {
         levelInfo["Data"]
@@ -137,9 +176,22 @@ class WorldSpecification (
     }
 
     fun reload() {
-        levelInfo = DatWorker.read(tree.level.readBytes())
+        levelInfo = DatWorker.read(tree.mainLevelData().readBytes())
     }
 
+    private fun type(path: String): WorldType {
+        val file = File(path)
+        return if (file.list()?.contains("server.properties") == true) {
+            WorldType.SpigotServer
+        } else {
+            WorldType.Vanilla
+        }
+    }
+
+}
+
+enum class WorldType {
+    Vanilla, SpigotServer
 }
 
 sealed class WorldFileType

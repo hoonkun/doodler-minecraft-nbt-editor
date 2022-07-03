@@ -24,6 +24,7 @@ import doodler.application.structure.DoodlerEditorType
 import doodler.application.structure.IntroDoodlerWindow
 import doodler.extension.ellipsisLast
 import doodler.extension.ellipsisStart
+import doodler.extension.fileOrNull
 import doodler.local.Recent
 import doodler.local.UserSavedLocalState
 import doodler.theme.DoodlerTheme
@@ -324,9 +325,11 @@ fun WorldRecentItem(
 
     val exists by remember(data.path) { mutableStateOf(File(data.path).exists()) }
 
-    val file = remember(data.path) { File("${data.path}/icon.png") }
+    val file = remember(data.path) {
+        fileOrNull("${data.path}/icon.png") ?: fileOrNull("${data.path}/server-icon.png")
+    }
 
-    val worldIconPainter = remember(file) { if (file.exists()) ImageIO.read(file).toComposeImageBitmap() else null }
+    val worldIconPainter = remember(file) { if (file != null) ImageIO.read(file).toComposeImageBitmap() else null }
     val fallbackWorldIcon = painterResource("/icons/intro/open_new_world.png")
 
     val contentDescription = remember { "world preview icon of ${data.name}" }

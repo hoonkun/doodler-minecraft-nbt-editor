@@ -30,15 +30,12 @@ import doodler.application.state.DoodlerAppState
 import doodler.application.structure.*
 import doodler.editor.NbtEditor
 import doodler.local.*
-import doodler.minecraft.DatWorker
-import doodler.nbt.tag.CompoundTag
-import doodler.nbt.tag.StringTag
+import doodler.minecraft.structures.WorldSpecification
 import doodler.theme.DoodlerTheme
 import doodler.unit.adp
 import doodler.unit.ddp
 import doodler.unit.dsp
 import java.awt.Dimension
-import java.io.File
 
 
 private val keys = mutableListOf<Key>()
@@ -157,17 +154,31 @@ fun DoodlerWindow(
                         is IntroDoodlerWindow -> Intro(
                             window = window,
                             openRecent = openRecent@ { type, file ->
-                                val item = UserSavedLocalState.recent.find { it.type == type && it.path == file.absolutePath }
-                                    ?: return@openRecent
+                                val item = UserSavedLocalState.recent.find {
+                                    it.type == type && it.path == file.absolutePath
+                                } ?: return@openRecent
 
                                 UserSavedLocalState.recent.remove(item)
                                 UserSavedLocalState.recent.add(0, item)
                                 UserSavedLocalState.save()
 
-                                editorAlreadyExists = !appState.sketchEditor(item.name, item.type, file)
+                                editorAlreadyExists =
+                                    when (item.type) {
+                                        DoodlerEditorType.World -> !appState.sketchWorldEditor(
+                                            title = item.name,
+                                            path = file.absolutePath,
+                                            worldSpec = WorldSpecification(file.absolutePath)
+                                        )
+                                        DoodlerEditorType.Standalone -> !appState.sketchStandaloneEditor(
+                                            title = item.name,
+                                            file = file
+                                        )
+                                    }
                             },
                             openSelector = {
-                                appState.sketch(SelectorDoodlerWindow("doodler: open '${it.displayName}'", targetType = it))
+                                appState.sketch(
+                                    SelectorDoodlerWindow("doodler: open '${it.displayName}'", targetType = it)
+                                )
                             },
                             changeGlobalScale = {
                                 appState.restart {
@@ -177,14 +188,28 @@ fun DoodlerWindow(
                             }
                         )
                         is SelectorDoodlerWindow -> Selector(window.targetType) { file, type ->
-                            val name =
-                                if (type == DoodlerEditorType.World) {
-                                    DatWorker.read(File("${file.absolutePath}/level.dat").readBytes())["Data"]
-                                        ?.getAs<CompoundTag>()?.get("LevelName")
-                                        ?.getAs<StringTag>()?.value ?: return@Selector
-                                } else {
-                                    file.name
+                            val (name, alreadyExists) =
+                                when (type) {
+                                    DoodlerEditorType.World -> {
+                                        val worldSpec = WorldSpecification(file.absolutePath)
+                                        val name = worldSpec.name
+
+                                        appState.erase(window)
+                                        name to !appState.sketchWorldEditor(
+                                            title = name,
+                                            path = file.absolutePath,
+                                            worldSpec = WorldSpecification(file.absolutePath)
+                                        )
+                                    }
+                                    DoodlerEditorType.Standalone -> {
+                                        file.name to !appState.sketchStandaloneEditor(
+                                            title = file.name,
+                                            file = file
+                                        )
+                                    }
                                 }
+
+                            editorAlreadyExists = alreadyExists
 
                             UserSavedLocalState.recent.removeIf { it.path == file.path }
 
@@ -193,9 +218,6 @@ fun DoodlerWindow(
                                 element = Recent(type = type, name = name, path = file.absolutePath)
                             )
                             UserSavedLocalState.save()
-
-                            appState.erase(window)
-                            editorAlreadyExists = !appState.sketchEditor(name, type, file)
                         }
                         is StandaloneEditorDoodlerWindow -> StandaloneNbtEditor(window)
                         is WorldEditorDoodlerWindow -> WorldEditor(window.editorState)

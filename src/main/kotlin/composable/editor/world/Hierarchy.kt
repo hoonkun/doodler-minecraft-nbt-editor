@@ -119,6 +119,10 @@ fun BoxScope.WorldHierarchy(
                 text = if (it.name == "<WORLD_ROOT>") worldSpec.name else it.name,
                 bold = items.indexOf(it) == 0
             )
+            if (it is FileHierarchyItem && it.description != null) {
+                Spacer(modifier = Modifier.width(5.ddp))
+                HierarchyDescription(it.description)
+            }
         }
 
         HierarchyItemsColumn(
@@ -266,6 +270,18 @@ fun HierarchyText(
 )
 
 @Composable
+fun HierarchyDescription(
+    text: String
+) = Box(modifier = Modifier.background(Color(0xff363636), RoundedCornerShape(2.ddp.value))) {
+    Text(
+        text = text,
+        color = Color(0xffaaaaaa),
+        fontSize = 7.dsp,
+        modifier = Modifier.padding(vertical = 2.ddp, horizontal = 5.ddp)
+    )
+}
+
+@Composable
 fun PlayerNameText(
     text: String
 ) = Text(
@@ -306,19 +322,19 @@ fun createWorldTreeItems(hierarchy: WorldHierarchy): List<HierarchyItem> {
         ).apply { toggle() }
     )
     result.add(DirectoryHierarchyItem(
-        children = hierarchy.advancements.map { FileHierarchyItem(it, it.name, depth) },
+        children = hierarchy.advancements.map { FileHierarchyItem(it, name = it.name, depth = depth) },
         name = "advancements",
         depth = rootDepth
     ))
     result.add(DirectoryHierarchyItem(
         children = hierarchy.players
             .filter { !it.name.endsWith(".dat_old") }
-            .map { FileHierarchyItem(it, it.name, depth) },
+            .map { FileHierarchyItem(it, name = it.name, depth = depth) },
         name = "playerdata",
         depth = rootDepth
     ).apply { toggle() })
     result.add(DirectoryHierarchyItem(
-        children = hierarchy.stats.map { FileHierarchyItem(it, it.name, depth) },
+        children = hierarchy.stats.map { FileHierarchyItem(it, name = it.name, depth = depth) },
         name = "stats",
         depth = rootDepth
     ))
@@ -327,10 +343,24 @@ fun createWorldTreeItems(hierarchy: WorldHierarchy): List<HierarchyItem> {
         name = "icon.png",
         depth = rootDepth
     ))
-    result.add(FileHierarchyItem(
-        file = hierarchy.level,
-        name = "level.dat",
-        depth = rootDepth))
+    when (hierarchy) {
+        is VanillaWorldHierarchy ->
+            result.add(FileHierarchyItem(
+                file = hierarchy.level,
+                name = "level.dat",
+                depth = rootDepth
+            ))
+        is SpigotServerWorldHierarchy -> {
+            WorldDimension.values().forEach {
+                result.add(FileHierarchyItem(
+                    file = hierarchy.level.getValue(it),
+                    name = "level.dat",
+                    depth = rootDepth,
+                    description = it.displayName
+                ))
+            }
+        }
+    }
     return result
 }
 
@@ -351,6 +381,7 @@ sealed class HierarchyItem(
 
 class FileHierarchyItem(
     val file: File,
+    val description: String? = null,
     name: String,
     depth: Int
 ): HierarchyItem(name, depth)

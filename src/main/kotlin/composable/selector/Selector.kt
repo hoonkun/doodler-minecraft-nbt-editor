@@ -51,6 +51,8 @@ private val File.typeId get() = if (isDirectory && !isFile) -1 else if (isFile) 
 private fun File.validateAs(type: DoodlerEditorType): File? {
     when(type) {
         DoodlerEditorType.World -> {
+            if (File("${this.absolutePath}/server.properties").exists()) return this
+
             val level = File("${this.absolutePath}/level.dat")
             if (!level.exists()) return null
 
