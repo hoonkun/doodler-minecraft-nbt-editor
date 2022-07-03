@@ -41,16 +41,34 @@ class SurfaceWorker {
             tag: CompoundTag
         ): List<SurfaceSubChunk> {
             return coroutineScope lambda@ {
-                val sections = tag["sections"]?.getAs<ListTag>()?.value ?: return@lambda listOf()
-                sections.map {
-                    throwIfInactive()
-                    val blockStates = it.getAs<CompoundTag>()["block_states"]?.getAs<CompoundTag>() ?: return@lambda listOf()
-                    val data = blockStates["data"]?.getAs<LongArrayTag>()?.value ?: longArrayOf()
-                    val palette = blockStates["palette"]?.getAs<ListTag>()?.value?.map { paletteEach ->
-                        paletteEach.getAs<CompoundTag>()["Name"]?.getAs<StringTag>()?.value ?: return@lambda listOf()
-                    } ?: throw Exception("Cannot create palette")
-                    SurfaceSubChunk(data, palette, it.getAs<CompoundTag>()["Y"]?.getAs<ByteTag>()?.value ?: return@lambda listOf())
-                }.reversed()
+                val dataVersion = tag["DataVersion"]!!.getAs<IntTag>().value
+                if (dataVersion > 2800) {
+                    val sections = tag["sections"]?.getAs<ListTag>()?.value
+                        ?: return@lambda listOf()
+
+                    sections.map {
+                        throwIfInactive()
+                        val blockStates = it.getAs<CompoundTag>()["block_states"]?.getAs<CompoundTag>() ?: return@lambda listOf()
+                        val data = blockStates["data"]?.getAs<LongArrayTag>()?.value ?: longArrayOf()
+                        val palette = blockStates["palette"]?.getAs<ListTag>()?.value?.map { paletteEach ->
+                            paletteEach.getAs<CompoundTag>()["Name"]?.getAs<StringTag>()?.value ?: return@lambda listOf()
+                        } ?: throw Exception("Cannot create palette")
+                        SurfaceSubChunk(data, palette, it.getAs<CompoundTag>()["Y"]?.getAs<ByteTag>()?.value ?: return@lambda listOf())
+                    }.reversed()
+                } else {
+                    val sections = tag["Level"]?.getAs<CompoundTag>()?.get("Sections")?.getAs<ListTag>()?.value
+                        ?: return@lambda listOf()
+
+                    sections.map {
+                        throwIfInactive()
+                        val blockStates = it.getAs<CompoundTag>()["BlockStates"]?.getAs<LongArrayTag>()?.value
+                            ?: longArrayOf()
+                        val palette = it.getAs<CompoundTag>()["Palette"]?.getAs<ListTag>()?.value?.map { paletteEach ->
+                            paletteEach.getAs<CompoundTag>()["Name"]?.getAs<StringTag>()?.value ?: "minecraft:air"
+                        } ?: listOf("minecraft:air")
+                        SurfaceSubChunk(blockStates, palette, it.getAs<CompoundTag>()["Y"]?.getAs<ByteTag>()?.value ?: return@lambda listOf())
+                    }.reversed()
+                }
             }
         }
 
