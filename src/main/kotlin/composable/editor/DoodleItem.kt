@@ -191,14 +191,14 @@ fun DepthLine(
     unFocus: () -> Unit,
     collapse: () -> Unit
 ){
-    val hoverInteractionSource = remember { MutableInteractionSource() }
-    val hovered by hoverInteractionSource.collectIsHoveredAsState()
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
 
     Canvas(
         modifier = Modifier.width(22.3125.ddp).fillMaxHeight()
             .onPointerEvent(PointerEventType.Enter) { focus() }
             .onPointerEvent(PointerEventType.Exit) { unFocus() }
-            .hoverable(hoverInteractionSource)
+            .hoverable(interaction)
             .clickable { collapse() },
     ) {
         drawLine(
@@ -374,24 +374,22 @@ fun ActionDoodleValueField(
     focus: Boolean,
     onEnter: () -> Unit,
     onEscape: () -> Unit
-) {
-    ActionDoodleField(
-        text = value,
-        isValid = isValid,
-        hint = type.creationHint(),
-        color = type.color(),
-        wide = true,
-        focus = focus,
-        transformation = type.transformer(),
-        modifier = Modifier.onPreviewKeyEvent {
-            when (it.key) {
-                Key.Enter -> onEnter()
-                Key.Escape -> onEscape()
-            }
-            false
+) = ActionDoodleField(
+    text = value,
+    isValid = isValid,
+    hint = type.creationHint(),
+    color = type.color(),
+    wide = true,
+    focus = focus,
+    transformation = type.transformer(),
+    modifier = Modifier.onPreviewKeyEvent {
+        when (it.key) {
+            Key.Enter -> onEnter()
+            Key.Escape -> onEscape()
         }
-    )
-}
+        false
+    }
+)
 
 @Composable
 fun RowScope.ActionDoodleContent(
@@ -497,8 +495,8 @@ fun ReadonlyDoodle(
     actionTarget: BooleanProvider = FalseProvider,
     enabled: BooleanProvider = TrueProvider
 ) {
-    val hoverInteractionSource = remember { MutableInteractionSource() }
-    val hovered by hoverInteractionSource.collectIsHoveredAsState()
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
 
     val pressedState = remember { mutableStateOf(false) }
 
@@ -535,7 +533,7 @@ fun ReadonlyDoodle(
         }
         ReadonlyDoodleContent(
             doodle = doodle,
-            hoverInteractionSource = hoverInteractionSource,
+            hoverInteractionSource = interaction,
             pressedState = pressedState,
             focus = { stateProvider().focused = it },
             onClick = {
@@ -605,8 +603,8 @@ fun TagDoodlePreview(
 ) {
     val pressedState = remember { mutableStateOf(false) }
 
-    val hoverInteractionSource = remember { MutableInteractionSource() }
-    val hovered by hoverInteractionSource.collectIsHoveredAsState()
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
 
     DoodleItemRoot(
         modifier = Modifier.then(modifier)
@@ -627,7 +625,7 @@ fun TagDoodlePreview(
     ) {
         ReadonlyDoodleContent(
             doodle = doodleProvider(),
-            hoverInteractionSource = hoverInteractionSource,
+            hoverInteractionSource = interaction,
             pressedState = pressedState,
             expand = false,
             focus = focus,
