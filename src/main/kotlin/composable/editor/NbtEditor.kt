@@ -122,7 +122,7 @@ fun BoxScope.NbtEditor(
         Actions(state = editor.state, worldSpec = worldSpec)
     }
 
-    Log { editor.state.currentLog }
+    Log(editor.state.currentLog)
 
 }
 

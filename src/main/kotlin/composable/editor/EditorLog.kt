@@ -21,7 +21,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.TextUnit
 import doodler.editor.structures.EditorLog
-import doodler.types.Provider
 import doodler.unit.ddp
 import doodler.unit.dsp
 import kotlinx.coroutines.delay
@@ -29,16 +28,14 @@ import kotlinx.coroutines.delay
 
 @Composable
 fun BoxScope.Log(
-    logProvider: Provider<MutableState<EditorLog?>>
+    state: MutableState<EditorLog?>
 ) {
-    val state = logProvider()
-
     val log = state.value ?: return
 
     var timedOut by remember { mutableStateOf(true) }
 
-    val source = remember { MutableInteractionSource() }
-    val hovered by source.collectIsHoveredAsState()
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
 
     val visible by remember { derivedStateOf { !timedOut || hovered } }
     val alpha by animateFloatAsState(
@@ -73,7 +70,7 @@ fun BoxScope.Log(
         Column(
             modifier = Modifier
                 .padding(15.ddp)
-                .hoverable(source)
+                .hoverable(interaction)
         ) {
             Column(modifier = Modifier
                 .requiredSizeIn(maxWidth = 300.ddp)
@@ -106,13 +103,11 @@ fun LogText(
     text: String,
     alpha: Float,
     fontSize: TextUnit = 11.25.dsp
-) {
-    Text(
-        text = text,
-        color = Color.White.copy(alpha = alpha),
-        fontSize = fontSize
-    )
-}
+) = Text(
+    text = text,
+    color = Color.White.copy(alpha = alpha),
+    fontSize = fontSize
+)
 
 fun DrawScope.drawBackgroundGradient() {
     val amount = 125f
