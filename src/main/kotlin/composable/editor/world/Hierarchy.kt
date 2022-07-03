@@ -151,27 +151,25 @@ fun HierarchyItemsColumn(
     disabled: ((HierarchyItem) -> Boolean)? = null,
     items: List<HierarchyItem>,
     content: @Composable RowScope.(HierarchyItem) -> Unit
+) = Column(
+    modifier = Modifier
+        .fillMaxWidth()
+        .let { if (horizontalScrollState != null) it.horizontalScroll(horizontalScrollState) else it }
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .let { if (horizontalScrollState != null) it.horizontalScroll(horizontalScrollState) else it }
-    ) {
-        for (item in items) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start,
-                modifier = Modifier
-                    .padding(start = item.padding, end = 13.5.ddp)
-                    .requiredHeight(ItemHeight)
-                    .alpha(if (disabled?.invoke(item) == true) 0.6f else 1f)
-                    .let {
-                        if (onClick != null) it.fillMaxWidth().clickable { onClick(item) }
-                        else it
-                    },
-                content = { content(item) }
-            )
-        }
+    for (item in items) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Start,
+            modifier = Modifier
+                .padding(start = item.padding, end = 13.5.ddp)
+                .requiredHeight(ItemHeight)
+                .alpha(if (disabled?.invoke(item) == true) 0.6f else 1f)
+                .let {
+                    if (onClick != null) it.fillMaxWidth().clickable { onClick(item) }
+                    else it
+                },
+            content = { content(item) }
+        )
     }
 }
 
@@ -223,13 +221,12 @@ fun WorldIcon(bitmap: ImageBitmap?, fallback: Painter) {
 }
 
 @Composable
-fun DirectoryIcon() {
+fun DirectoryIcon() =
     Image(
         painter = painterResource("/icons/editor_folder.png"),
         contentDescription = null,
         modifier = Modifier.size(11.5.ddp)
     )
-}
 
 @Composable
 fun FileTypeIcon(extension: String) {
@@ -261,14 +258,12 @@ fun HierarchyText(
     text: String,
     bold: Boolean = false,
     fontSize: TextUnit = 10.8.dsp
-) {
-    Text(
-        text = text,
-        color = DoodlerTheme.Colors.HierarchyView.TextColor,
-        fontSize = fontSize,
-        fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal
-    )
-}
+) = Text(
+    text = text,
+    color = DoodlerTheme.Colors.HierarchyView.TextColor,
+    fontSize = fontSize,
+    fontWeight = if (bold) FontWeight.Bold else FontWeight.Normal
+)
 
 @Composable
 fun PlayerNameText(

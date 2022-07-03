@@ -15,6 +15,7 @@ fun BoxScope.EditorManager(
 ) {
 
     val manager = state.manager
+    val worldSpec = state.worldSpec
 
     EditorManagerRoot {
         EditorTabGroup(
@@ -24,8 +25,8 @@ fun BoxScope.EditorManager(
         )
         Editors {
             when (val selected = manager.selected) {
-                is NbtEditor -> NbtEditor(selected, state.worldSpec)
-                is McaEditor<*> -> McaEditor(manager, selected, manager.cache, state.worldSpec)
+                is NbtEditor -> NbtEditor(selected, worldSpec)
+                is McaEditor<*> -> McaEditor(manager, selected, manager.cache, worldSpec)
                 else -> pass
             }
         }

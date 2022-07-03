@@ -48,7 +48,7 @@ fun Breadcrumb(
 }
 
 @Composable
-fun NbtBreadcrumb(item: NbtBreadcrumb) {
+fun NbtBreadcrumb(item: NbtBreadcrumb) =
     when (val doodle = item.doodle) {
         is TagDoodle -> TagCrumb(doodle)
         is ArrayValueDoodle -> ArrayValueCrumb(doodle)
@@ -57,7 +57,6 @@ fun NbtBreadcrumb(item: NbtBreadcrumb) {
         is TagEditorDoodle -> TagEditorCrumb(doodle)
         is ArrayValueEditorDoodle -> ArrayValueEditorCrumb(doodle)
     }
-}
 
 @Composable
 fun BreadcrumbTagDoodleType(tagType: TagType) =

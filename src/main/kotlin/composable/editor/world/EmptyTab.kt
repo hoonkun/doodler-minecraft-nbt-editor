@@ -15,7 +15,7 @@ import doodler.unit.ddp
 import doodler.unit.dsp
 
 @Composable
-fun BoxScope.EmptyTab() {
+fun BoxScope.EmptyTab() =
     Column(
         modifier = Modifier.align(Alignment.Center).wrapContentWidth()
     ) {
@@ -48,7 +48,6 @@ fun BoxScope.EmptyTab() {
             )
         }
     }
-}
 
 @Composable
 fun ColumnScope.FunctionDeclaration(text: String, content: @Composable ColumnScope.() -> Unit) {

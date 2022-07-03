@@ -15,14 +15,12 @@ import doodler.unit.ddp
 @Composable
 fun StandaloneNbtEditor(
     window: StandaloneEditorDoodlerWindow
-) {
-    Column(modifier = Modifier.fillMaxSize().background(DoodlerTheme.Colors.Background)) {
-        BreadcrumbsBar {
-            Breadcrumb(window.editor.breadcrumb, disableFirstSlash = true)
-            Spacer(modifier = Modifier.width(50.ddp))
-        }
-        Box(modifier = Modifier.fillMaxSize()) {
-            NbtEditor(window.editor)
-        }
+) = Column(modifier = Modifier.fillMaxSize().background(DoodlerTheme.Colors.Background)) {
+    BreadcrumbsBar {
+        Breadcrumb(window.editor.breadcrumb, disableFirstSlash = true)
+        Spacer(modifier = Modifier.width(50.ddp))
+    }
+    Box(modifier = Modifier.fillMaxSize()) {
+        NbtEditor(window.editor)
     }
 }
