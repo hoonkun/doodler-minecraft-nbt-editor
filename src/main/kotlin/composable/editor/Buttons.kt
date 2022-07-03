@@ -37,14 +37,14 @@ fun ActionButton(
     onDisabledClick: () -> Unit = EmptyLambda,
     content: @Composable BoxScope.() -> Unit
 ) {
-    val hoverInteractionSource = remember { MutableInteractionSource() }
-    val hovered by hoverInteractionSource.collectIsHoveredAsState()
+    val interaction = remember { MutableInteractionSource() }
+    val hovered by interaction.collectIsHoveredAsState()
 
     Box(
         modifier = Modifier
             .wrapContentSize()
             .padding(top = 1.ddp, bottom = 1.ddp)
-            .hoverable(hoverInteractionSource, enabled())
+            .hoverable(interaction, enabled())
             .mouseClickable {
                 if (buttons.isPrimaryPressed) {
                     if (enabled()) onClick()
@@ -71,10 +71,8 @@ fun TagCreatorButton(
     enabled: BooleanProvider = TrueProvider,
     onClick: () -> Unit,
     onDisabledClick: () -> Unit = EmptyLambda
-) {
-    ActionButton(enabled, onClick = onClick, onDisabledClick = onDisabledClick) {
-        TagDoodleTypeText(type, enabled = enabled, fontSize = 9.dsp)
-    }
+) = ActionButton(enabled, onClick = onClick, onDisabledClick = onDisabledClick) {
+    TagDoodleTypeText(type, enabled = enabled, fontSize = 9.dsp)
 }
 
 @Composable
@@ -87,13 +85,11 @@ fun EditorActionButton(
     onRightClick: () -> Unit = EmptyLambda,
     onDisabledClick: () -> Unit = EmptyLambda,
     onClick: () -> Unit
-) {
-    ActionButton(enabled, onClick = onClick, onRightClick = onRightClick, onDisabledClick = onDisabledClick) {
-        DoodleText(
-            text = text,
-            color = color,
-            fontSize = fontSize,
-            rotate = rotate
-        )
-    }
+) = ActionButton(enabled, onClick = onClick, onRightClick = onRightClick, onDisabledClick = onDisabledClick) {
+    DoodleText(
+        text = text,
+        color = color,
+        fontSize = fontSize,
+        rotate = rotate
+    )
 }
