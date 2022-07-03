@@ -73,10 +73,11 @@ class WorldEditorDoodlerWindow(
     title: String,
     path: String,
     position: WindowPosition = WindowPosition(Alignment.Center),
-    override val editorState: WorldEditorState = WorldEditorState(manager = EditorManager(), worldSpec = WorldSpecification(path))
+    val worldSpec: WorldSpecification,
+    override val editorState: WorldEditorState = WorldEditorState(manager = EditorManager(), worldSpec = worldSpec)
 ): EditorDoodlerWindow(title, position, DoodlerEditorType.World, path) {
 
-    override fun copy() = WorldEditorDoodlerWindow(title, path, state.position, editorState)
+    override fun copy() = WorldEditorDoodlerWindow(title, path, state.position, worldSpec, editorState)
 
 }
 
