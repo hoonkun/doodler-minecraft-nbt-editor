@@ -10,7 +10,7 @@ class WorldUtils {
 
     companion object {
 
-        fun load(path: String): WorldHierarchy {
+        fun loadVanilla(path: String): WorldHierarchy {
             val world = File(path)
 
             if (!world.exists()) throw FileNotFoundException()
@@ -45,6 +45,10 @@ class WorldUtils {
                     )
                 )
             )
+        }
+
+        fun loadServer(path: String): WorldHierarchy {
+            TODO("Not Implemented")
         }
 
         private fun File.listIfExists(): List<File> {

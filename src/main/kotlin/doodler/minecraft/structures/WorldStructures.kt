@@ -104,7 +104,13 @@ class WorldSpecification (
         val NetworkScope = CoroutineScope(Dispatchers.IO)
     }
 
-    val tree: WorldHierarchy = WorldUtils.load(worldPath)
+    val type: WorldType = type(worldPath)
+
+    val tree: WorldHierarchy =
+        when (type){
+          WorldType.Vanilla -> WorldUtils.loadVanilla(worldPath)
+          WorldType.SpigotServer -> WorldUtils.loadServer(worldPath)
+        }
 
     private var levelInfo by mutableStateOf(DatWorker.read(tree.level.readBytes()))
 
@@ -140,6 +146,19 @@ class WorldSpecification (
         levelInfo = DatWorker.read(tree.level.readBytes())
     }
 
+    private fun type(path: String): WorldType {
+        val file = File(path)
+        return if (file.list()?.contains("server.properties") == true) {
+            WorldType.SpigotServer
+        } else {
+            WorldType.Vanilla
+        }
+    }
+
+}
+
+enum class WorldType {
+    Vanilla, SpigotServer
 }
 
 sealed class WorldFileType
