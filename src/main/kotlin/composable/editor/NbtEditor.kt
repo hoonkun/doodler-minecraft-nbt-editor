@@ -21,7 +21,6 @@ import doodler.doodle.structures.ReadonlyDoodle
 import doodler.doodle.structures.TagDoodle
 import doodler.editor.NbtEditor
 import doodler.editor.states.NbtEditorState
-import doodler.logging.DoodlerLogger
 import doodler.minecraft.structures.WorldSpecification
 import doodler.theme.DoodlerTheme
 import doodler.types.Provider
@@ -36,8 +35,6 @@ fun BoxScope.NbtEditor(
     editor: NbtEditor,
     worldSpec: WorldSpecification? = null
 ) {
-
-    DoodlerLogger.recomposition("NbtEditor")
 
     val coroutine = rememberCoroutineScope()
 
