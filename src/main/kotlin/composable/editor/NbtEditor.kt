@@ -21,6 +21,7 @@ import doodler.doodle.structures.ReadonlyDoodle
 import doodler.doodle.structures.TagDoodle
 import doodler.editor.NbtEditor
 import doodler.editor.states.NbtEditorState
+import doodler.logging.DoodlerLogger
 import doodler.minecraft.structures.WorldSpecification
 import doodler.theme.DoodlerTheme
 import doodler.types.Provider
@@ -35,6 +36,8 @@ fun BoxScope.NbtEditor(
     editor: NbtEditor,
     worldSpec: WorldSpecification? = null
 ) {
+
+    DoodlerLogger.recomposition("NbtEditor")
 
     val coroutine = rememberCoroutineScope()
 
@@ -177,11 +180,11 @@ fun BoxScope.LazyScrollbarDecorationItem(
     doodleProvider: Provider<ReadonlyDoodle>,
     scrollTo: (ReadonlyDoodle) -> Unit
 ) {
-    val indicatorHoverSource = remember { MutableInteractionSource() }
-    val indicatorHovered by indicatorHoverSource.collectIsHoveredAsState()
+    val indicatorInteraction = remember { MutableInteractionSource() }
+    val indicatorHovered by indicatorInteraction.collectIsHoveredAsState()
 
-    val previewHoverSource = remember { MutableInteractionSource() }
-    val previewHovered by previewHoverSource.collectIsHoveredAsState()
+    val previewInteraction = remember { MutableInteractionSource() }
+    val previewHovered by previewInteraction.collectIsHoveredAsState()
 
     Row {
 
@@ -192,7 +195,7 @@ fun BoxScope.LazyScrollbarDecorationItem(
                 TagDoodlePreview(
                     doodleProvider = doodleProvider,
                     scrollTo = scrollTo,
-                    modifier = Modifier.wrapContentWidth().hoverable(previewHoverSource)
+                    modifier = Modifier.wrapContentWidth().hoverable(previewInteraction)
                 )
 
                 if (position < 1) Spacer(modifier = Modifier.weight(1 - position))
@@ -205,7 +208,7 @@ fun BoxScope.LazyScrollbarDecorationItem(
             Canvas(
                 modifier = Modifier
                     .requiredHeightIn(min = minSize).fillMaxHeight(size).width(10.ddp)
-                    .hoverable(indicatorHoverSource)
+                    .hoverable(indicatorInteraction)
             ) {
                 drawRect(
                     DoodlerTheme.Colors.Editor.ScrollbarDecorSelected,
