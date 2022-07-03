@@ -8,6 +8,7 @@ import doodler.nbt.tag.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import doodler.exceptions.*
+import doodler.extension.indexOfAbsoluteEquals
 
 
 @Stable
@@ -39,7 +40,7 @@ class TagDoodle(
         parent?.let {
             when (it.tag.type) {
                 TagType.TAG_COMPOUND -> "${it.path}.${tag.name}"
-                TagType.TAG_LIST -> "${it.path}[${it.tag.getAs<ListTag>().value.indexOf(tag)}]"
+                TagType.TAG_LIST -> "${it.path}[${it.tag.getAs<ListTag>().value.indexOfAbsoluteEquals(tag)}]"
                 else -> "" // no-op
             }
         } ?: "root"

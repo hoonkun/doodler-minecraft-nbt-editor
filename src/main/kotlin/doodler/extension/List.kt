@@ -8,6 +8,13 @@ fun <T> List<T>.contentEquals(other: List<T>): Boolean {
     return true
 }
 
+fun <T> List<T>.indexOfAbsoluteEquals(element: T): Int {
+    forEachIndexed { index, item ->
+        if (item === element) return index
+    }
+    return -1
+}
+
 fun List<Int>.toRanges(): List<IntRange> {
     val sorted = sorted()
     val result = mutableListOf<IntRange>()
