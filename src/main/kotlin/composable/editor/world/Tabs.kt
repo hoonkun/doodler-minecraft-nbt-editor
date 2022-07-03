@@ -28,11 +28,13 @@ import doodler.editor.NbtEditor
 import doodler.editor.states.WorldEditorState
 import doodler.extension.toUUID
 import doodler.minecraft.structures.WorldSpecification
+import doodler.minecraft.structures.WorldType
 import doodler.theme.DoodlerTheme
 import doodler.types.BooleanProvider
 import doodler.unit.ddp
 import doodler.unit.dsp
 import kotlinx.coroutines.CoroutineScope
+import java.io.File
 
 
 @Composable
@@ -168,6 +170,24 @@ fun EditorTab(
                     fontSize = 7.5.dsp
                 )
                 Spacer(modifier = Modifier.width(2.7.ddp))
+            }
+
+            if (worldSpec.type != WorldType.Vanilla && editor is NbtEditor && editor.name == "level.dat") {
+                val path = when (File(editor.state.file.absolutePath).parentFile.name) {
+                    worldSpec.name -> "overworld/"
+                    "${worldSpec.name}_nether" -> "nether/"
+                    "${worldSpec.name}_the_end" -> "the_end/"
+                    else -> null
+                }
+
+                if (path != null) {
+                    Text(
+                        text = path,
+                        color = DoodlerTheme.Colors.Editor.TabPath,
+                        fontSize = 7.5.dsp
+                    )
+                    Spacer(modifier = Modifier.width(2.7.ddp))
+                }
             }
 
             Text(
