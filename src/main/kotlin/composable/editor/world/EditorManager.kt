@@ -24,7 +24,7 @@ fun BoxScope.EditorManager(
         )
         Editors {
             when (val selected = manager.selected) {
-                is NbtEditor -> NbtEditor(selected) { state.worldSpec }
+                is NbtEditor -> NbtEditor(selected, state.worldSpec)
                 is McaEditor<*> -> McaEditor(manager, selected, manager.cache, state.worldSpec)
                 else -> pass
             }

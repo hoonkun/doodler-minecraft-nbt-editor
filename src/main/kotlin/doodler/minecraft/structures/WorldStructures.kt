@@ -18,7 +18,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.File
 
-class WorldHierarchy (
+@Immutable
+class WorldHierarchy(
     val icon: File,
     val level: File,
     val advancements: List<File>,
@@ -51,7 +52,8 @@ class WorldHierarchy (
     }
 }
 
-class WorldDimensionHierarchy (
+@Immutable
+class WorldDimensionHierarchy(
     private val region: List<File>,
     private val entities: List<File>,
     private val poi: List<File>,
@@ -93,6 +95,7 @@ enum class WorldDimension(
     }
 }
 
+@Stable
 class WorldSpecification (
     worldPath: String
 ) {

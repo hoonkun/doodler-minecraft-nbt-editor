@@ -17,27 +17,21 @@ import doodler.extension.toRanges
 import doodler.minecraft.structures.WorldSpecification
 import doodler.nbt.TagType
 import doodler.theme.DoodlerTheme
-import doodler.types.Provider
 import doodler.unit.ddp
 
 @Composable
 fun BoxScope.Actions(
-    stateProvider: Provider<NbtEditorState>,
-    worldSpecProvider: Provider<WorldSpecification>?
-) {
-    val state = stateProvider()
-    if (state.action != null) return
-
-    Row(modifier = Modifier.align(Alignment.TopEnd).padding(15.ddp)) {
-        Column(modifier = Modifier.wrapContentSize().padding(end = 11.25.ddp)) {
-            HistoryAction(state)
-            ElevatorAction(state)
-        }
-        Column(modifier = Modifier.wrapContentSize()) {
-            SaveAction(state, worldSpecProvider)
-            AlterAction(state)
-            CreateAction(state)
-        }
+    state: NbtEditorState,
+    worldSpec: WorldSpecification?
+) = Row(modifier = Modifier.align(Alignment.TopEnd).padding(15.ddp)) {
+    Column(modifier = Modifier.wrapContentSize().padding(end = 11.25.ddp)) {
+        HistoryAction(state)
+        ElevatorAction(state)
+    }
+    Column(modifier = Modifier.wrapContentSize()) {
+        SaveAction(state, worldSpec)
+        AlterAction(state)
+        CreateAction(state)
     }
 }
 
@@ -108,11 +102,11 @@ fun ColumnScope.ElevatorAction(
 @Composable
 fun ColumnScope.SaveAction(
     state: NbtEditorState,
-    worldSpecProvider: Provider<WorldSpecification>?
+    worldSpec: WorldSpecification?
 ) {
     val save = {
         state.save()
-        if (state.file.name == "level.dat") worldSpecProvider?.invoke()?.reload()
+        if (state.file.name == "level.dat") worldSpec?.reload()
     }
 
     ActionRoot {

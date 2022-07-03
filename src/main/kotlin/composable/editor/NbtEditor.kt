@@ -33,7 +33,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun BoxScope.NbtEditor(
     editor: NbtEditor,
-    worldSpecProvider: Provider<WorldSpecification>? = null
+    worldSpec: WorldSpecification? = null
 ) {
 
     val coroutine = rememberCoroutineScope()
@@ -118,7 +118,9 @@ fun BoxScope.NbtEditor(
 
     LazyScrollEffect(coroutine) { editor.state }
 
-    Actions(stateProvider = { editor.state }, worldSpecProvider = worldSpecProvider)
+    if (editor.state.action == null) {
+        Actions(state = editor.state, worldSpec = worldSpec)
+    }
 
     Log { editor.state.currentLog }
 
