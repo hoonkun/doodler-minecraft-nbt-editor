@@ -30,6 +30,7 @@ import doodler.local.UserSavedLocalState
 import doodler.theme.DoodlerTheme
 import doodler.unit.ddp
 import doodler.unit.dsp
+import doodler.utils.BrowserUtils
 import java.io.File
 import javax.imageio.ImageIO
 
@@ -104,18 +105,12 @@ fun Intro(
                         Spacer(modifier = Modifier.height(3.75.ddp))
                         Row {
                             ClickableText(
-                                text = "Getting Started?",
-                                color = DoodlerTheme.Colors.ExternalLink,
-                                fontSize = 10.dsp,
-                                onClick = { },
-                                modifier = Modifier.padding(bottom = 3.125.ddp)
-                            )
-                            Spacer(modifier = Modifier.width(12.5.ddp))
-                            ClickableText(
                                 text = "README.md",
                                 color = DoodlerTheme.Colors.ExternalLink,
                                 fontSize = 10.dsp,
-                                onClick = { },
+                                onClick = {
+                                    BrowserUtils.open("https://github.com/hoonkun/doodler-minecraft-nbt-editor")
+                                },
                                 modifier = Modifier.padding(bottom = 3.125.ddp)
                             )
                             Spacer(modifier = Modifier.width(12.5.ddp))
@@ -130,7 +125,9 @@ fun Intro(
                                 hoverAlpha = 1.0f,
                                 normalAlpha = 0.5f,
                                 fontSize = 10.dsp,
-                                onClick = { }
+                                onClick = {
+                                    BrowserUtils.open("https://twitter.com/hoon_kiwicraft")
+                                }
                             )
                         }
                     }

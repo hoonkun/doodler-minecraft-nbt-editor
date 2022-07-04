@@ -10,9 +10,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import composable.global.ClickableText
 import doodler.theme.DoodlerTheme
 import doodler.unit.ddp
 import doodler.unit.dsp
+import doodler.utils.BrowserUtils
 
 @Composable
 fun BoxScope.EmptyTab() =
@@ -33,8 +35,17 @@ fun BoxScope.EmptyTab() =
                 }
             }
             EmptyTabText(text = " ", color = DoodlerTheme.Colors.Text.IdeGeneral)
-            CommentText("if you want some detailed documentation, visit here!")
-            PropertyText("Documentation", "https://some.link.here")
+            CommentText("if you want some detailed documentation(Korean), visit here!")
+            PropertyText("Documentation", "", false)
+            Row {
+                EmptyTabText("    ", color = Color.Transparent)
+                ClickableText(
+                    text = "\"https://github.com/hoonkun/doodler-minecraft-nbt-editor\"",
+                    color = DoodlerTheme.Colors.Text.IdeStringLiteral,
+                    fontSize = 10.dsp,
+                    onClick = { BrowserUtils.open("https://github.com/hoonkun/doodler-minecraft-nbt-editor") }
+                )
+            }
         }
         Row(
             modifier = Modifier
@@ -43,7 +54,7 @@ fun BoxScope.EmptyTab() =
         ) {
             EmptyTabText(
                 // where is `justify-content: stretch;`???
-                text = "HelloDoodler.kt                                        ",
+                text = "HelloDoodler.kt                                                ",
                 color = DoodlerTheme.Colors.Text.IdeGeneral
             )
         }
@@ -125,10 +136,11 @@ fun ColumnScope.DocumentationText(
 @Composable
 fun ColumnScope.PropertyText(
     name: String,
-    value: String
+    value: String,
+    newLine: Boolean
 ) = EmptyTabText(
     text = AnnotatedString(
-        text = """val $name = "$value"""",
+        text = """val $name = ${if (newLine) "\n    " else ""}$value""",
         spanStyles = listOf(
             AnnotatedString.Range(
                 item = SpanStyle(color = DoodlerTheme.Colors.Text.IdeKeyword),
@@ -143,7 +155,7 @@ fun ColumnScope.PropertyText(
             AnnotatedString.Range(
                 item = SpanStyle(color = DoodlerTheme.Colors.Text.IdeStringLiteral),
                 start = 4 + name.length + 3,
-                end = 4 + name.length + 3 + value.length + 2
+                end = 4 + name.length + 3 + value.length + (if (newLine) 5 else 0)
             )
         )
     ),
