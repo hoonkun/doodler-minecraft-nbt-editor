@@ -609,7 +609,7 @@ fun TagDoodlePreview(
     DoodleItemRoot(
         modifier = Modifier.then(modifier)
             .zIndex(99f)
-            .border(12.75.ddp, DoodlerTheme.Colors.DoodleItem.DepthPreviewBorder)
+            .border(1.ddp, DoodlerTheme.Colors.DoodleItem.DepthPreviewBorder)
             .drawWithContent {
                 drawRect(DoodlerTheme.Colors.DoodleItem.NormalItemBackground)
                 drawRect(
