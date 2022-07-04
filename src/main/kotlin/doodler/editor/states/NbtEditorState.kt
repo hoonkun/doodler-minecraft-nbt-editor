@@ -19,6 +19,9 @@ import doodler.exceptions.*
 import doodler.file.StateFile
 import java.io.File
 
+
+private val ClipboardStack = mutableStateListOf<Pair<PasteCriteria, List<ReadonlyDoodle>>>()
+
 @Stable
 class NbtEditorState(
     val root: TagDoodle,
@@ -282,9 +285,7 @@ class NbtEditorState(
     @Stable
     inner class Clipboard: Action() {
 
-        private val stack = mutableStateListOf<Pair<PasteCriteria, List<ReadonlyDoodle>>>()
-
-        val isStackEmpty by derivedStateOf { stack.isEmpty() }
+        val isStackEmpty by derivedStateOf { ClipboardStack.isEmpty() }
 
         val criteria by derivedStateOf {
             val targets = selected
@@ -328,7 +329,7 @@ class NbtEditorState(
             val into = selected[0]
             if (into !is TagDoodle) return@derivedStateOf false
 
-            val (criteria, items) = stack.lastOrNull() ?: return@derivedStateOf false
+            val (criteria, items) = ClipboardStack.lastOrNull() ?: return@derivedStateOf false
 
             when (criteria) {
                 CannotBePasted -> false
@@ -360,9 +361,9 @@ class NbtEditorState(
         fun copy() {
             if (criteria == CannotBePasted) return
 
-            if (stack.size >= 5) stack.removeFirst()
+            if (ClipboardStack.size >= 5) ClipboardStack.removeFirst()
 
-            stack.add(Pair(criteria, listOf(*selected.map { it.clone(null) }.toTypedArray())))
+            ClipboardStack.add(Pair(criteria, listOf(*selected.map { it.clone(null) }.toTypedArray())))
         }
 
         fun paste() {
@@ -373,7 +374,7 @@ class NbtEditorState(
             if (into !is TagDoodle)
                 throw InternalAssertionException(TagDoodle::class.java.simpleName, selected.javaClass.name)
 
-            val (criteria, items) = stack.last()
+            val (criteria, items) = ClipboardStack.last()
 
             when (criteria) {
                 CannotBePasted -> throw InternalAssertionException(
